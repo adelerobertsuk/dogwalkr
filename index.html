@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dogwalkr — The Runna for Dogs (dogwalkr.co.uk)</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .glow-strava {
+      box-shadow: 0 0 50px -10px rgba(252, 76, 2, 0.25);
+    }
+    .badge-blur {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-black text-white min-h-screen antialiased selection:bg-orange-500 selection:text-white relative overflow-x-hidden">
+
+  <!-- Background Subtle Ambient Glow -->
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-gradient-to-b from-orange-500/15 via-orange-600/5 to-transparent rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-zinc-900/80">
+    <div class="flex items-center gap-2.5">
+      <div class="h-9 w-9 rounded-xl bg-orange-500 flex items-center justify-center font-black text-black text-lg">
+        <svg class="h-5 w-5 fill-black" viewBox="0 0 24 24">
+          <path d="M12 14c-1.66 0-3 1.34-3 3 0 1.66 1.34 3 3 3s3-1.34 3-3c0-1.66-1.34-3-3-3zm-5.5-3c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5zm11 0c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5zm-8-5C8.12 6 7 7.12 7 8.5S8.12 11 9.5 11 12 9.88 12 8.5 10.88 6 9.5 6zm5 0C13.12 6 12 7.12 12 8.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5S15.88 6 14.5 6z"/>
+        </svg>
+      </div>
+      <span class="text-xl font-black tracking-tight text-white uppercase">Dogwalkr</span>
+      <span class="text-[10px] font-bold text-zinc-500 ml-0.5">.co.uk</span>
+    </div>
+
+    <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-wider text-zinc-400">
+      <a href="#how-it-works" class="hover:text-white transition">How It Works</a>
+      <a href="#safety-engine" class="hover:text-white transition">Joint Safety</a>
+      <a href="#fuel-balancer" class="hover:text-white transition">Kibble Fuel</a>
+      <a href="#strava-loop" class="hover:text-white transition">Strava Sync</a>
+    </div>
+
+    <div>
+      <a href="#join" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-black uppercase tracking-wider hover:bg-zinc-800 hover:border-zinc-700 transition text-zinc-200">
+        Sign In
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="max-w-7xl mx-auto px-6 pt-12 pb-24 md:pt-20 md:pb-32">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+      
+      <!-- Left Copy & Conversion Column -->
+      <div class="lg:col-span-7 flex flex-col items-start text-left space-y-6">
+        
+        <!-- Live Strava Integration Badge -->
+        <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 badge-blur">
+          <div class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-[11px] font-black uppercase tracking-wider text-zinc-300">Strava Webhook API Live</span>
+          </div>
+          <span class="text-zinc-700">|</span>
+          <span class="text-[11px] font-bold text-orange-400">Zero Hardware Required</span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.05] text-white">
+          The <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400">Runna</span> for your dog.
+        </h1>
+
+        <!-- Subheadline -->
+        <p class="text-base sm:text-lg text-zinc-400 font-medium leading-relaxed max-w-xl">
+          Turn your human Strava walks and runs into breed-specific canine exertion scores, joint safety caps, dynamic kibble fuel balancing, and first-person debriefs. No £150 GPS collar needed.
+        </p>
+
+       <!-- CTA Form with Instant Confirmation -->
+<div class="w-full max-w-md pt-2" id="waitlist-wrapper">
+  <form 
+    id="kit-form"
+    action="https://app.kit.com/forms/9838645/subscriptions" 
+    method="post" 
+    class="flex flex-col sm:flex-row gap-3"
+  >
+    <input 
+      type="email" 
+      name="email_address" 
+      placeholder="Enter your email" 
+      required
+      class="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3.5 text-white placeholder-zinc-500 focus:outline-none focus:border-[#FC4C02] text-sm"
+    />
+    <button 
+      type="submit" 
+      class="px-6 py-3.5 bg-orange-500 hover:bg-orange-600 font-semibold rounded-xl flex items-center justify-center gap-2 text-white shadow-lg shadow-orange-500/20 text-sm whitespace-nowrap transition cursor-pointer"
+    >
+      <span>Join Beta</span>
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+      </svg>
+    </button>
+  </form>
+
+  <!-- Success Message State (Hidden by default) -->
+  <div id="form-success" class="hidden p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-sm font-medium flex items-center gap-3">
+    <span>🐾</span>
+    <span>You're in the pack! Check your inbox to confirm early access.</span>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('kit-form');
+  const successBox = document.getElementById('form-success');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    
+    try {
+      await fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors'
+      });
+      form.classList.add('hidden');
+      successBox.classList.remove('hidden');
+    } catch (err) {
+      form.submit();
+    }
+  });
+</script>
+
+
+
+
+          <!-- Micro-Trust / Feature Bullets -->
+          <div class="flex flex-wrap items-center gap-y-2 gap-x-6 mt-4 text-xs font-semibold text-zinc-500">
+            <div class="flex items-center gap-1.5">
+              <svg class="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Instant 1-Click Strava Auth</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <svg class="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Puppy to Senior Engine</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <svg class="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Free to start</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Live App Preview Card (Runna/Strava High-Contrast) -->
+      <div class="lg:col-span-5 relative">
+        
+        <!-- Glow backing -->
+        <div class="absolute inset-0 bg-orange-500/10 rounded-3xl blur-2xl -z-10 transform rotate-1 scale-95"></div>
+
+        <!-- Debrief Preview Container -->
+        <div class="w-full bg-zinc-950 text-white rounded-3xl border border-zinc-800 p-6 shadow-2xl glow-strava">
+          
+          <!-- Card Header -->
+          <div class="flex items-start justify-between border-b border-zinc-900 pb-4">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                  Strava Auto-Ingest
+                </span>
+                <span class="text-zinc-500 text-[11px] font-medium">Just now</span>
+              </div>
+              <h2 class="text-lg font-black tracking-tight text-white">Morning Trail Base Building</h2>
+              <p class="text-xs text-zinc-400 font-medium">Buster • Cocker Spaniel (14.2kg)</p>
+            </div>
+            
+            <div class="h-9 w-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+              <svg class="h-4 w-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Canine vs Human Load Telemetry -->
+          <div class="grid grid-cols-2 gap-3 my-4">
+            <div class="bg-zinc-900/90 rounded-xl p-3.5 border border-zinc-800">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Canine Distance</span>
+              <div class="flex items-baseline gap-1 mt-0.5">
+                <span class="text-2xl font-black text-white">7.6</span>
+                <span class="text-xs font-bold text-zinc-400">km</span>
+              </div>
+              <p class="text-[10px] text-orange-400 font-semibold mt-0.5">+2.6 km stride cadence</p>
+            </div>
+
+            <div class="bg-zinc-900/40 rounded-xl p-3.5 border border-zinc-900">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Human Base</span>
+              <div class="flex items-baseline gap-1 mt-0.5">
+                <span class="text-2xl font-black text-zinc-300">5.0</span>
+                <span class="text-xs font-bold text-zinc-500">km</span>
+              </div>
+              <p class="text-[10px] text-zinc-500 font-medium mt-0.5">32m • 6:24 /km</p>
+            </div>
+          </div>
+
+          <!-- Dynamic Kibble Fuel -->
+          <div class="bg-zinc-900/80 rounded-xl p-3.5 border border-zinc-800 mb-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="h-8 w-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+                <svg class="h-4 w-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-[9px] uppercase tracking-wider text-zinc-400 font-bold">Post-Walk Fuel Top-Up</div>
+                <div class="text-lg font-black text-white">+89g <span class="text-xs font-normal text-zinc-400">kibble</span></div>
+              </div>
+            </div>
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+              340 kcal burn
+            </span>
+          </div>
+
+          <!-- Safety & Sniff Status -->
+          <div class="grid grid-cols-3 gap-2 text-center mb-4">
+            <div class="bg-zinc-900/50 rounded-lg p-2 border border-zinc-800/60">
+              <div class="text-[9px] font-bold uppercase text-zinc-500">Joints</div>
+              <div class="text-[11px] font-black text-emerald-400 mt-0.5">Safe Cap</div>
+            </div>
+            <div class="bg-zinc-900/50 rounded-lg p-2 border border-zinc-800/60">
+              <div class="text-[9px] font-bold uppercase text-zinc-500">Paw Temp</div>
+              <div class="text-[11px] font-black text-emerald-400 mt-0.5">16°C (Low)</div>
+            </div>
+            <div class="bg-zinc-900/50 rounded-lg p-2 border border-zinc-800/60">
+              <div class="text-[9px] font-bold uppercase text-zinc-500">Sniffs</div>
+              <div class="text-[11px] font-black text-zinc-200 mt-0.5">14 stops</div>
+            </div>
+          </div>
+
+          <!-- AI Debrief Excerpt -->
+          <div class="bg-zinc-900/40 rounded-xl p-3 border border-zinc-800/60">
+            <div class="flex items-center gap-1.5 mb-1">
+              <svg class="h-3.5 w-3.5 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/>
+              </svg>
+              <span class="text-[10px] font-black uppercase tracking-wider text-white">Canine AI Debrief</span>
+            </div>
+            <p class="text-[11px] leading-relaxed text-zinc-300">
+              "Buster nailed Zone 2 cardio on the trails. Short-stride cadence pushed total canine load to 7.6km with zero joint stress."
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+</body>
+</html>
