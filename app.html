@@ -149,24 +149,53 @@
         </div>
 
         <!-- Primary Canine vs Human Telemetry Grid -->
-        <div class="grid grid-cols-4 gap-2 px-4 pb-3 text-left">
-          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Canine</span>
-            <span class="text-sm font-black text-zinc-900">9.52 <span class="text-[10px] font-medium text-zinc-500">km</span></span>
-          </div>
-          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Human</span>
-            <span class="text-sm font-black text-zinc-600">5.50 <span class="text-[10px] font-medium text-zinc-500">km</span></span>
-          </div>
-          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Time</span>
-            <span class="text-sm font-black text-zinc-900">60m 00s</span>
-          </div>
-          <div class="bg-orange-50 p-2.5 rounded-xl border border-orange-100/80">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-[#FC4C02] block">Kibble</span>
-            <span class="text-sm font-black text-[#FC4C02]">+76g</span>
-          </div>
-        </div>
+<div class="grid grid-cols-4 gap-2 px-4 pb-3 text-left">
+  <!-- Canine Distance -->
+  <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
+    <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Canine</div>
+    <div class="text-sm font-black text-zinc-900">9.52 <span class="text-[10px] font-bold text-zinc-400">km</span></div>
+  </div>
+
+  <!-- Human Distance -->
+  <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
+    <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Human</div>
+    <div class="text-sm font-black text-zinc-900">5.50 <span class="text-[10px] font-bold text-zinc-400">km</span></div>
+  </div>
+
+  <!-- Dual Time: Moving vs Total Sniff Time -->
+  <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
+    <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Time Split</div>
+    <div class="text-xs font-black text-zinc-900">25m <span class="text-[9px] font-bold text-zinc-400">move</span></div>
+    <div class="text-[10px] font-bold text-orange-600">45m <span class="text-[8px] text-orange-400">sniff/total</span></div>
+  </div>
+
+  <!-- Kibble Fuel Adjustment -->
+  <div class="bg-orange-50/80 p-2.5 rounded-xl border border-orange-100/80">
+    <div class="text-[9px] font-bold uppercase tracking-wider text-orange-600">Kibble</div>
+    <div class="text-sm font-black text-orange-600">+76<span class="text-[10px] font-bold text-orange-400">g</span></div>
+  </div>
+</div>
+
+<!-- Co-Pilot & Pack Interaction Bar -->
+<div class="px-4 pb-3 flex items-center justify-between border-t border-zinc-100 pt-2.5">
+  <!-- Pack Met Badge -->
+  <div class="flex items-center gap-1.5">
+    <span class="text-[10px] font-bold text-zinc-400 uppercase">Pack:</span>
+    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-100 text-zinc-700">
+      🐾 Barney
+    </span>
+    <button class="w-5 h-5 rounded-full border border-dashed border-zinc-300 text-zinc-400 text-xs flex items-center justify-center hover:border-orange-500 hover:text-orange-500">
+      +
+    </button>
+  </div>
+
+  <!-- Tail Wag Kudos Button -->
+  <button id="wagBtn" onclick="addWag()" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-100 text-orange-600 active:scale-95 transition text-xs font-bold">
+    <span>🐕</span>
+    <span id="wagCount">14 Tail Wags</span>
+  </button>
+</div>
+
 
         <!-- Map Section with Canine Paw Trail Marker -->
         <div class="relative w-full h-48 bg-zinc-100 border-y border-zinc-200 overflow-hidden">
@@ -279,6 +308,14 @@
     </nav>
 
   </div>
+  <script>
+    let wags = 14;
+    function addWag() {
+      wags += 1;
+      document.getElementById('wagCount').innerText = `${wags} Tail Wags`;
+    }
+  </script>
+  
 
 </body>
 </html>
