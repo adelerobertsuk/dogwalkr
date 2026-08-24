@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="stravaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6A00"/>
+      <stop offset="50%" stop-color="#FC4C02"/>
+      <stop offset="100%" stop-color="#D03B00"/>
+    </linearGradient>
+  </defs>
+  <!-- App Icon Background -->
+  <rect width="512" height="512" rx="115" fill="#0C0C0E"/>
+  <rect x="12" y="12" width="488" height="488" rx="103" fill="none" stroke="#27272A" stroke-width="8"/>
+  
+  <!-- Stylized Telemetry Paw Mark -->
+  <circle cx="150" cy="180" r="38" fill="url(#stravaGrad)"/>
+  <circle cx="362" cy="180" r="38" fill="url(#stravaGrad)"/>
+  <circle cx="215" cy="120" r="42" fill="url(#stravaGrad)"/>
+  <circle cx="297" cy="120" r="42" fill="url(#stravaGrad)"/>
+  
+  <!-- Main Pad -->
+  <path d="M256 225 C200 225, 155 270, 165 330 C173 375, 210 405, 256 405 C302 405, 339 375, 347 330 C357 270, 312 225, 256 225 Z" fill="url(#stravaGrad)"/>
+</svg>
