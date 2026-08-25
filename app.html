@@ -35,6 +35,16 @@
     .safe-top { padding-top: max(env(safe-area-inset-top), 48px); }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 24px); }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .checkerboard-bg {
+      background-color: #4a4a4a;
+      background-image:
+        linear-gradient(45deg, #5c5c5c 25%, transparent 25%),
+        linear-gradient(-45deg, #5c5c5c 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #5c5c5c 75%),
+        linear-gradient(-45deg, transparent 75%, #5c5c5c 75%);
+      background-size: 32px 32px;
+      background-position: 0 0, 0 16px, 16px -16px, -16px 0px;
+    }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .tap-target { min-height: 48px; min-width: 48px; }
   </style>
@@ -525,18 +535,18 @@
       </div>
 
       <div class="grid grid-cols-2 gap-2">
-        <button id="shareModePhotoBtn" onclick="setShareCardMode('photo')" class="py-2.5 rounded-xl text-xs font-bold border">Photo Card</button>
-        <button id="shareModeStickerBtn" onclick="setShareCardMode('sticker')" class="py-2.5 rounded-xl text-xs font-bold border">Sticker</button>
+        <button id="shareModePhotoBtn" onclick="setShareCardMode('photo')" class="py-2.5 rounded-xl text-xs font-bold border">Photo Overlay</button>
+        <button id="shareModeStickerBtn" onclick="setShareCardMode('sticker')" class="py-2.5 rounded-xl text-xs font-bold border">Transparent Sticker</button>
       </div>
 
-      <div class="bg-zinc-900 rounded-2xl overflow-hidden flex items-center justify-center relative" style="aspect-ratio: 9 / 16;">
+      <div class="rounded-2xl overflow-hidden flex items-center justify-center relative checkerboard-bg" style="aspect-ratio: 9 / 16;">
         <canvas id="shareCardCanvas" width="1080" height="1920" class="w-full h-full"></canvas>
-        <div id="shareCardSpinner" class="absolute inset-0 flex items-center justify-center text-white text-xs font-bold hidden">Rendering…</div>
+        <div id="shareCardSpinner" class="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-xs font-bold hidden">Rendering…</div>
       </div>
       <input type="hidden" id="shareCardWalkId" value="" />
 
       <button id="shareCardShareBtn" onclick="shareWalkoutCard()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md">Share Walkout</button>
-      <button id="shareCardDownloadBtn" onclick="downloadWalkoutCard()" class="w-full py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold">Save to Camera Roll / Download PNG</button>
+      <button id="shareCardDownloadBtn" onclick="downloadWalkoutCard()" class="w-full py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold">Save to Camera Roll</button>
     </div>
   </div>
 
@@ -1265,10 +1275,12 @@
     // ==========================================================
     // Share Card engine: native Canvas rendering of a 1080x1920
     // (9:16) story card, in two modes:
-    //   'photo'   — user's walkout photo full-bleed with gradient
-    //               overlays so text stays legible
-    //   'sticker' — transparent background, small floating branded
-    //               card only, for use as an IG Stories sticker
+    //   'photo'   — Photo Overlay: user's walkout photo full-bleed,
+    //               cropped to fill, with a dark gradient at the
+    //               bottom so the white text pops
+    //   'sticker' — Transparent Sticker: fully transparent canvas,
+    //               branding + stats only, for use as a native IG
+    //               Stories sticker on top of a video/photo
     // ==========================================================
 
     let shareCardMode = 'sticker';
@@ -1297,16 +1309,6 @@
       });
     }
 
-    function drawRoundedRect(ctx, x, y, w, h, r) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-    }
-
     function drawCoverImage(ctx, img, x, y, w, h) {
       const imgRatio = img.width / img.height;
       const boxRatio = w / h;
@@ -1329,15 +1331,81 @@
       ctx.restore();
     }
 
-    function drawBrandBadge(ctx, x, y, color) {
-      ctx.font = '44px -apple-system, sans-serif';
+    let _brandIconPromise = null;
+    function getBrandIcon() {
+      if (!_brandIconPromise) _brandIconPromise = loadImageCORS('dogwalkr-icon.png').catch(() => null);
+      return _brandIconPromise;
+    }
+
+    // Draws the icon+wordmark lockup left-aligned starting at (x, y), y = vertical center.
+    function drawBrandBadge(ctx, x, y, color, iconImg, iconSize = 56, fontSize = 34) {
       ctx.textBaseline = 'middle';
-      ctx.fillText('🐾', x, y);
-      ctx.font = '700 34px -apple-system, sans-serif';
+      let cursorX = x;
+      if (iconImg) {
+        ctx.drawImage(iconImg, cursorX, y - iconSize / 2, iconSize, iconSize);
+        cursorX += iconSize + 18;
+      } else {
+        ctx.font = `${Math.round(iconSize * 0.8)}px -apple-system, sans-serif`;
+        ctx.fillText('🐾', cursorX, y);
+        cursorX += iconSize;
+      }
+      ctx.font = `800 ${fontSize}px -apple-system, sans-serif`;
       ctx.fillStyle = color;
-      ctx.letterSpacing = '2px';
-      ctx.fillText('DOGWALKR', x + 56, y);
+      ctx.letterSpacing = '1px';
+      ctx.fillText('DogWalkr', cursorX, y);
       ctx.letterSpacing = '0px';
+    }
+
+    // Draws the icon+wordmark lockup centered as a unit on cx, y = vertical center.
+    function drawBrandLockupCentered(ctx, cx, y, iconImg, iconSize = 72, fontSize = 52) {
+      ctx.textBaseline = 'middle';
+      ctx.font = `800 ${fontSize}px -apple-system, sans-serif`;
+      const textW = ctx.measureText('DogWalkr').width;
+      const gap = iconImg ? 22 : iconSize * 0.25;
+      const totalW = iconSize + gap + textW;
+      let x = cx - totalW / 2;
+      if (iconImg) {
+        ctx.drawImage(iconImg, x, y - iconSize / 2, iconSize, iconSize);
+      } else {
+        ctx.font = `${Math.round(iconSize * 0.8)}px -apple-system, sans-serif`;
+        ctx.fillText('🐾', x, y);
+        ctx.font = `800 ${fontSize}px -apple-system, sans-serif`;
+      }
+      x += iconSize + gap;
+      ctx.fillStyle = '#ffffff';
+      ctx.letterSpacing = '1px';
+      ctx.fillText('DogWalkr', x, y);
+      ctx.letterSpacing = '0px';
+    }
+
+    // Draws a row of label/value stat columns centered as a group on cx.
+    // y is the baseline of the label line; the value is drawn below it.
+    function drawStatsRowCentered(ctx, cx, y, stats, opts = {}) {
+      const { labelSize = 26, valueSize = 64, colGap = 90, valueGap = 68 } = opts;
+      ctx.textBaseline = 'alphabetic';
+      const colWidths = stats.map(([label, value]) => {
+        ctx.font = `700 ${labelSize}px -apple-system, sans-serif`;
+        const lw = ctx.measureText(label.toUpperCase()).width;
+        ctx.font = `800 ${valueSize}px -apple-system, sans-serif`;
+        const vw = ctx.measureText(value).width;
+        return Math.max(lw, vw);
+      });
+      const totalW = colWidths.reduce((a, b) => a + b, 0) + colGap * (stats.length - 1);
+      let x = cx - totalW / 2;
+      ctx.textAlign = 'center';
+      stats.forEach(([label, value], i) => {
+        const colCx = x + colWidths[i] / 2;
+        ctx.font = `700 ${labelSize}px -apple-system, sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.letterSpacing = '1.5px';
+        ctx.fillText(label.toUpperCase(), colCx, y);
+        ctx.letterSpacing = '0px';
+        ctx.font = `800 ${valueSize}px -apple-system, sans-serif`;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(value, colCx, y + valueGap);
+        x += colWidths[i] + colGap;
+      });
+      ctx.textAlign = 'left';
     }
 
     function getShareCardData(walkId) {
@@ -1355,7 +1423,7 @@
 
     async function renderPhotoCard(ctx, W, H, data) {
       const { w, dog, dogDist, pawsTaken, dateStr } = data;
-      const photo = await loadImageCORS(w.photo_url);
+      const [photo, icon] = await Promise.all([loadImageCORS(w.photo_url), getBrandIcon()]);
       drawCoverImage(ctx, photo, 0, 0, W, H);
 
       const topGrad = ctx.createLinearGradient(0, 0, 0, 420);
@@ -1370,7 +1438,7 @@
       ctx.fillStyle = bottomGrad;
       ctx.fillRect(0, H - 780, W, 780);
 
-      drawBrandBadge(ctx, 64, 110, '#ffffff');
+      drawBrandBadge(ctx, 64, 110, '#ffffff', icon);
 
       // Dog avatar + name
       const avatarY = H - 660;
@@ -1421,63 +1489,30 @@
       ctx.fillText(dateStr, 64, H - 200);
     }
 
+    // Transparent Sticker mode: NO background, NO card box — just the branding
+    // lockup, dog name, and stat row floating on a fully transparent canvas,
+    // exactly like the Strava story-sticker reference (icon+wordmark, then a
+    // row of label/value stats), so it drops onto an IG Stories video/photo
+    // as a native sticker.
     async function renderStickerCard(ctx, W, H, data) {
-      const { w, dog, dogDist, pawsTaken, dateStr } = data;
-      const cardW = 900, cardH = 620;
-      const cardX = (W - cardW) / 2, cardY = (H - cardH) / 2;
+      const { w, dog, dogDist, pawsTaken } = data;
+      const icon = await getBrandIcon();
+      const cx = W / 2;
 
-      const grad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
-      grad.addColorStop(0, '#f97316');
-      grad.addColorStop(1, '#d97706');
-      ctx.fillStyle = grad;
-      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
-      ctx.fill();
+      drawBrandLockupCentered(ctx, cx, 840, icon, 76, 54);
 
-      const pad = 56;
-      drawBrandBadge(ctx, cardX + pad, cardY + 80, '#ffffff');
-
-      const avatarCx = cardX + pad + 56, avatarCy = cardY + 200;
-      try {
-        const avatar = await loadImageCORS(dog.avatar);
-        drawCircleClippedImage(ctx, avatar, avatarCx, avatarCy, 56);
-        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(avatarCx, avatarCy, 56, 0, Math.PI * 2);
-        ctx.stroke();
-      } catch (err) {
-        console.warn('Share card avatar load failed:', err);
-      }
       ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'center';
+      ctx.font = '800 72px -apple-system, sans-serif';
       ctx.fillStyle = '#ffffff';
-      ctx.font = '800 52px -apple-system, sans-serif';
-      ctx.fillText(dog.name, avatarCx + 90, avatarCy + 10);
-      ctx.font = '500 26px -apple-system, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.fillText(dog.breed || '', avatarCx + 90, avatarCy + 42);
+      ctx.fillText(`${dog.name}'s Walkout`, cx, 1000);
+      ctx.textAlign = 'left';
 
-      const statsY = cardY + 400;
-      const innerW = cardW - pad * 2;
-      const cols = [cardX + pad, cardX + pad + innerW / 3, cardX + pad + (2 * innerW) / 3];
-      const stats = [
-        ['DISTANCE', `${dogDist.toFixed(2)} km`],
-        ['TIME', formatDurationLong(w.durationMins)],
-        ['PAWS', pawsTaken.toLocaleString('en-GB')],
-      ];
-      stats.forEach(([label, value], i) => {
-        ctx.font = '700 22px -apple-system, sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.letterSpacing = '1px';
-        ctx.fillText(label, cols[i], statsY);
-        ctx.letterSpacing = '0px';
-        ctx.font = '800 46px -apple-system, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(value, cols[i], statsY + 54);
-      });
-
-      ctx.font = '400 22px -apple-system, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.fillText(dateStr, cardX + pad, cardY + cardH - 40);
+      drawStatsRowCentered(ctx, cx, 1120, [
+        ['Distance', `${dogDist.toFixed(2)} km`],
+        ['Time', formatDurationLong(w.durationMins)],
+        ['Paws Taken', pawsTaken.toLocaleString('en-GB')],
+      ]);
     }
 
     async function renderShareCard() {
@@ -1532,7 +1567,10 @@
       if (!w) return;
       document.getElementById('shareCardWalkId').value = walkId;
       shareCardMode = w.photo_url ? 'photo' : 'sticker';
-      document.getElementById('shareCardDownloadBtn').classList.toggle('hidden', !!navigator.share);
+      // "Save to Camera Roll" always stays visible as the fallback path —
+      // navigator.share existing doesn't guarantee it succeeds (user can
+      // cancel, a target app can reject the file, etc.), so the download
+      // button is the guaranteed way to get the PNG out of the browser.
       openModal('modalShareCard');
       await renderShareCard();
     }
