@@ -578,6 +578,7 @@
         { id: 'dog_bertie', name: 'Bertie', breed: 'Pug', weight: 6.0, dob: '2025-01-15', avatar: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80' }
       ],
       walkouts: [],
+      walkDogs: [],
       foodItems: [],
       foodLogs: {},
       selectedFoodDate: localDateKey(new Date())
@@ -635,7 +636,7 @@
     }
 
     async function initApp() {
-      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchStravaConnectionStatus(), fetchFoodItems()]);
+      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchWalkDogs()]);
       renderAll();
 
       const params = new URLSearchParams(window.location.search);
@@ -738,6 +739,19 @@
         }
       } catch (err) {
         console.error("Food items connection exception:", err);
+      }
+    }
+
+    async function fetchWalkDogs() {
+      try {
+        const { data, error } = await db.from('walk_dogs').select('walk_id, dog_id');
+        if (error) {
+          console.warn("Supabase walk_dogs query notice:", error.message);
+        } else if (data) {
+          STATE.walkDogs = data;
+        }
+      } catch (err) {
+        console.error("walk_dogs connection exception:", err);
       }
     }
 
@@ -863,6 +877,12 @@
           STATE.walkouts.unshift({ id: 'walk_' + Date.now(), ...newWalk });
         } else if (data) {
           STATE.walkouts.unshift(data[0]);
+          const { error: linkError } = await db.from('walk_dogs').insert([{ walk_id: data[0].id, dog_id: STATE.activeDogId }]);
+          if (linkError) {
+            console.warn("walk_dogs insert notice:", linkError.message);
+          } else {
+            STATE.walkDogs.push({ walk_id: data[0].id, dog_id: STATE.activeDogId });
+          }
         }
       }
 
@@ -914,7 +934,9 @@
     }
 
     function getDogWalkouts(dogId) {
-      return STATE.walkouts.filter(w => w.dog_id === dogId);
+      return STATE.walkouts.filter(w =>
+        w.dog_id === dogId || STATE.walkDogs.some(wd => wd.walk_id === w.id && wd.dog_id === dogId)
+      );
     }
 
     function renderDashboard(dog) {

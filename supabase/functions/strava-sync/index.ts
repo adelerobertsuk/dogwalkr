@@ -1,12 +1,26 @@
 // strava-sync: fetches recent Strava activities for ONE DEVICE's
 // connected account, filters for dog walks (by dog name or keywords
-// like "dog"/"pup"/"walk" in the title/description — same logic as
-// app.html's isDogActivity), and imports new matches into the shared
-// walks table. Skips activities already imported (de-duped on
-// strava_activity_id). Which device's Strava token is used is
-// determined by the device_id in the request body — the resulting
-// walk data is still shared household-wide, only the credential is
-// per-device.
+// like "dog"/"pup"/"walk" in the title/description), and imports new
+// matches into the shared walks table. Skips activities already
+// imported (de-duped on strava_activity_id). Which device's Strava
+// token is used is determined by the device_id in the request body —
+// the resulting walk data is still shared household-wide, only the
+// credential is per-device.
+//
+// Human-to-dog translation rules:
+//   1. Duration is Strava's elapsed_time (wall-clock start-to-finish),
+//      NOT moving_time — humans auto-pause, dogs don't stop moving.
+//   2/3. Every dog whose name appears in the activity's name or
+//      description gets attributed via the walk_dogs join table (a
+//      walk mentioning "Audrey and Daisy" counts for both). dog_id on
+//      the walk row itself is set to the first match, kept only as a
+//      backward-compatible convenience column for older client code.
+//   4. If no dog name matches, the walk is imported UNASSIGNED
+//      (dog_id null, no walk_dogs rows) rather than guessed at — this
+//      function has no reliable concept of "the active dog" (it runs
+//      server-side, independent of any one device's UI state), so
+//      guessing would misattribute data. The app doesn't yet have UI
+//      to browse/reassign unassigned walks; that's a follow-up.
 //
 // Invoke from the client with:
 //   supabase.functions.invoke('strava-sync', { body: { device_id } })
@@ -129,24 +143,37 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const matchedDog = dogList.find((d) => d.name && text.toLowerCase().includes(d.name.toLowerCase()));
+      const lowerText = text.toLowerCase();
+      const matchedDogs = dogList.filter((d) => d.name && lowerText.includes(d.name.toLowerCase()));
 
-      const { error: insertError } = await supabase.from("walks").insert({
-        title: activity.name,
-        humanDistance: Math.round((activity.distance / 1000) * 100) / 100,
-        durationMins: Math.round(activity.moving_time / 60),
-        stoolScore: null,
-        notes: `Imported from Strava (${activity.type})`,
-        dog_id: matchedDog ? matchedDog.id : null,
-        strava_activity_id: activity.id,
-        created_at: activity.start_date,
-      });
+      const { data: inserted, error: insertError } = await supabase
+        .from("walks")
+        .insert({
+          title: activity.name,
+          humanDistance: Math.round((activity.distance / 1000) * 100) / 100,
+          durationMins: Math.round(activity.elapsed_time / 60),
+          stoolScore: null,
+          notes: `Imported from Strava (${activity.type})`,
+          dog_id: matchedDogs[0] ? matchedDogs[0].id : null,
+          strava_activity_id: activity.id,
+          created_at: activity.start_date,
+        })
+        .select()
+        .single();
 
-      if (insertError) {
-        console.error("Walk insert failed:", insertError.message);
+      if (insertError || !inserted) {
+        console.error("Walk insert failed:", insertError?.message);
         skipped++;
         continue;
       }
+
+      if (matchedDogs.length > 0) {
+        const { error: linkError } = await supabase
+          .from("walk_dogs")
+          .insert(matchedDogs.map((d) => ({ walk_id: inserted.id, dog_id: d.id })));
+        if (linkError) console.error("walk_dogs insert failed:", linkError.message);
+      }
+
       imported++;
       importedTitles.push(activity.name);
     }

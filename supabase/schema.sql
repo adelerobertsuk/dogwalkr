@@ -217,3 +217,29 @@ create policy "Allow anon update food_items" on public.food_items
 
 alter table public.walks add column if not exists photo_url text;
 alter table public.dogs add column if not exists avatar text;
+
+-- ==========================================================
+-- walk_dogs: many-to-many join for multi-dog walk attribution.
+-- walks.dog_id stays as the "primary" dog (used by manually-logged
+-- walks and as a backward-compatible convenience column), but a walk
+-- can now belong to MULTIPLE dogs via this table — e.g. a Strava
+-- activity whose title mentions both "Audrey" and "Daisy" gets a
+-- row here for each, so it counts toward both dogs' stats. The
+-- client's getDogWalkouts() checks dog_id OR this table.
+-- ==========================================================
+create table if not exists public.walk_dogs (
+  walk_id uuid not null references public.walks(id) on delete cascade,
+  dog_id uuid not null references public.dogs(id) on delete cascade,
+  primary key (walk_id, dog_id)
+);
+alter table public.walk_dogs enable row level security;
+
+drop policy if exists "Allow anon read walk_dogs" on public.walk_dogs;
+create policy "Allow anon read walk_dogs" on public.walk_dogs
+  for select using (true);
+drop policy if exists "Allow anon insert walk_dogs" on public.walk_dogs;
+create policy "Allow anon insert walk_dogs" on public.walk_dogs
+  for insert with check (true);
+drop policy if exists "Allow anon delete walk_dogs" on public.walk_dogs;
+create policy "Allow anon delete walk_dogs" on public.walk_dogs
+  for delete using (true);
