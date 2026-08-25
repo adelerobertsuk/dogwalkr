@@ -759,6 +759,64 @@
       document.getElementById('feedbackForm').reset();
     }
 
+    async function loadLiveWalksFromSupabase() {
+      const SUPABASE_URL = "https://rrrjojbxjektdhrkahvh.supabase.co";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycmpvamJ4amVrdGRocmthaHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTk2MzIsImV4cCI6MjA3MTY5NTYzMn0.UfP6Wk1856YQn2N7x5g4J47V_u1w7Q6B9_0j_zYwPfk";
+      const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+      if (!supabaseClient) return;
+
+      try {
+        const { data: walks, error } = await supabaseClient
+          .from('walks')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (error || !walks || walks.length === 0) return;
+
+        const feed = document.getElementById('activityFeedList');
+        if (!feed) return;
+        feed.innerHTML = '';
+
+        walks.forEach(walk => {
+          const canineKm = parseFloat(walk.dog_distance_km || (walk.distance_km * 1.44)).toFixed(2);
+          const durationMins = Math.round((walk.moving_time_seconds || 0) / 60) || Math.round(walk.duration_minutes || 30);
+          const fuelGrams = walk.extra_kibble_grams || Math.round((28.5 * 0.95 * (walk.distance_km || 3)) / 3.8);
+          const walkDate = new Date(walk.created_at || Date.now()).toLocaleDateString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+
+          const card = document.createElement('article');
+          card.className = "bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-4 space-y-3 shadow-sm dark:shadow-lg transition-colors";
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-orange-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-orange-600 dark:text-orange-400">🐾</div>
+                <div>
+                  <h4 class="text-sm font-black text-zinc-900 dark:text-white">${walk.title || 'Outdoor Walkout'}</h4>
+                  <p class="text-[10px] text-zinc-400 font-medium">${walkDate} • Barney</p>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 rounded-full">Synced</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200/70 dark:border-zinc-800/60 rounded-2xl p-3 text-center">
+              <div><p class="text-[9px] uppercase font-bold text-zinc-500">Pup Distance</p><p class="text-base font-black text-zinc-900 dark:text-white mt-0.5">${canineKm} <span class="text-[9px] text-zinc-500 font-normal">km</span></p></div>
+              <div><p class="text-[9px] uppercase font-bold text-zinc-500">Duration</p><p class="text-base font-black text-zinc-900 dark:text-white mt-0.5">${durationMins} <span class="text-[9px] text-zinc-500 font-normal">min</span></p></div>
+              <div><p class="text-[9px] uppercase font-bold text-orange-700 dark:text-zinc-500">Extra Kibble</p><p class="text-base font-black text-orange-600 dark:text-orange-400 mt-0.5">+${fuelGrams} <span class="text-[9px] text-orange-700 dark:text-zinc-500 font-normal">g</span></p></div>
+            </div>
+          `;
+          feed.appendChild(card);
+        });
+      } catch (err) {
+        console.log("Supabase feed error:", err);
+      }
+    }
+
+    function init() {
+      applyTheme();
+      renderStackItems();
+      loadLiveWalksFromSupabase();
+      lucide.createIcons();
+    }
+
     document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
