@@ -99,7 +99,9 @@ create policy "Anon update walk-photos" on storage.objects
   for update using (bucket_id = 'walk-photos');
 
 -- ==========================================================
--- food_items: written by saveFoodItem(), deleted by deleteFoodItem()
+-- food_items: written by saveFoodItem(), deleted by deleteFoodItem().
+-- dog_id scopes each item to one dog (state-isolation fix) — items
+-- with no dog_id predate this and won't show under any dog's tab.
 -- ==========================================================
 create table if not exists public.food_items (
   id uuid primary key default gen_random_uuid(),
@@ -108,6 +110,7 @@ create table if not exists public.food_items (
   emoji text,
   created_at timestamptz not null default now()
 );
+alter table public.food_items add column if not exists dog_id uuid references public.dogs(id) on delete cascade;
 
 alter table public.food_items enable row level security;
 
@@ -192,3 +195,25 @@ create policy "Allow anon update strava_connections" on public.strava_connection
 alter table public.walks add column if not exists strava_activity_id bigint;
 create unique index if not exists walks_strava_activity_id_idx
   on public.walks (strava_activity_id) where strava_activity_id is not null;
+
+-- ==========================================================
+-- Live-verified fixes (2026-08-26): the original walks/food_items
+-- policy sets above were missing UPDATE policies, so every edit
+-- (including adding a photo to an existing walkout) silently
+-- affected 0 rows — no error thrown, just never persisted. Also
+-- walks.photo_url and dogs.avatar were missing entirely live despite
+-- being defined earlier in this file (an earlier paste of this file
+-- likely errored out partway through on a duplicate-policy conflict
+-- and rolled back everything after that point). Confirmed fixed via
+-- direct insert/update probes against the live database.
+-- ==========================================================
+drop policy if exists "Allow anon update walks" on public.walks;
+create policy "Allow anon update walks" on public.walks
+  for update using (true) with check (true);
+
+drop policy if exists "Allow anon update food_items" on public.food_items;
+create policy "Allow anon update food_items" on public.food_items
+  for update using (true) with check (true);
+
+alter table public.walks add column if not exists photo_url text;
+alter table public.dogs add column if not exists avatar text;

@@ -55,12 +55,15 @@
           </button>
           <span id="activeDogStatusDot" class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
         </div>
-        <div>
-          <div class="flex items-center space-x-1.5 cursor-pointer" onclick="openPackTab()">
+        <div class="relative">
+          <div class="flex items-center space-x-1.5 cursor-pointer" onclick="toggleDogPicker()">
             <h1 id="activeDogName" class="text-lg font-bold text-zinc-900 tracking-tight">Joe</h1>
             <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-500"></i>
           </div>
           <p id="activeDogSubhead" class="text-xs font-medium text-zinc-500">Italian Greyhound • Active 🟢</p>
+          <div id="dogPickerDropdown" class="hidden absolute top-full left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-zinc-200 z-40 overflow-hidden py-1">
+            <!-- Populated by JS -->
+          </div>
         </div>
       </div>
 
@@ -150,13 +153,13 @@
       </section>
 
       <!-- ========================================================== -->
-      <!-- TAB 2: WALKOUTS (Workout Library)                          -->
+      <!-- TAB 2: WALKOUTS (Walkout Library)                          -->
       <!-- ========================================================== -->
       <section id="viewWalkouts" class="space-y-4 hidden">
         
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-black text-zinc-900 tracking-tight">Workout Library</h2>
+            <h2 class="text-xl font-black text-zinc-900 tracking-tight">Walkout Library</h2>
             <p class="text-xs text-zinc-500">Strava Connected</p>
           </div>
           <button onclick="openLogWalkModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
@@ -575,10 +578,7 @@
         { id: 'dog_bertie', name: 'Bertie', breed: 'Pug', weight: 6.0, dob: '2025-01-15', avatar: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80' }
       ],
       walkouts: [],
-      foodItems: [
-        { id: 'food_1', name: 'Royal Canin Adult', portion: '150g Bowl', emoji: '🥣' },
-        { id: 'food_2', name: 'Salmon Oil Pump', portion: '1 Pump (5ml)', emoji: '🐟' }
-      ],
+      foodItems: [],
       foodLogs: {},
       selectedFoodDate: localDateKey(new Date())
     };
@@ -635,7 +635,7 @@
     }
 
     async function initApp() {
-      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchStravaConnectionStatus()]);
+      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchStravaConnectionStatus(), fetchFoodItems()]);
       renderAll();
 
       const params = new URLSearchParams(window.location.search);
@@ -669,7 +669,7 @@
               durationMins: 53,
               stoolScore: 3,
               notes: 'Synced via Strava 🐾',
-              dogIds: [STATE.activeDogId],
+              dog_id: STATE.activeDogId,
               created_at: new Date().toISOString()
             }];
           }
@@ -725,6 +725,19 @@
         STATE.stravaAthleteName = (data && data.athlete_name) || null;
       } catch (err) {
         console.error("Strava connection exception:", err);
+      }
+    }
+
+    async function fetchFoodItems() {
+      try {
+        const { data, error } = await db.from('food_items').select('*').order('created_at', { ascending: true });
+        if (error) {
+          console.warn("Supabase food items query notice:", error.message);
+        } else if (data) {
+          STATE.foodItems = data;
+        }
+      } catch (err) {
+        console.error("Food items connection exception:", err);
       }
     }
 
@@ -829,8 +842,10 @@
         const existing = STATE.walkouts.find(w => String(w.id) === String(editId));
         const photo_url = uploadedPhoto || (existing ? existing.photo_url : null) || null;
         const updateData = { title, humanDistance, durationMins, stoolScore, notes, photo_url };
-        const { error } = await db.from('walks').update(updateData).eq('id', editId);
-        if (error) console.warn("Walk update notice:", error.message);
+        const { data, error } = await db.from('walks').update(updateData).eq('id', editId).select();
+        if (error || !data || !data.length) {
+          console.warn("Walk update notice:", error?.message || 'update matched 0 rows — check RLS policy');
+        }
         if (existing) Object.assign(existing, updateData);
       } else {
         const newWalk = {
@@ -882,8 +897,6 @@
       renderAll();
     }
 
-    function openPackTab() { openTab('pack'); }
-
     function renderAll() {
       const activeDog = STATE.dogs.find(p => p.id === STATE.activeDogId) || STATE.dogs[0];
       if (!activeDog) return;
@@ -900,21 +913,26 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    function getDogWalkouts(dogId) {
+      return STATE.walkouts.filter(w => w.dog_id === dogId);
+    }
+
     function renderDashboard(dog) {
       const multiplier = calculateStrideRatio(dog.weight);
       const now = new Date();
+      const dogWalkouts = getDogWalkouts(dog.id);
 
       document.getElementById('dashCoachHeadline').innerText = `${dog.name} is recovered and ready for walkouts!`;
       document.getElementById('dashCoachBody').innerText = `Based on recent pacing and joint recovery, a 30–45 minute walk on soft grass is optimal today. Stride ratio calibrated at ${multiplier.toFixed(2)}×.`;
 
-      const weeklyWalks = STATE.walkouts.filter(w => isWithinLast7Days(w.created_at, now));
+      const weeklyWalks = dogWalkouts.filter(w => isWithinLast7Days(w.created_at, now));
       let totalHumanKm = 0;
       weeklyWalks.forEach(w => { totalHumanKm += Number(w.humanDistance || w.distance) || 0; });
 
       document.getElementById('dashWeeklyDistance').innerText = (totalHumanKm * multiplier).toFixed(1);
       document.getElementById('dashWeeklyCount').innerText = weeklyWalks.length;
 
-      const latest = STATE.walkouts[0];
+      const latest = dogWalkouts[0];
       const container = document.getElementById('latestWalkoutContent');
       if (!latest) {
         container.innerHTML = `<p class="text-xs text-zinc-500 py-4 text-center">No workouts recorded yet.</p>`;
@@ -955,12 +973,13 @@
 
     function renderWalkouts() {
       const list = document.getElementById('walkoutsList');
-      if (STATE.walkouts.length === 0) {
+      const dogWalkouts = getDogWalkouts(STATE.activeDogId);
+      if (dogWalkouts.length === 0) {
         list.innerHTML = `<div class="p-8 text-center text-zinc-400 bg-white rounded-3xl border border-zinc-200"><p class="text-sm font-bold">No workouts found</p></div>`;
         return;
       }
 
-      list.innerHTML = STATE.walkouts.map(w => {
+      list.innerHTML = dogWalkouts.map(w => {
         const dist = Number(w.humanDistance || w.distance) || 0;
         const extraG = Math.round(dist * 25);
         const stoolMeta = stoolScoreMeta(w.stoolScore);
@@ -1022,7 +1041,8 @@
     function renderFood() {
       const doneToday = STATE.foodLogs[STATE.selectedFoodDate] || [];
       const list = document.getElementById('foodStackList');
-      list.innerHTML = STATE.foodItems.map(item => {
+      const dogFoodItems = STATE.foodItems.filter(item => item.dog_id === STATE.activeDogId);
+      list.innerHTML = dogFoodItems.map(item => {
         const done = doneToday.includes(item.id);
         return `
         <div class="bg-white rounded-2xl p-3.5 border border-zinc-200/80 shadow-xs flex items-center justify-between">
@@ -1042,7 +1062,7 @@
       `;
       }).join('');
 
-      const dayWalks = STATE.walkouts.filter(w => w.created_at && localDateKey(new Date(w.created_at)) === STATE.selectedFoodDate);
+      const dayWalks = getDogWalkouts(STATE.activeDogId).filter(w => w.created_at && localDateKey(new Date(w.created_at)) === STATE.selectedFoodDate);
       const extraKibble = dayWalks.reduce((sum, w) => sum + Math.round((Number(w.humanDistance || w.distance) || 0) * 25), 0);
       document.getElementById('foodTotalExtraEarned').innerText = `+${extraKibble}`;
 
@@ -1089,8 +1109,38 @@
     function setActiveDog(dogId) {
       STATE.activeDogId = dogId;
       renderAll();
-      showDogPassportModal(dogId);
+      const dropdown = document.getElementById('dogPickerDropdown');
+      if (dropdown) dropdown.classList.add('hidden');
     }
+
+    function toggleDogPicker() {
+      const dropdown = document.getElementById('dogPickerDropdown');
+      const isHidden = dropdown.classList.contains('hidden');
+      if (isHidden) {
+        renderDogPicker();
+        dropdown.classList.remove('hidden');
+      } else {
+        dropdown.classList.add('hidden');
+      }
+    }
+
+    function renderDogPicker() {
+      const dropdown = document.getElementById('dogPickerDropdown');
+      dropdown.innerHTML = STATE.dogs.map(d => `
+        <button onclick="setActiveDog('${d.id}')" class="w-full flex items-center space-x-2.5 px-3.5 py-2.5 hover:bg-zinc-50 text-left transition ${d.id === STATE.activeDogId ? 'bg-orange-50' : ''}">
+          <img src="${d.avatar}" alt="${d.name}" class="w-8 h-8 rounded-xl object-cover flex-shrink-0" />
+          <span class="text-sm font-semibold text-zinc-900 flex-1">${d.name}</span>
+          ${d.id === STATE.activeDogId ? '<i data-lucide="check" class="w-4 h-4 text-orange-500"></i>' : ''}
+        </button>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('dogPickerDropdown');
+      if (!dropdown || dropdown.classList.contains('hidden')) return;
+      if (!dropdown.parentElement.contains(e.target)) dropdown.classList.add('hidden');
+    });
 
     function showDogPassportModal(dogId) {
       const dog = STATE.dogs.find(p => p.id === dogId) || STATE.dogs.find(p => p.id === STATE.activeDogId) || STATE.dogs[0];
@@ -1176,8 +1226,10 @@
       if (uploadedAvatar) dogData.avatar = uploadedAvatar;
 
       if (editId) {
-        const { error } = await db.from('dogs').update(dogData).eq('id', editId);
-        if (error) console.warn("Supabase dog update notice:", error.message);
+        const { data, error } = await db.from('dogs').update(dogData).eq('id', editId).select();
+        if (error || !data || !data.length) {
+          console.warn("Supabase dog update notice:", error?.message || 'update matched 0 rows — check RLS policy');
+        }
         const dog = STATE.dogs.find(d => d.id === editId);
         if (dog) Object.assign(dog, dogData, { weight });
       } else {
@@ -1232,12 +1284,14 @@
       if (!name) return;
 
       if (editId) {
-        const { error } = await db.from('food_items').update({ name, portion }).eq('id', editId);
-        if (error) console.warn("Supabase food item update notice:", error.message);
+        const { data, error } = await db.from('food_items').update({ name, portion }).eq('id', editId).select();
+        if (error || !data || !data.length) {
+          console.warn("Supabase food item update notice:", error?.message || 'update matched 0 rows');
+        }
         const item = STATE.foodItems.find(i => i.id === editId);
         if (item) { item.name = name; item.portion = portion; }
       } else {
-        const newItem = { name, portion, emoji: '🥣' };
+        const newItem = { name, portion, emoji: '🥣', dog_id: STATE.activeDogId };
         const { data, error } = await db.from('food_items').insert([newItem]).select();
         if (error || !data) {
           console.warn("Supabase food item insert notice:", error?.message);
