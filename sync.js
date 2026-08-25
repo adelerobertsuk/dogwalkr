@@ -1,6 +1,11 @@
-const STRAVA_ACCESS_TOKEN = "27466da143f9abeb7fb2fe284b664aef335f0eed";
-const SUPABASE_URL = "https://rrrjojbxjektdhrkahvh.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycmpvamJ4amVrdGRocmthaHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTk2MzIsImV4cCI6MjA3MTY5NTYzMn0.UfP6Wk1856YQn2N7x5g4J47V_u1w7Q6B9_0j_zYwPfk";
+const STRAVA_ACCESS_TOKEN = process.env.STRAVA_ACCESS_TOKEN;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+
+if (!STRAVA_ACCESS_TOKEN) {
+  console.error("Set STRAVA_ACCESS_TOKEN before running this script. This file is superseded by the strava-sync Edge Function (see supabase/functions/) which handles token refresh automatically — prefer that for real use.");
+  process.exit(1);
+}
 
 const DOG_ID = "barney-labrador-default";
 const DOG_WEIGHT = 28.5;

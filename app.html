@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Dogwalkr 🐾 | Smart Canine Companion to Strava</title>
   
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Dogwalkr" />
   <meta name="theme-color" content="#F2F2F7" />
+  <link rel="icon" type="image/svg+xml" href="dogwalkr-icon.svg" />
+  <link rel="icon" type="image/png" href="dogwalkr-icon.png" />
+  <link rel="apple-touch-icon" href="dogwalkr-icon.png" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <!-- Official Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -84,7 +88,7 @@
             <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Weekly Movement</span>
             <span class="text-xs font-semibold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-100 flex items-center space-x-1">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Supabase Live DB</span>
+              <span>Strava Connected</span>
             </span>
           </div>
 
@@ -134,7 +138,7 @@
         <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm space-y-3">
           <div class="flex items-center justify-between">
             <h3 class="text-base font-bold text-zinc-900">Latest Workout</h3>
-            <span id="latestWalkTimeAgo" class="text-xs font-medium text-zinc-500">Supabase Cloud Synced</span>
+            <span id="latestWalkTimeAgo" class="text-xs font-medium text-zinc-500">Strava Synced</span>
           </div>
 
           <div id="latestWalkoutContent">
@@ -152,7 +156,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-black text-zinc-900 tracking-tight">Workout Library</h2>
-            <p class="text-xs text-zinc-500">Live Supabase Cloud Database</p>
+            <p class="text-xs text-zinc-500">Strava Connected</p>
           </div>
           <button onclick="openLogWalkModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
             <i data-lucide="plus" class="w-4 h-4"></i>
@@ -217,13 +221,15 @@
           </button>
         </div>
 
-        <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-2">
+        <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-3">
           <div class="flex items-center justify-between text-xs font-bold text-zinc-700">
-            <span>7-Day Bowl Consistency</span>
+            <span>Feeding History</span>
             <span id="foodSelectedDateLabel" class="text-orange-600 font-black">Today</span>
           </div>
-          <div id="scrollableFoodCalendar" class="flex space-x-2 overflow-x-auto hide-scrollbar pt-1 pb-1">
-            <!-- Rendered by JS -->
+          <div class="flex items-center space-x-2">
+            <button onclick="shiftFoodDate(-1)" aria-label="Previous day" class="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-zinc-600 hover:bg-zinc-100"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <input type="date" id="foodDatePicker" onchange="selectFoodDate(this.value)" class="flex-1 p-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-xs font-semibold text-center focus:outline-none focus:border-orange-500" />
+            <button onclick="shiftFoodDate(1)" aria-label="Next day" class="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-zinc-600 hover:bg-zinc-100"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
           </div>
         </div>
 
@@ -240,7 +246,7 @@
               </div>
             </div>
           </div>
-          <span class="text-xs font-semibold text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-full">Cloud Synced</span>
+          <span class="text-xs font-semibold text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-full">Strava Synced</span>
         </div>
 
         <div class="space-y-2">
@@ -305,12 +311,19 @@
       <div class="space-y-3">
         <input type="hidden" id="editDogId" value="" />
         <div>
+          <label class="text-xs font-bold text-zinc-700 uppercase">Photo</label>
+          <div class="flex items-center space-x-3 mt-1">
+            <img id="dogPhotoPreview" src="" class="w-16 h-16 rounded-2xl object-cover border border-zinc-200 bg-zinc-100" />
+            <input type="file" accept="image/*" id="inputDogPhoto" onchange="previewDogPhoto(this)" class="text-xs" />
+          </div>
+        </div>
+        <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Dog's Name</label>
           <input type="text" id="inputDogName" placeholder="e.g. Joe" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
         </div>
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Breed</label>
-          <input type="text" id="inputDogBreed" placeholder="e.g. Italian Greyhound" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+          <input type="text" id="inputDogBreed" placeholder="e.g. Italian Greyhound" autocomplete="off" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -345,11 +358,12 @@
         <div class="flex items-center space-x-3 pt-1">
           <div id="passportQRCode" class="bg-white p-2 rounded-xl"></div>
           <div class="text-[11px] text-zinc-400">
-            <p class="font-bold text-white">Household Dog ID</p>
+            <p class="font-bold text-white">Scan to Share Dogwalkr</p>
             <p id="passportHouseholdText" class="text-zinc-500">Adele & Kate</p>
           </div>
         </div>
       </div>
+      <button onclick="editDogFromPassport()" class="w-full py-3.5 bg-orange-500 text-white rounded-2xl text-xs font-bold">Edit Profile 🐾</button>
       <button onclick="closeModal('modalDogPassport')" class="w-full py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold">Close</button>
     </div>
   </div>
@@ -362,6 +376,13 @@
       </div>
       <input type="hidden" id="editWalkId" value="" />
       <div class="space-y-3">
+        <div>
+          <label class="text-xs font-bold text-zinc-700 uppercase">Photo</label>
+          <div class="flex items-center space-x-3 mt-1">
+            <img id="walkPhotoPreview" src="" class="w-16 h-16 rounded-2xl object-cover border border-zinc-200 bg-zinc-100 hidden" />
+            <input type="file" accept="image/*" id="inputWalkPhoto" onchange="previewWalkPhoto(this)" class="text-xs" />
+          </div>
+        </div>
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Walkout Title</label>
           <input type="text" id="logWalkTitle" placeholder="e.g. Afternoon Park Loop" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
@@ -383,6 +404,7 @@
             <option value="4">🟡 4 - Soft</option>
             <option value="5">🔴 5 - Loose</option>
             <option value="1">⚪ 1 - Hard</option>
+            <option value="0">⚫ 0 - No Stools / Clean</option>
           </select>
         </div>
         <div>
@@ -394,12 +416,45 @@
     </div>
   </div>
 
+  <div id="modalWalkDetail" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <h3 class="text-lg font-bold text-zinc-900">Walk Details 🐾</h3>
+        <button onclick="closeModal('modalWalkDetail')" class="p-2 text-zinc-400 hover:text-zinc-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <input type="hidden" id="walkDetailId" value="" />
+      <img id="walkDetailPhoto" src="" class="w-full h-40 object-cover rounded-2xl hidden" />
+      <div>
+        <h4 id="walkDetailTitle" class="text-base font-bold text-zinc-900"></h4>
+        <p id="walkDetailDate" class="text-xs text-zinc-500"></p>
+      </div>
+      <div class="grid grid-cols-3 gap-2 bg-zinc-50 p-3 rounded-2xl border border-zinc-100 text-center">
+        <div>
+          <p class="text-[10px] font-bold uppercase text-zinc-400">Distance</p>
+          <p id="walkDetailDistance" class="text-sm font-black text-zinc-900"></p>
+        </div>
+        <div>
+          <p class="text-[10px] font-bold uppercase text-zinc-400">Duration</p>
+          <p id="walkDetailDuration" class="text-sm font-black text-zinc-900"></p>
+        </div>
+        <div>
+          <p class="text-[10px] font-bold uppercase text-zinc-400">Stool</p>
+          <p id="walkDetailStool" class="text-sm font-black text-zinc-900"></p>
+        </div>
+      </div>
+      <p id="walkDetailNotes" class="text-xs text-zinc-600 bg-zinc-50 p-2.5 rounded-xl border border-zinc-100 hidden"></p>
+      <button onclick="editWalkFromDetail()" class="w-full py-3.5 bg-orange-500 text-white rounded-2xl text-xs font-bold">Edit Walk 🐾</button>
+      <button onclick="closeModal('modalWalkDetail')" class="w-full py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold">Close</button>
+    </div>
+  </div>
+
   <div id="modalAddFood" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-        <h3 class="text-lg font-bold text-zinc-900">Add Daily Food / Stack 🥣</h3>
+        <h3 id="modalFoodTitle" class="text-lg font-bold text-zinc-900">Add Daily Food / Stack 🥣</h3>
         <button onclick="closeModal('modalAddFood')" class="p-2 text-zinc-400 hover:text-zinc-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
+      <input type="hidden" id="editFoodItemId" value="" />
       <div class="space-y-3">
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Item Name</label>
@@ -424,18 +479,65 @@
         <label class="text-xs font-bold text-zinc-900 uppercase">Household Owner Names</label>
         <input type="text" id="inputHouseholdNames" value="Adele Roberts & Kate Holderness" class="w-full p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" onchange="saveHouseholdNames(this.value)" />
       </div>
-      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
-        <label class="text-xs font-bold text-zinc-900 uppercase">Strava Profile Link</label>
-        <p class="text-[11px] text-zinc-500">Paste your Strava profile link so walk syncs map to your profile.</p>
-        <input type="text" id="inputStravaUrl" placeholder="https://www.strava.com/athletes/your-id" class="w-full p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" />
-      </div>
-      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3">
+      <div class="p-4 rounded-2xl border border-orange-200 bg-orange-50 space-y-3">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-zinc-900">Supabase Cloud Database</span>
-          <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Connected</span>
+          <span class="text-xs font-bold text-zinc-900 uppercase">Strava</span>
+          <span id="stravaStatusPill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-200 text-zinc-600">Not Connected</span>
         </div>
-        <p class="text-xs text-zinc-500">Connected to project rrrjojbxjektdhrkahvh.supabase.co</p>
+        <p id="stravaStatusDetail" class="text-[11px] text-zinc-500">Connect your Strava account so walk syncs map to your profile.</p>
+        <button id="stravaConnectBtn" onclick="connectStrava()" class="w-full py-3 rounded-xl font-bold text-sm text-white" style="background:#FC4C02;">Connect with Strava</button>
+        <button id="stravaSyncBtn" onclick="syncStravaActivities()" class="hidden w-full py-2.5 rounded-xl font-bold text-xs text-white bg-orange-500">Sync Now</button>
+        <button id="stravaDisconnectBtn" onclick="disconnectStrava()" class="hidden w-full py-2.5 rounded-xl font-bold text-xs text-red-600 border border-red-200 bg-white">Disconnect from Strava</button>
       </div>
+      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 flex items-center justify-between">
+        <span class="text-xs font-bold text-zinc-900">Cloud Sync</span>
+        <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Connected</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalStatus" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <h3 class="text-lg font-bold text-zinc-900">Dog Status</h3>
+        <button onclick="closeModal('modalStatus')" class="p-2 text-zinc-400 hover:text-zinc-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="setDogStatus('🟢','Ready')" class="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm font-bold text-emerald-700">🟢 Ready</button>
+        <button onclick="setDogStatus('🟡','Resting')" class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-sm font-bold text-amber-700">🟡 Resting</button>
+        <button onclick="setDogStatus('🔴','Recovering')" class="p-3 rounded-2xl bg-red-50 border border-red-200 text-sm font-bold text-red-700">🔴 Recovering</button>
+        <button onclick="setDogStatus('⚪','Off Duty')" class="p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-bold text-zinc-700">⚪ Off Duty</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offscreen template rendered to PNG for walk-stat card export -->
+  <div id="shareCardTemplate" class="fixed -left-[9999px] top-0 w-[400px] bg-gradient-to-br from-orange-500 to-amber-600 text-white p-8 rounded-[32px] space-y-4" style="font-family: -apple-system, sans-serif;">
+    <div class="flex items-center space-x-3">
+      <img id="shareCardAvatar" crossorigin="anonymous" class="w-14 h-14 rounded-2xl object-cover border-2 border-white/60" />
+      <div>
+        <p id="shareCardDogName" class="text-lg font-black"></p>
+        <p id="shareCardDate" class="text-xs text-orange-100"></p>
+      </div>
+    </div>
+    <p id="shareCardTitle" class="text-2xl font-black leading-tight"></p>
+    <div class="grid grid-cols-3 gap-3 pt-2">
+      <div>
+        <p class="text-[10px] uppercase font-bold text-orange-100">Distance</p>
+        <p id="shareCardDistance" class="text-xl font-black"></p>
+      </div>
+      <div>
+        <p class="text-[10px] uppercase font-bold text-orange-100">Duration</p>
+        <p id="shareCardDuration" class="text-xl font-black"></p>
+      </div>
+      <div>
+        <p class="text-[10px] uppercase font-bold text-orange-100">Stool</p>
+        <p id="shareCardStool" class="text-xl font-black"></p>
+      </div>
+    </div>
+    <div class="pt-4 border-t border-white/20 flex items-center justify-between">
+      <span class="text-xs font-bold tracking-wide">🐾 DOGWALKR</span>
+      <span class="text-xs text-orange-100">Strava Synced</span>
     </div>
   </div>
 
@@ -448,10 +550,23 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycmpvamJ4amVrdGRocmthaHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NzgzOTQsImV4cCI6MjEwMjM1NDM5NH0.sjqbYyIA7NLQ7hQYp3HJQesLVbCr8X6PA94nV6BLqHA';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    function getDeviceId() {
+      let id = localStorage.getItem('dogwalkr_device_id');
+      if (!id) {
+        id = window.crypto?.randomUUID ? crypto.randomUUID() : 'device_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        localStorage.setItem('dogwalkr_device_id', id);
+      }
+      return id;
+    }
+    const DEVICE_ID = getDeviceId();
+
     const STATE = {
       activeTab: 'dashboard',
       activeDogId: 'dog_joe',
+      passportDogId: null,
       householdNames: 'Adele Roberts & Kate Holderness',
+      stravaConnected: false,
+      stravaAthleteName: null,
       dogs: [
         { id: 'dog_joe', name: 'Joe', breed: 'Italian Greyhound', weight: 5.8, dob: '2024-03-09', avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80' },
         { id: 'dog_bertie', name: 'Bertie', breed: 'Pug', weight: 6.0, dob: '2025-01-15', avatar: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80' }
@@ -462,7 +577,7 @@
         { id: 'food_2', name: 'Salmon Oil Pump', portion: '1 Pump (5ml)', emoji: '🐟' }
       ],
       foodLogs: {},
-      selectedFoodDate: new Date().toISOString().split('T')[0]
+      selectedFoodDate: localDateKey(new Date())
     };
 
     function calculateStrideRatio(weightKg) {
@@ -472,8 +587,9 @@
     }
 
     function calculateAge(dobString) {
-      if (!dobString) return '2 Years Old';
-      const dob = new Date(dobString);
+      if (!dobString) return 'Age Unknown';
+      const [y, m, d] = dobString.split('-').map(Number);
+      const dob = new Date(y, m - 1, d);
       const today = new Date();
       let years = today.getFullYear() - dob.getFullYear();
       let months = today.getMonth() - dob.getMonth();
@@ -486,9 +602,51 @@
       return `${years} Years Old`;
     }
 
+    function localDateKey(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function isWithinLast7Days(dateStr, ref) {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      const diffMs = ref - d;
+      return diffMs >= 0 && diffMs < 7 * 24 * 60 * 60 * 1000;
+    }
+
+    function stoolScoreMeta(score) {
+      if (score === null || score === undefined) return { emoji: '❔', label: 'Not Recorded' };
+      const map = {
+        0: { emoji: '⚫', label: 'No Stools' },
+        1: { emoji: '⚪', label: 'Hard' },
+        3: { emoji: '🟢', label: 'Optimal' },
+        4: { emoji: '🟡', label: 'Soft' },
+        5: { emoji: '🔴', label: 'Loose' }
+      };
+      return map[Number(score)] ?? map[3];
+    }
+
+    function isDogActivity(title, description) {
+      const text = `${title || ''} ${description || ''}`.toLowerCase();
+      const keywords = ['dog', 'pup', 'walk', ...STATE.dogs.map(d => (d.name || '').toLowerCase())].filter(Boolean);
+      return keywords.some(k => text.includes(k));
+    }
+
     async function initApp() {
-      await fetchSupabaseWalks();
+      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchStravaConnectionStatus()]);
       renderAll();
+
+      const params = new URLSearchParams(window.location.search);
+      const stravaResult = params.get('strava');
+      if (stravaResult) {
+        history.replaceState({}, '', window.location.pathname);
+        if (stravaResult === 'connected') {
+          await fetchStravaConnectionStatus();
+          renderAll();
+          syncStravaActivities();
+        } else {
+          alert('Strava connection was not completed.');
+        }
+      }
     }
 
     async function fetchSupabaseWalks() {
@@ -503,12 +661,13 @@
           if (STATE.walkouts.length === 0) {
             STATE.walkouts = [{
               id: 'walk_init',
-              title: 'Evening Walk (Supabase Live)',
+              title: 'Evening Walk (Strava Synced)',
               humanDistance: 2.92,
               durationMins: 53,
               stoolScore: 3,
-              notes: 'Synced from Supabase database 🐾',
-              dogIds: [STATE.activeDogId]
+              notes: 'Synced via Strava 🐾',
+              dogIds: [STATE.activeDogId],
+              created_at: new Date().toISOString()
             }];
           }
         } else if (data && data.length > 0) {
@@ -519,37 +678,188 @@
       }
     }
 
+    const DEFAULT_DOG_AVATAR = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80';
+
+    async function fetchSupabaseDogs() {
+      try {
+        const { data, error } = await db.from('dogs').select('*').order('created_at', { ascending: true });
+        if (error) {
+          console.warn("Supabase dogs query notice:", error.message);
+        } else if (data && data.length > 0) {
+          STATE.dogs = data.map(d => ({
+            ...d,
+            weight: d.weight_kg ?? d.weight ?? 0,
+            avatar: d.avatar || DEFAULT_DOG_AVATAR
+          }));
+          STATE.activeDogId = STATE.dogs[0].id;
+        }
+      } catch (err) {
+        console.error("Dogs connection exception:", err);
+      }
+    }
+
+    async function fetchSupabaseHousehold() {
+      try {
+        const { data, error } = await db.from('household_settings').select('*').limit(1).maybeSingle();
+        if (error) {
+          console.warn("Supabase household query notice:", error.message);
+        } else if (data && data.names) {
+          STATE.householdNames = data.names;
+        }
+      } catch (err) {
+        console.error("Household connection exception:", err);
+      }
+    }
+
+    async function fetchStravaConnectionStatus() {
+      try {
+        const { data, error } = await db.from('strava_connections').select('*').eq('device_id', DEVICE_ID).maybeSingle();
+        if (error) {
+          console.warn("Strava connection query notice:", error.message);
+          return;
+        }
+        STATE.stravaConnected = !!(data && data.connected);
+        STATE.stravaAthleteName = (data && data.athlete_name) || null;
+      } catch (err) {
+        console.error("Strava connection exception:", err);
+      }
+    }
+
+    function resetWalkForm() {
+      document.getElementById('editWalkId').value = '';
+      document.getElementById('modalWalkTitleHeader').innerText = 'Record Walkout 🐾';
+      document.getElementById('logWalkTitle').value = '';
+      document.getElementById('logWalkDistance').value = '';
+      document.getElementById('logWalkDuration').value = '';
+      document.getElementById('logWalkStool').value = '3';
+      document.getElementById('logWalkNotes').value = '';
+      document.getElementById('inputWalkPhoto').value = '';
+      const preview = document.getElementById('walkPhotoPreview');
+      preview.src = '';
+      preview.classList.add('hidden');
+    }
+
+    function showWalkDetailModal(walkId) {
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      if (!w) return;
+      const dist = Number(w.humanDistance || w.distance) || 0;
+      const stoolMeta = stoolScoreMeta(w.stoolScore);
+
+      document.getElementById('walkDetailId').value = w.id;
+      const photo = document.getElementById('walkDetailPhoto');
+      if (w.photo_url) { photo.src = w.photo_url; photo.classList.remove('hidden'); }
+      else { photo.src = ''; photo.classList.add('hidden'); }
+      document.getElementById('walkDetailTitle').innerText = w.title || 'Walkout';
+      document.getElementById('walkDetailDate').innerText = w.created_at
+        ? new Date(w.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '';
+      document.getElementById('walkDetailDistance').innerText = `${dist} km`;
+      document.getElementById('walkDetailDuration').innerText = `${w.durationMins || 0} min`;
+      document.getElementById('walkDetailStool').innerText = `${stoolMeta.emoji} ${stoolMeta.label}`;
+      const notesEl = document.getElementById('walkDetailNotes');
+      if (w.notes) { notesEl.innerText = `"${w.notes}"`; notesEl.classList.remove('hidden'); }
+      else { notesEl.classList.add('hidden'); }
+
+      openModal('modalWalkDetail');
+    }
+
+    function editWalkFromDetail() {
+      const id = document.getElementById('walkDetailId').value;
+      closeModal('modalWalkDetail');
+      openEditWalkModal(id);
+    }
+
+    function openEditWalkModal(walkId) {
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      if (!w) return;
+      resetWalkForm();
+      document.getElementById('editWalkId').value = w.id;
+      document.getElementById('modalWalkTitleHeader').innerText = 'Edit Walkout 🐾';
+      document.getElementById('logWalkTitle').value = w.title || '';
+      document.getElementById('logWalkDistance').value = w.humanDistance ?? w.distance ?? '';
+      document.getElementById('logWalkDuration').value = w.durationMins ?? '';
+      document.getElementById('logWalkStool').value = w.stoolScore ?? 3;
+      document.getElementById('logWalkNotes').value = w.notes || '';
+      if (w.photo_url) {
+        const preview = document.getElementById('walkPhotoPreview');
+        preview.src = w.photo_url;
+        preview.classList.remove('hidden');
+      }
+      openModal('modalLogWalk');
+    }
+
+    function previewWalkPhoto(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const preview = document.getElementById('walkPhotoPreview');
+        preview.src = e.target.result;
+        preview.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function uploadWalkPhoto(file) {
+      const path = `${Date.now()}_${file.name}`;
+      const { error } = await db.storage.from('walk-photos').upload(path, file, { upsert: true });
+      if (error) {
+        console.warn("Walk photo upload notice:", error.message);
+        return null;
+      }
+      const { data } = db.storage.from('walk-photos').getPublicUrl(path);
+      return data.publicUrl;
+    }
+
     async function saveWalkout() {
+      const editId = document.getElementById('editWalkId').value;
       const title = document.getElementById('logWalkTitle').value.trim() || 'Afternoon Park Walk';
       const humanDistance = parseFloat(document.getElementById('logWalkDistance').value) || 2.5;
       const durationMins = parseInt(document.getElementById('logWalkDuration').value) || 40;
-      const stoolScore = parseInt(document.getElementById('logWalkStool').value) || 3;
+      const stoolScoreRaw = parseInt(document.getElementById('logWalkStool').value);
+      const stoolScore = isNaN(stoolScoreRaw) ? 3 : stoolScoreRaw;
       const notes = document.getElementById('logWalkNotes').value.trim();
+      const photoFile = document.getElementById('inputWalkPhoto').files[0];
+      const uploadedPhoto = photoFile ? await uploadWalkPhoto(photoFile) : null;
 
-      const newWalk = {
-        title,
-        humanDistance,
-        durationMins,
-        stoolScore,
-        notes,
-        dog_id: STATE.activeDogId,
-        created_at: new Date().toISOString()
-      };
-
-      const { data, error } = await db.from('walks').insert([newWalk]).select();
-      if (error) {
-        STATE.walkouts.unshift({ id: 'walk_' + Date.now(), ...newWalk });
-      } else if (data) {
-        STATE.walkouts.unshift(data[0]);
+      if (editId) {
+        const existing = STATE.walkouts.find(w => String(w.id) === String(editId));
+        const photo_url = uploadedPhoto || (existing ? existing.photo_url : null) || null;
+        const updateData = { title, humanDistance, durationMins, stoolScore, notes, photo_url };
+        const { error } = await db.from('walks').update(updateData).eq('id', editId);
+        if (error) console.warn("Walk update notice:", error.message);
+        if (existing) Object.assign(existing, updateData);
+      } else {
+        const newWalk = {
+          title,
+          humanDistance,
+          durationMins,
+          stoolScore,
+          notes,
+          photo_url: uploadedPhoto,
+          dog_id: STATE.activeDogId,
+          created_at: new Date().toISOString()
+        };
+        const { data, error } = await db.from('walks').insert([newWalk]).select();
+        if (error) {
+          STATE.walkouts.unshift({ id: 'walk_' + Date.now(), ...newWalk });
+        } else if (data) {
+          STATE.walkouts.unshift(data[0]);
+        }
       }
 
       closeModal('modalLogWalk');
+      resetWalkForm();
       renderAll();
     }
 
     async function deleteWalkout(walkId) {
       if (confirm("Delete this workout record?")) {
-        await db.from('walks').delete().eq('id', walkId);
+        const { error } = await db.from('walks').delete().eq('id', walkId);
+        if (error) {
+          console.warn("Supabase delete notice:", error.message);
+          return;
+        }
         STATE.walkouts = STATE.walkouts.filter(w => w.id !== walkId);
         renderAll();
       }
@@ -589,21 +899,17 @@
 
     function renderDashboard(dog) {
       const multiplier = calculateStrideRatio(dog.weight);
-      let totalHumanKm = 0, totalSessions = 0;
+      const now = new Date();
 
-      STATE.walkouts.forEach(w => {
-        totalHumanKm += Number(w.humanDistance || w.distance) || 0;
-        totalSessions++;
-      });
+      document.getElementById('dashCoachHeadline').innerText = `${dog.name} is recovered and ready for walkouts!`;
+      document.getElementById('dashCoachBody').innerText = `Based on recent pacing and joint recovery, a 30–45 minute walk on soft grass is optimal today. Stride ratio calibrated at ${multiplier.toFixed(2)}×.`;
+
+      const weeklyWalks = STATE.walkouts.filter(w => isWithinLast7Days(w.created_at, now));
+      let totalHumanKm = 0;
+      weeklyWalks.forEach(w => { totalHumanKm += Number(w.humanDistance || w.distance) || 0; });
 
       document.getElementById('dashWeeklyDistance').innerText = (totalHumanKm * multiplier).toFixed(1);
-      document.getElementById('dashWeeklyCount').innerText = totalSessions;
-
-      let todayExtraKibble = 0;
-      STATE.walkouts.forEach(w => {
-        todayExtraKibble += Math.round((Number(w.humanDistance || w.distance) || 0) * 25);
-      });
-      document.getElementById('foodTotalExtraEarned').innerText = `+${todayExtraKibble}`;
+      document.getElementById('dashWeeklyCount').innerText = weeklyWalks.length;
 
       const latest = STATE.walkouts[0];
       const container = document.getElementById('latestWalkoutContent');
@@ -615,13 +921,14 @@
       const dist = Number(latest.humanDistance || latest.distance) || 0;
       const walkDogKm = (dist * multiplier).toFixed(2);
       const extraGrams = Math.round(dist * 25);
+      const stoolMeta = stoolScoreMeta(latest.stoolScore);
 
       container.innerHTML = `
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-bold text-zinc-900">${latest.title || 'Walkout'}</p>
-              <p class="text-xs text-zinc-500">${latest.durationMins || 45} mins • Supabase Live</p>
+              <p class="text-xs text-zinc-500">${latest.durationMins || 45} mins • Strava Synced</p>
             </div>
             <span class="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-200">Synced</span>
           </div>
@@ -634,6 +941,10 @@
               <span class="text-[10px] font-bold uppercase text-amber-600">Recommended Fuel</span>
               <p class="text-base font-black text-amber-700">+${extraGrams}g Kibble</p>
             </div>
+          </div>
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-100">
+            <span class="text-zinc-500 font-semibold">Stool Quality</span>
+            <span class="font-bold text-zinc-700">${stoolMeta.emoji} ${stoolMeta.label}</span>
           </div>
         </div>
       `;
@@ -649,21 +960,29 @@
       list.innerHTML = STATE.walkouts.map(w => {
         const dist = Number(w.humanDistance || w.distance) || 0;
         const extraG = Math.round(dist * 25);
+        const stoolMeta = stoolScoreMeta(w.stoolScore);
         return `
-          <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-3">
+          <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-3 cursor-pointer" onclick="showWalkDetailModal('${w.id}')">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
-                <span class="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">🐾</span>
+                ${w.photo_url
+                  ? `<img src="${w.photo_url}" class="w-8 h-8 rounded-xl object-cover" />`
+                  : `<span class="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">🐾</span>`}
                 <div>
                   <h4 class="text-sm font-bold text-zinc-900">${w.title || 'Walkout'}</h4>
-                  <p class="text-[11px] text-zinc-500">${w.durationMins || 40} mins • Cloud Database</p>
+                  <p class="text-[11px] text-zinc-500">${w.durationMins || 40} mins • Strava Synced</p>
                 </div>
               </div>
-              <button onclick="deleteWalkout('${w.id}')" class="p-2 text-zinc-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <div class="flex items-center">
+                <button onclick="event.stopPropagation(); openEditWalkModal('${w.id}')" class="p-2 text-zinc-400 hover:text-orange-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                <button onclick="event.stopPropagation(); exportWalkCard('${w.id}')" class="p-2 text-zinc-400 hover:text-orange-500"><i data-lucide="download" class="w-4 h-4"></i></button>
+                <button onclick="event.stopPropagation(); deleteWalkout('${w.id}')" class="p-2 text-zinc-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
             </div>
             ${w.notes ? `<p class="text-xs text-zinc-600 bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">"${w.notes}"</p>` : ''}
             <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-100 text-zinc-500">
               <span>Distance: <strong>${dist} km</strong></span>
+              <span class="font-bold text-zinc-700">${stoolMeta.emoji} ${stoolMeta.label}</span>
               <span class="text-amber-700 font-bold">+${extraG}g Fuel Top-up</span>
             </div>
           </div>
@@ -672,19 +991,25 @@
     }
 
     function renderPack() {
+      const subtitle = document.getElementById('packHouseholdSubtitle');
+      if (subtitle) subtitle.innerText = STATE.householdNames;
+      const householdInput = document.getElementById('inputHouseholdNames');
+      if (householdInput && document.activeElement !== householdInput) householdInput.value = STATE.householdNames;
+
       const list = document.getElementById('packCardsList');
       list.innerHTML = STATE.dogs.map(p => {
         const isSelected = p.id === STATE.activeDogId;
         return `
           <div class="bg-white rounded-3xl p-4 border ${isSelected ? 'border-orange-500 ring-2 ring-orange-500/20' : 'border-zinc-200/80'} shadow-sm space-y-3">
             <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3 cursor-pointer flex-1" onclick="showDogPassportModal('${p.id}')">
+              <div class="flex items-center space-x-3 cursor-pointer flex-1" onclick="setActiveDog('${p.id}')">
                 <img src="${p.avatar}" alt="${p.name}" class="w-12 h-12 rounded-2xl object-cover border border-zinc-200" />
                 <div>
                   <h3 class="text-base font-bold text-zinc-900">${p.name}</h3>
                   <p class="text-xs text-zinc-500">${p.breed} • ${p.weight} kg • ${calculateAge(p.dob)}</p>
                 </div>
               </div>
+              <button onclick="openEditDogModal('${p.id}')" class="p-2 text-zinc-400 hover:text-orange-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
             </div>
           </div>
         `;
@@ -692,51 +1017,348 @@
     }
 
     function renderFood() {
+      const doneToday = STATE.foodLogs[STATE.selectedFoodDate] || [];
       const list = document.getElementById('foodStackList');
-      list.innerHTML = STATE.foodItems.map(item => `
+      list.innerHTML = STATE.foodItems.map(item => {
+        const done = doneToday.includes(item.id);
+        return `
         <div class="bg-white rounded-2xl p-3.5 border border-zinc-200/80 shadow-xs flex items-center justify-between">
-          <div class="flex items-center space-x-3">
+          <label class="flex items-center space-x-3 flex-1 cursor-pointer">
+            <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleFoodDone('${item.id}')" class="w-4 h-4 accent-orange-500" />
             <span class="text-xl">${item.emoji}</span>
-            <div>
+            <div class="${done ? 'opacity-40 line-through' : ''}">
               <p class="text-xs font-bold text-zinc-900">${item.name}</p>
               <p class="text-[11px] text-zinc-500">${item.portion}</p>
             </div>
+          </label>
+          <div class="flex items-center">
+            <button onclick="openEditFoodModal('${item.id}')" class="p-2 text-zinc-400 hover:text-orange-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+            <button onclick="deleteFoodItem('${item.id}')" class="p-2 text-zinc-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
 
-      const strip = document.getElementById('scrollableFoodCalendar');
-      const today = new Date();
-      let stripHTML = '';
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(today.getDate() - i);
-        stripHTML += `
-          <div class="flex flex-col items-center space-y-1 flex-shrink-0 px-2.5 py-2 rounded-2xl bg-zinc-50 text-zinc-700">
-            <span class="text-[10px] font-bold text-zinc-400">${d.toLocaleDateString('en-US', { weekday: 'narrow' })}</span>
-            <div class="w-8 h-8 rounded-full border-2 border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center justify-center text-[11px] font-black">${d.getDate()}</div>
-          </div>
-        `;
-      }
-      strip.innerHTML = stripHTML;
+      const dayWalks = STATE.walkouts.filter(w => w.created_at && localDateKey(new Date(w.created_at)) === STATE.selectedFoodDate);
+      const extraKibble = dayWalks.reduce((sum, w) => sum + Math.round((Number(w.humanDistance || w.distance) || 0) * 25), 0);
+      document.getElementById('foodTotalExtraEarned').innerText = `+${extraKibble}`;
+
+      const todayKey = localDateKey(new Date());
+      const dateLabel = STATE.selectedFoodDate === todayKey
+        ? 'Today'
+        : new Date(STATE.selectedFoodDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      document.getElementById('foodSelectedDateLabel').innerText = dateLabel;
+      document.getElementById('foodRoutineDateHeader').innerText = dateLabel;
+      document.getElementById('foodDatePicker').value = STATE.selectedFoodDate;
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function selectFoodDate(dateKey) {
+      if (!dateKey) return;
+      STATE.selectedFoodDate = dateKey;
+      renderFood();
+    }
+
+    function shiftFoodDate(delta) {
+      const [y, m, d] = STATE.selectedFoodDate.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      date.setDate(date.getDate() + delta);
+      selectFoodDate(localDateKey(date));
+    }
+
+    function toggleFoodDone(itemId) {
+      const key = STATE.selectedFoodDate;
+      if (!STATE.foodLogs[key]) STATE.foodLogs[key] = [];
+      const idx = STATE.foodLogs[key].indexOf(itemId);
+      if (idx >= 0) STATE.foodLogs[key].splice(idx, 1);
+      else STATE.foodLogs[key].push(itemId);
+      renderFood();
+    }
+
+    async function deleteFoodItem(itemId) {
+      const { error } = await db.from('food_items').delete().eq('id', itemId);
+      if (error) console.warn("Supabase food item delete notice:", error.message);
+      STATE.foodItems = STATE.foodItems.filter(i => i.id !== itemId);
+      renderFood();
+    }
+
+    function setActiveDog(dogId) {
+      STATE.activeDogId = dogId;
+      renderAll();
+      showDogPassportModal(dogId);
     }
 
     function showDogPassportModal(dogId) {
-      const dog = STATE.dogs.find(p => p.id === dogId) || STATE.dogs[0];
+      const dog = STATE.dogs.find(p => p.id === dogId) || STATE.dogs.find(p => p.id === STATE.activeDogId) || STATE.dogs[0];
+      STATE.passportDogId = dog.id;
       document.getElementById('passportCardAvatar').src = dog.avatar;
       document.getElementById('passportCardName').innerText = dog.name;
       document.getElementById('passportCardBreed').innerText = `${dog.breed} • ${dog.weight} kg`;
       document.getElementById('passportCardAge').innerText = calculateAge(dog.dob);
+      document.getElementById('passportHouseholdText').innerText = STATE.householdNames;
+
+      const qrContainer = document.getElementById('passportQRCode');
+      qrContainer.innerHTML = '';
+      if (window.QRCode) {
+        const shareUrl = window.location.href.replace(/app\.html.*$/, 'index.html');
+        new QRCode(qrContainer, { text: shareUrl, width: 96, height: 96 });
+      }
+
       openModal('modalDogPassport');
     }
 
-    function openLogWalkModal() { openModal('modalLogWalk'); }
-    function openAddFoodModal() { openModal('modalAddFood'); }
-    function openSettingsModal() { openModal('modalSettings'); }
+    function editDogFromPassport() {
+      closeModal('modalDogPassport');
+      openEditDogModal(STATE.passportDogId);
+    }
+
+    function openAddDogModal() {
+      document.getElementById('editDogId').value = '';
+      document.getElementById('modalDogTitle').innerText = "Add New Dog 🐾";
+      document.getElementById('inputDogName').value = '';
+      document.getElementById('inputDogBreed').value = '';
+      document.getElementById('inputDogWeight').value = '';
+      document.getElementById('inputDogDob').value = '';
+      document.getElementById('inputDogPhoto').value = '';
+      document.getElementById('dogPhotoPreview').src = DEFAULT_DOG_AVATAR;
+      openModal('modalAddDog');
+    }
+
+    function openEditDogModal(dogId) {
+      const dog = STATE.dogs.find(d => d.id === dogId);
+      if (!dog) return;
+      document.getElementById('editDogId').value = dog.id;
+      document.getElementById('modalDogTitle').innerText = 'Edit Dog 🐾';
+      document.getElementById('inputDogName').value = dog.name || '';
+      document.getElementById('inputDogBreed').value = dog.breed || '';
+      document.getElementById('inputDogWeight').value = dog.weight || '';
+      document.getElementById('inputDogDob').value = dog.dob || '';
+      document.getElementById('inputDogPhoto').value = '';
+      document.getElementById('dogPhotoPreview').src = dog.avatar || DEFAULT_DOG_AVATAR;
+      openModal('modalAddDog');
+    }
+
+    function previewDogPhoto(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => { document.getElementById('dogPhotoPreview').src = e.target.result; };
+      reader.readAsDataURL(file);
+    }
+
+    async function uploadDogAvatar(file) {
+      const path = `${Date.now()}_${file.name}`;
+      const { error } = await db.storage.from('dog-avatars').upload(path, file, { upsert: true });
+      if (error) {
+        console.warn("Avatar upload notice:", error.message);
+        return null;
+      }
+      const { data } = db.storage.from('dog-avatars').getPublicUrl(path);
+      return data.publicUrl;
+    }
+
+    async function saveDogProfile() {
+      const editId = document.getElementById('editDogId').value;
+      const name = document.getElementById('inputDogName').value.trim();
+      const breed = document.getElementById('inputDogBreed').value.trim();
+      const weight = parseFloat(document.getElementById('inputDogWeight').value) || 0;
+      const dob = document.getElementById('inputDogDob').value;
+      if (!name) return;
+
+      const photoFile = document.getElementById('inputDogPhoto').files[0];
+      const uploadedAvatar = photoFile ? await uploadDogAvatar(photoFile) : null;
+
+      const dogData = { name, breed, weight_kg: weight, dob };
+      if (uploadedAvatar) dogData.avatar = uploadedAvatar;
+
+      if (editId) {
+        const { error } = await db.from('dogs').update(dogData).eq('id', editId);
+        if (error) console.warn("Supabase dog update notice:", error.message);
+        const dog = STATE.dogs.find(d => d.id === editId);
+        if (dog) Object.assign(dog, dogData, { weight });
+      } else {
+        const avatar = uploadedAvatar || DEFAULT_DOG_AVATAR;
+        const { data, error } = await db.from('dogs').insert([{ ...dogData, avatar }]).select();
+        if (error || !data) {
+          console.warn("Supabase dog insert notice:", error?.message);
+          STATE.dogs.push({ id: 'dog_' + Date.now(), avatar, weight, ...dogData });
+        } else {
+          STATE.dogs.push({ ...data[0], weight: data[0].weight_kg ?? weight, avatar: data[0].avatar || avatar });
+        }
+      }
+
+      closeModal('modalAddDog');
+      renderAll();
+    }
+
+    async function exportWalkCard(walkId) {
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      if (!w) return;
+      const dog = STATE.dogs.find(d => d.id === STATE.activeDogId) || STATE.dogs[0];
+      const multiplier = calculateStrideRatio(dog.weight);
+      const dist = Number(w.humanDistance || w.distance) || 0;
+      const stoolMeta = stoolScoreMeta(w.stoolScore);
+
+      document.getElementById('shareCardAvatar').src = dog.avatar;
+      document.getElementById('shareCardDogName').innerText = dog.name;
+      document.getElementById('shareCardDate').innerText = new Date(w.created_at || Date.now())
+        .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      document.getElementById('shareCardTitle').innerText = w.title || 'Walkout';
+      document.getElementById('shareCardDistance').innerText = `${(dist * multiplier).toFixed(2)} km`;
+      document.getElementById('shareCardDuration').innerText = `${w.durationMins || 0} min`;
+      document.getElementById('shareCardStool').innerText = `${stoolMeta.emoji} ${stoolMeta.label}`;
+
+      try {
+        const canvas = await html2canvas(document.getElementById('shareCardTemplate'), { useCORS: true, backgroundColor: null, scale: 2 });
+        const link = document.createElement('a');
+        link.download = `dogwalkr-${(w.title || 'walk').trim().replace(/\s+/g, '-').toLowerCase()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch (err) {
+        console.error("Card export failed:", err);
+      }
+    }
+
+    async function saveFoodItem() {
+      const editId = document.getElementById('editFoodItemId').value;
+      const name = document.getElementById('inputFoodName').value.trim();
+      const portion = document.getElementById('inputFoodPortion').value.trim();
+      if (!name) return;
+
+      if (editId) {
+        const { error } = await db.from('food_items').update({ name, portion }).eq('id', editId);
+        if (error) console.warn("Supabase food item update notice:", error.message);
+        const item = STATE.foodItems.find(i => i.id === editId);
+        if (item) { item.name = name; item.portion = portion; }
+      } else {
+        const newItem = { name, portion, emoji: '🥣' };
+        const { data, error } = await db.from('food_items').insert([newItem]).select();
+        if (error || !data) {
+          console.warn("Supabase food item insert notice:", error?.message);
+          STATE.foodItems.push({ id: 'food_' + Date.now(), ...newItem });
+        } else {
+          STATE.foodItems.push(data[0]);
+        }
+      }
+
+      closeModal('modalAddFood');
+      renderAll();
+    }
+
+    function setDogStatus(emoji, text) {
+      document.getElementById('headerStatusEmoji').innerText = emoji;
+      document.getElementById('headerStatusText').innerText = text;
+      closeModal('modalStatus');
+    }
+
+    function openLogWalkModal() { resetWalkForm(); openModal('modalLogWalk'); }
+
+    function openAddFoodModal() {
+      document.getElementById('editFoodItemId').value = '';
+      document.getElementById('modalFoodTitle').innerText = 'Add Daily Food / Stack 🥣';
+      document.getElementById('inputFoodName').value = '';
+      document.getElementById('inputFoodPortion').value = '';
+      openModal('modalAddFood');
+    }
+
+    function openEditFoodModal(itemId) {
+      const item = STATE.foodItems.find(i => i.id === itemId);
+      if (!item) return;
+      document.getElementById('editFoodItemId').value = item.id;
+      document.getElementById('modalFoodTitle').innerText = 'Edit Food Item 🥣';
+      document.getElementById('inputFoodName').value = item.name || '';
+      document.getElementById('inputFoodPortion').value = item.portion || '';
+      openModal('modalAddFood');
+    }
+    function openSettingsModal() { renderStravaStatus(); openModal('modalSettings'); }
+
+    // Registered Strava API app (strava.com/settings/api). The
+    // Authorization Callback Domain there must match this page's host.
+    const STRAVA_CLIENT_ID = '274314';
+    const STRAVA_AUTH_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/strava-auth`;
+
+    function renderStravaStatus() {
+      const pill = document.getElementById('stravaStatusPill');
+      if (!pill) return;
+      const detail = document.getElementById('stravaStatusDetail');
+      const connectBtn = document.getElementById('stravaConnectBtn');
+      const disconnectBtn = document.getElementById('stravaDisconnectBtn');
+      const syncBtn = document.getElementById('stravaSyncBtn');
+      if (STATE.stravaConnected) {
+        pill.textContent = 'Connected';
+        pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700';
+        detail.textContent = STATE.stravaAthleteName ? `Connected as ${STATE.stravaAthleteName}` : 'Connected to Strava.';
+        connectBtn.classList.add('hidden');
+        disconnectBtn.classList.remove('hidden');
+        syncBtn.classList.remove('hidden');
+      } else {
+        pill.textContent = 'Not Connected';
+        pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-200 text-zinc-600';
+        detail.textContent = 'Connect your Strava account so dog walks import automatically.';
+        connectBtn.classList.remove('hidden');
+        disconnectBtn.classList.add('hidden');
+        syncBtn.classList.add('hidden');
+      }
+    }
+
+    function connectStrava() {
+      const state = JSON.stringify({ returnUrl: window.location.href.split('?')[0], deviceId: DEVICE_ID });
+      const authUrl = `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(STRAVA_CLIENT_ID)}`
+        + `&redirect_uri=${encodeURIComponent(STRAVA_AUTH_FUNCTION_URL)}`
+        + `&response_type=code&scope=activity:read_all&approval_prompt=auto`
+        + `&state=${encodeURIComponent(state)}`;
+      window.location.href = authUrl;
+    }
+
+    async function disconnectStrava() {
+      const btn = document.getElementById('stravaDisconnectBtn');
+      if (btn) { btn.disabled = true; btn.innerText = 'Disconnecting…'; }
+      try {
+        const { error } = await db.functions.invoke('strava-disconnect', { body: { device_id: DEVICE_ID } });
+        if (error) {
+          console.warn("Strava disconnect notice:", error.message);
+          alert('Disconnect failed — check the console for details.');
+          return;
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = 'Disconnect'; }
+      }
+      STATE.stravaConnected = false;
+      STATE.stravaAthleteName = null;
+      renderStravaStatus();
+    }
+
+    async function syncStravaActivities() {
+      const btn = document.getElementById('stravaSyncBtn');
+      if (btn) { btn.disabled = true; btn.innerText = 'Syncing…'; }
+      try {
+        const { data, error } = await db.functions.invoke('strava-sync', { body: { device_id: DEVICE_ID } });
+        if (error) {
+          console.warn("Strava sync notice:", error.message);
+          alert('Strava sync failed — check the console for details.');
+        } else {
+          await fetchSupabaseWalks();
+          renderAll();
+          alert(`Strava sync complete: ${data.imported} new walk(s) imported, ${data.skipped} skipped.`);
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = 'Sync Now'; }
+      }
+    }
     function openStatusModal() { openModal('modalStatus'); }
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function saveHouseholdNames(val) { STATE.householdNames = val; }
+
+    async function saveHouseholdNames(val) {
+      STATE.householdNames = val;
+      const subtitle = document.getElementById('packHouseholdSubtitle');
+      if (subtitle) subtitle.innerText = val;
+      const { error } = await db.from('household_settings').upsert({ id: 1, names: val });
+      if (error) console.warn("Supabase household save notice:", error.message);
+    }
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
