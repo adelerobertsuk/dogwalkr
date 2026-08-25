@@ -17,7 +17,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <!-- Official Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -447,7 +446,8 @@
         </div>
       </div>
       <p id="walkDetailNotes" class="text-xs text-zinc-600 bg-zinc-50 p-2.5 rounded-xl border border-zinc-100 hidden"></p>
-      <button onclick="editWalkFromDetail()" class="w-full py-3.5 bg-orange-500 text-white rounded-2xl text-xs font-bold">Edit Walk 🐾</button>
+      <button onclick="shareWalkoutFromDetail()" class="w-full py-4 bg-gradient-to-tr from-orange-600 to-amber-500 text-white rounded-2xl font-bold text-sm shadow-md">Share Walkout 🐾</button>
+      <button onclick="editWalkFromDetail()" class="w-full py-3.5 bg-orange-50 text-orange-700 rounded-2xl text-xs font-bold">Edit Walk</button>
       <button onclick="closeModal('modalWalkDetail')" class="w-full py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold">Close</button>
     </div>
   </div>
@@ -517,33 +517,26 @@
     </div>
   </div>
 
-  <!-- Offscreen template rendered to PNG for walk-stat card export -->
-  <div id="shareCardTemplate" class="fixed -left-[9999px] top-0 w-[400px] bg-gradient-to-br from-orange-500 to-amber-600 text-white p-8 rounded-[32px] space-y-4" style="font-family: -apple-system, sans-serif;">
-    <div class="flex items-center space-x-3">
-      <img id="shareCardAvatar" crossorigin="anonymous" class="w-14 h-14 rounded-2xl object-cover border-2 border-white/60" />
-      <div>
-        <p id="shareCardDogName" class="text-lg font-black"></p>
-        <p id="shareCardDate" class="text-xs text-orange-100"></p>
+  <div id="modalShareCard" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[95vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <h3 class="text-lg font-bold text-zinc-900">Share Walkout 🐾</h3>
+        <button onclick="closeModal('modalShareCard')" class="p-2 text-zinc-400 hover:text-zinc-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-    </div>
-    <p id="shareCardTitle" class="text-2xl font-black leading-tight"></p>
-    <div class="grid grid-cols-3 gap-3 pt-2">
-      <div>
-        <p class="text-[10px] uppercase font-bold text-orange-100">Distance</p>
-        <p id="shareCardDistance" class="text-xl font-black"></p>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button id="shareModePhotoBtn" onclick="setShareCardMode('photo')" class="py-2.5 rounded-xl text-xs font-bold border">Photo Card</button>
+        <button id="shareModeStickerBtn" onclick="setShareCardMode('sticker')" class="py-2.5 rounded-xl text-xs font-bold border">Sticker</button>
       </div>
-      <div>
-        <p class="text-[10px] uppercase font-bold text-orange-100">Duration</p>
-        <p id="shareCardDuration" class="text-xl font-black"></p>
+
+      <div class="bg-zinc-900 rounded-2xl overflow-hidden flex items-center justify-center relative" style="aspect-ratio: 9 / 16;">
+        <canvas id="shareCardCanvas" width="1080" height="1920" class="w-full h-full"></canvas>
+        <div id="shareCardSpinner" class="absolute inset-0 flex items-center justify-center text-white text-xs font-bold hidden">Rendering…</div>
       </div>
-      <div>
-        <p class="text-[10px] uppercase font-bold text-orange-100">Stool</p>
-        <p id="shareCardStool" class="text-xl font-black"></p>
-      </div>
-    </div>
-    <div class="pt-4 border-t border-white/20 flex items-center justify-between">
-      <span class="text-xs font-bold tracking-wide">🐾 DOGWALKR</span>
-      <span class="text-xs text-orange-100">Strava Synced</span>
+      <input type="hidden" id="shareCardWalkId" value="" />
+
+      <button id="shareCardShareBtn" onclick="shareWalkoutCard()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md">Share Walkout</button>
+      <button id="shareCardDownloadBtn" onclick="downloadWalkoutCard()" class="w-full py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold">Save to Camera Roll / Download PNG</button>
     </div>
   </div>
 
@@ -1019,7 +1012,7 @@
               </div>
               <div class="flex items-center">
                 <button onclick="event.stopPropagation(); openEditWalkModal('${w.id}')" class="p-2 text-zinc-400 hover:text-orange-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                <button onclick="event.stopPropagation(); exportWalkCard('${w.id}')" class="p-2 text-zinc-400 hover:text-orange-500"><i data-lucide="download" class="w-4 h-4"></i></button>
+                <button onclick="event.stopPropagation(); openShareCardModal('${w.id}')" class="p-2 text-zinc-400 hover:text-orange-500"><i data-lucide="share-2" class="w-4 h-4"></i></button>
                 <button onclick="event.stopPropagation(); deleteWalkout('${w.id}')" class="p-2 text-zinc-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
               </div>
             </div>
@@ -1269,34 +1262,335 @@
       renderAll();
     }
 
-    async function exportWalkCard(walkId) {
+    // ==========================================================
+    // Share Card engine: native Canvas rendering of a 1080x1920
+    // (9:16) story card, in two modes:
+    //   'photo'   — user's walkout photo full-bleed with gradient
+    //               overlays so text stays legible
+    //   'sticker' — transparent background, small floating branded
+    //               card only, for use as an IG Stories sticker
+    // ==========================================================
+
+    let shareCardMode = 'sticker';
+    const AVG_HUMAN_STRIDE_M = 0.75;
+
+    function computePawsTaken(humanDistanceKm, strideRatio) {
+      const humanSteps = (humanDistanceKm * 1000) / AVG_HUMAN_STRIDE_M;
+      return Math.round(humanSteps * strideRatio);
+    }
+
+    function formatDurationLong(mins) {
+      const m = Math.round(mins || 0);
+      if (m < 60) return `${m} min`;
+      const h = Math.floor(m / 60);
+      const rem = m % 60;
+      return `${h}h ${String(rem).padStart(2, '0')}m`;
+    }
+
+    function loadImageCORS(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    function drawRoundedRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function drawCoverImage(ctx, img, x, y, w, h) {
+      const imgRatio = img.width / img.height;
+      const boxRatio = w / h;
+      let sx, sy, sw, sh;
+      if (imgRatio > boxRatio) {
+        sh = img.height; sw = sh * boxRatio; sx = (img.width - sw) / 2; sy = 0;
+      } else {
+        sw = img.width; sh = sw / boxRatio; sx = 0; sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    }
+
+    function drawCircleClippedImage(ctx, img, cx, cy, radius) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      drawCoverImage(ctx, img, cx - radius, cy - radius, radius * 2, radius * 2);
+      ctx.restore();
+    }
+
+    function drawBrandBadge(ctx, x, y, color) {
+      ctx.font = '44px -apple-system, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🐾', x, y);
+      ctx.font = '700 34px -apple-system, sans-serif';
+      ctx.fillStyle = color;
+      ctx.letterSpacing = '2px';
+      ctx.fillText('DOGWALKR', x + 56, y);
+      ctx.letterSpacing = '0px';
+    }
+
+    function getShareCardData(walkId) {
       const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
-      if (!w) return;
+      if (!w) return null;
       const dog = STATE.dogs.find(d => d.id === STATE.activeDogId) || STATE.dogs[0];
       const multiplier = calculateStrideRatio(dog.weight);
-      const dist = Number(w.humanDistance || w.distance) || 0;
-      const stoolMeta = stoolScoreMeta(w.stoolScore);
+      const humanDist = Number(w.humanDistance || w.distance) || 0;
+      const dogDist = humanDist * multiplier;
+      const pawsTaken = computePawsTaken(humanDist, multiplier);
+      const dateStr = new Date(w.created_at || Date.now())
+        .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return { w, dog, dogDist, pawsTaken, dateStr };
+    }
 
-      document.getElementById('shareCardAvatar').src = dog.avatar;
-      document.getElementById('shareCardDogName').innerText = dog.name;
-      document.getElementById('shareCardDate').innerText = new Date(w.created_at || Date.now())
-        .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-      document.getElementById('shareCardTitle').innerText = w.title || 'Walkout';
-      document.getElementById('shareCardDistance').innerText = `${(dist * multiplier).toFixed(2)} km`;
-      document.getElementById('shareCardDuration').innerText = `${w.durationMins || 0} min`;
-      document.getElementById('shareCardStool').innerText = `${stoolMeta.emoji} ${stoolMeta.label}`;
+    async function renderPhotoCard(ctx, W, H, data) {
+      const { w, dog, dogDist, pawsTaken, dateStr } = data;
+      const photo = await loadImageCORS(w.photo_url);
+      drawCoverImage(ctx, photo, 0, 0, W, H);
 
+      const topGrad = ctx.createLinearGradient(0, 0, 0, 420);
+      topGrad.addColorStop(0, 'rgba(0,0,0,0.6)');
+      topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, 0, W, 420);
+
+      const bottomGrad = ctx.createLinearGradient(0, H - 780, 0, H);
+      bottomGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      bottomGrad.addColorStop(1, 'rgba(0,0,0,0.82)');
+      ctx.fillStyle = bottomGrad;
+      ctx.fillRect(0, H - 780, W, 780);
+
+      drawBrandBadge(ctx, 64, 110, '#ffffff');
+
+      // Dog avatar + name
+      const avatarY = H - 660;
       try {
-        const canvas = await html2canvas(document.getElementById('shareCardTemplate'), { useCORS: true, backgroundColor: null, scale: 2 });
-        const link = document.createElement('a');
-        link.download = `dogwalkr-${(w.title || 'walk').trim().replace(/\s+/g, '-').toLowerCase()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        const avatar = await loadImageCORS(dog.avatar);
+        drawCircleClippedImage(ctx, avatar, 64 + 60, avatarY, 60);
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(64 + 60, avatarY, 60, 0, Math.PI * 2);
+        ctx.stroke();
       } catch (err) {
-        console.error("Card export failed:", err);
+        console.warn('Share card avatar load failed:', err);
       }
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 60px -apple-system, sans-serif';
+      ctx.fillText(dog.name, 64 + 140, avatarY + 14);
+      ctx.font = '500 30px -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText(dog.breed || '', 64 + 140, avatarY + 52);
+
+      // Stat grid
+      const statsY = H - 480;
+      const cols = [64, 64 + (W - 128) / 3, 64 + (2 * (W - 128)) / 3];
+      const stats = [
+        ['DOG DISTANCE', `${dogDist.toFixed(2)} km`],
+        ['TOTAL TIME', formatDurationLong(w.durationMins)],
+        ['PAWS TAKEN', pawsTaken.toLocaleString('en-GB')],
+      ];
+      stats.forEach(([label, value], i) => {
+        ctx.font = '700 26px -apple-system, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        ctx.letterSpacing = '1px';
+        ctx.fillText(label, cols[i], statsY);
+        ctx.letterSpacing = '0px';
+        ctx.font = '800 66px -apple-system, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(value, cols[i], statsY + 68);
+      });
+
+      // Title + date
+      ctx.font = '700 36px -apple-system, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(w.title || 'Walkout', 64, H - 250);
+      ctx.font = '400 28px -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText(dateStr, 64, H - 200);
+    }
+
+    async function renderStickerCard(ctx, W, H, data) {
+      const { w, dog, dogDist, pawsTaken, dateStr } = data;
+      const cardW = 900, cardH = 620;
+      const cardX = (W - cardW) / 2, cardY = (H - cardH) / 2;
+
+      const grad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+      grad.addColorStop(0, '#f97316');
+      grad.addColorStop(1, '#d97706');
+      ctx.fillStyle = grad;
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
+      ctx.fill();
+
+      const pad = 56;
+      drawBrandBadge(ctx, cardX + pad, cardY + 80, '#ffffff');
+
+      const avatarCx = cardX + pad + 56, avatarCy = cardY + 200;
+      try {
+        const avatar = await loadImageCORS(dog.avatar);
+        drawCircleClippedImage(ctx, avatar, avatarCx, avatarCy, 56);
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(avatarCx, avatarCy, 56, 0, Math.PI * 2);
+        ctx.stroke();
+      } catch (err) {
+        console.warn('Share card avatar load failed:', err);
+      }
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 52px -apple-system, sans-serif';
+      ctx.fillText(dog.name, avatarCx + 90, avatarCy + 10);
+      ctx.font = '500 26px -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(dog.breed || '', avatarCx + 90, avatarCy + 42);
+
+      const statsY = cardY + 400;
+      const innerW = cardW - pad * 2;
+      const cols = [cardX + pad, cardX + pad + innerW / 3, cardX + pad + (2 * innerW) / 3];
+      const stats = [
+        ['DISTANCE', `${dogDist.toFixed(2)} km`],
+        ['TIME', formatDurationLong(w.durationMins)],
+        ['PAWS', pawsTaken.toLocaleString('en-GB')],
+      ];
+      stats.forEach(([label, value], i) => {
+        ctx.font = '700 22px -apple-system, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.letterSpacing = '1px';
+        ctx.fillText(label, cols[i], statsY);
+        ctx.letterSpacing = '0px';
+        ctx.font = '800 46px -apple-system, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(value, cols[i], statsY + 54);
+      });
+
+      ctx.font = '400 22px -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText(dateStr, cardX + pad, cardY + cardH - 40);
+    }
+
+    async function renderShareCard() {
+      const walkId = document.getElementById('shareCardWalkId').value;
+      const data = getShareCardData(walkId);
+      const canvas = document.getElementById('shareCardCanvas');
+      const spinner = document.getElementById('shareCardSpinner');
+      if (!data || !canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      spinner.classList.remove('hidden');
+      try {
+        if (shareCardMode === 'photo' && data.w.photo_url) {
+          await renderPhotoCard(ctx, W, H, data);
+        } else {
+          shareCardMode = 'sticker';
+          await renderStickerCard(ctx, W, H, data);
+        }
+      } catch (err) {
+        console.error('Share card render failed:', err);
+        ctx.clearRect(0, 0, W, H);
+        await renderStickerCard(ctx, W, H, data);
+      } finally {
+        spinner.classList.add('hidden');
+        updateShareModeButtons();
+      }
+    }
+
+    function updateShareModeButtons() {
+      const walkId = document.getElementById('shareCardWalkId').value;
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      const hasPhoto = !!(w && w.photo_url);
+      const photoBtn = document.getElementById('shareModePhotoBtn');
+      const stickerBtn = document.getElementById('shareModeStickerBtn');
+      const activeCls = 'py-2.5 rounded-xl text-xs font-bold border bg-orange-500 text-white border-orange-500';
+      const inactiveCls = 'py-2.5 rounded-xl text-xs font-bold border bg-white text-zinc-600 border-zinc-200';
+      photoBtn.className = (shareCardMode === 'photo' ? activeCls : inactiveCls) + (hasPhoto ? '' : ' opacity-40 cursor-not-allowed');
+      stickerBtn.className = shareCardMode === 'sticker' ? activeCls : inactiveCls;
+    }
+
+    async function setShareCardMode(mode) {
+      const walkId = document.getElementById('shareCardWalkId').value;
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      if (mode === 'photo' && !(w && w.photo_url)) return;
+      shareCardMode = mode;
+      await renderShareCard();
+    }
+
+    async function openShareCardModal(walkId) {
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      if (!w) return;
+      document.getElementById('shareCardWalkId').value = walkId;
+      shareCardMode = w.photo_url ? 'photo' : 'sticker';
+      document.getElementById('shareCardDownloadBtn').classList.toggle('hidden', !!navigator.share);
+      openModal('modalShareCard');
+      await renderShareCard();
+    }
+
+    function shareWalkoutFromDetail() {
+      const walkId = document.getElementById('walkDetailId').value;
+      closeModal('modalWalkDetail');
+      openShareCardModal(walkId);
+    }
+
+    function getShareCardFilename(w) {
+      return `dogwalkr-${(w.title || 'walk').trim().replace(/\s+/g, '-').toLowerCase()}-${shareCardMode}.png`;
+    }
+
+    function getShareCardBlob() {
+      const canvas = document.getElementById('shareCardCanvas');
+      return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function shareWalkoutCard() {
+      const walkId = document.getElementById('shareCardWalkId').value;
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      if (!w) return;
+      const blob = await getShareCardBlob();
+      if (!blob) { alert('Could not generate the image.'); return; }
+      const filename = getShareCardFilename(w);
+      const file = new File([blob], filename, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Dogwalkr Walkout', text: `${w.title || 'Walkout'} 🐾` });
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+          console.warn('Native share failed, falling back to download:', err);
+        }
+      }
+      downloadBlob(blob, filename);
+    }
+
+    async function downloadWalkoutCard() {
+      const walkId = document.getElementById('shareCardWalkId').value;
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      if (!w) return;
+      const blob = await getShareCardBlob();
+      if (!blob) { alert('Could not generate the image.'); return; }
+      downloadBlob(blob, getShareCardFilename(w));
     }
 
     async function saveFoodItem() {
