@@ -486,7 +486,9 @@
           <span id="stravaStatusPill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-200 text-zinc-600">Not Connected</span>
         </div>
         <p id="stravaStatusDetail" class="text-[11px] text-zinc-500">Connect your Strava account so walk syncs map to your profile.</p>
-        <button id="stravaConnectBtn" onclick="connectStrava()" class="w-full py-3 rounded-xl font-bold text-sm text-white" style="background:#FC4C02;">Connect with Strava</button>
+        <button id="stravaConnectBtn" onclick="connectStrava()" class="w-full flex justify-center py-1">
+          <img src="btn_strava_connect_with_orange.svg" alt="Connect with Strava" style="height:48px; width:auto;" />
+        </button>
         <button id="stravaSyncBtn" onclick="syncStravaActivities()" class="hidden w-full py-2.5 rounded-xl font-bold text-xs text-white bg-orange-500">Sync Now</button>
         <button id="stravaDisconnectBtn" onclick="disconnectStrava()" class="hidden w-full py-2.5 rounded-xl font-bold text-xs text-red-600 border border-red-200 bg-white">Disconnect from Strava</button>
       </div>
