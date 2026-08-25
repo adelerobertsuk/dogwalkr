@@ -10,17 +10,29 @@
 // Human-to-dog translation rules:
 //   1. Duration is Strava's elapsed_time (wall-clock start-to-finish),
 //      NOT moving_time — humans auto-pause, dogs don't stop moving.
-//   2/3. Every dog whose name appears in the activity's name or
-//      description gets attributed via the walk_dogs join table (a
-//      walk mentioning "Audrey and Daisy" counts for both). dog_id on
-//      the walk row itself is set to the first match, kept only as a
+//   2/3. Attribution is HASHTAG-ONLY (#Audrey, #Daisy), not bare name
+//      matching. A bare name is ambiguous — a dog and a human (e.g. a
+//      partner) can share one — so only an explicit hashtag counts as
+//      the owner tagging that specific dog. Every pack member whose
+//      hashtag appears anywhere in the name or description (either
+//      field, order doesn't matter) gets attributed via the walk_dogs
+//      join table — "#Audrey #Daisy" counts for both. dog_id on the
+//      walk row itself is set to the first match, kept only as a
 //      backward-compatible convenience column for older client code.
-//   4. If no dog name matches, the walk is imported UNASSIGNED
+//   4. If no pack hashtag is found, the walk is imported UNASSIGNED
 //      (dog_id null, no walk_dogs rows) rather than guessed at — this
-//      function has no reliable concept of "the active dog" (it runs
-//      server-side, independent of any one device's UI state), so
-//      guessing would misattribute data. The app doesn't yet have UI
-//      to browse/reassign unassigned walks; that's a follow-up.
+//      avoids ever crediting a human-only walk to a dog, and this
+//      function has no reliable concept of "the active dog" anyway
+//      (it runs server-side, independent of any one device's UI
+//      state). The app doesn't yet have UI to browse/reassign
+//      unassigned walks; that's a follow-up.
+//
+// Note: the broader "is this even worth looking at as a dog activity"
+// pre-filter (isDogActivity, below) is intentionally left loose —
+// generic keywords or a bare name still qualify an activity for
+// import consideration. Only the ATTRIBUTION step (which specific
+// dog gets credited) is hashtag-strict, since that's where a wrong
+// guess actually corrupts a dog's stats.
 //
 // Invoke from the client with:
 //   supabase.functions.invoke('strava-sync', { body: { device_id } })
@@ -46,6 +58,14 @@ function isDogActivity(text: string, dogNames: string[]): boolean {
   const lower = text.toLowerCase();
   const keywords = ["dog", "pup", "walk", ...dogNames.map((n) => n.toLowerCase())].filter(Boolean);
   return keywords.some((k) => lower.includes(k));
+}
+
+// Extracts hashtag words (the part after #, up to the next
+// non-word character) as lowercase strings, e.g. "Walk with #Audrey
+// and #Daisy!" -> ["audrey", "daisy"].
+function extractHashtags(text: string): string[] {
+  const matches = text.match(/#(\w+)/g) || [];
+  return matches.map((h) => h.slice(1).toLowerCase());
 }
 
 async function getValidAccessToken(deviceId: string): Promise<string | null> {
@@ -143,8 +163,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const lowerText = text.toLowerCase();
-      const matchedDogs = dogList.filter((d) => d.name && lowerText.includes(d.name.toLowerCase()));
+      const hashtags = extractHashtags(text);
+      const matchedDogs = dogList.filter((d) => d.name && hashtags.includes(d.name.toLowerCase()));
 
       const { data: inserted, error: insertError } = await supabase
         .from("walks")
