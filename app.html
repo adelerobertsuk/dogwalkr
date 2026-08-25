@@ -377,6 +377,15 @@
           </div>
         </div>
         <div>
+          <label class="text-xs font-bold text-zinc-700 uppercase">Stool Quality Score</label>
+          <select id="logWalkStool" class="w-full mt-1 p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500">
+            <option value="3">🟢 3 - Optimal / Solid</option>
+            <option value="4">🟡 4 - Soft</option>
+            <option value="5">🔴 5 - Loose</option>
+            <option value="1">⚪ 1 - Hard</option>
+          </select>
+        </div>
+        <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Walk Notes</label>
           <textarea id="logWalkNotes" rows="2" placeholder="e.g. Great pace" class="w-full mt-1 p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs placeholder:text-zinc-400 focus:outline-none focus:border-orange-500"></textarea>
         </div>
@@ -414,6 +423,11 @@
       <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
         <label class="text-xs font-bold text-zinc-900 uppercase">Household Owner Names</label>
         <input type="text" id="inputHouseholdNames" value="Adele Roberts & Kate Holderness" class="w-full p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" onchange="saveHouseholdNames(this.value)" />
+      </div>
+      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
+        <label class="text-xs font-bold text-zinc-900 uppercase">Strava Profile Link</label>
+        <p class="text-[11px] text-zinc-500">Paste your Strava profile link so walk syncs map to your profile.</p>
+        <input type="text" id="inputStravaUrl" placeholder="https://www.strava.com/athletes/your-id" class="w-full p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" />
       </div>
       <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3">
         <div class="flex items-center justify-between">
@@ -477,7 +491,6 @@
       renderAll();
     }
 
-    // Live Supabase Fetch Function
     async function fetchSupabaseWalks() {
       try {
         const { data, error } = await db
@@ -486,8 +499,7 @@
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.warn("Supabase 'walks' table query notice:", error.message);
-          // Fallback initial mock walk if table is empty or initializing
+          console.warn("Supabase query notice:", error.message);
           if (STATE.walkouts.length === 0) {
             STATE.walkouts = [{
               id: 'walk_init',
@@ -496,7 +508,6 @@
               durationMins: 53,
               stoolScore: 3,
               notes: 'Synced from Supabase database 🐾',
-              photo: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80',
               dogIds: [STATE.activeDogId]
             }];
           }
@@ -512,23 +523,21 @@
       const title = document.getElementById('logWalkTitle').value.trim() || 'Afternoon Park Walk';
       const humanDistance = parseFloat(document.getElementById('logWalkDistance').value) || 2.5;
       const durationMins = parseInt(document.getElementById('logWalkDuration').value) || 40;
+      const stoolScore = parseInt(document.getElementById('logWalkStool').value) || 3;
       const notes = document.getElementById('logWalkNotes').value.trim();
 
       const newWalk = {
         title,
         humanDistance,
         durationMins,
-        stoolScore: 3,
+        stoolScore,
         notes,
         dog_id: STATE.activeDogId,
         created_at: new Date().toISOString()
       };
 
-      // Push to Supabase Live DB
       const { data, error } = await db.from('walks').insert([newWalk]).select();
       if (error) {
-        console.error("Insert error:", error.message);
-        // Local fallback insertion so UI updates immediately
         STATE.walkouts.unshift({ id: 'walk_' + Date.now(), ...newWalk });
       } else if (data) {
         STATE.walkouts.unshift(data[0]);
