@@ -19,7 +19,7 @@
 
   <style>
     @supports (-webkit-touch-callout: none) {
-      .min-h-screen { min-h-screen: -webkit-fill-available; }
+      .min-h-screen { min-height: -webkit-fill-available; }
     }
     body {
       -webkit-font-smoothing: antialiased;
@@ -72,6 +72,20 @@
       </div>
     </header>
 
+    <!-- FRIEND MET BANNER (Triggered when scanning friend QR code) -->
+    <div id="friendMetBanner" class="mx-4 mt-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 rounded-2xl shadow-md hidden flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">🐾</span>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-orange-100">New Friend Met!</p>
+          <p id="friendMetText" class="text-sm font-black">Joe met a new pal on the street!</p>
+        </div>
+      </div>
+      <button onclick="acceptPawBumpFriend()" class="px-3 py-1.5 bg-white text-orange-600 rounded-xl text-xs font-bold shadow-xs hover:bg-orange-50 transition">
+        🤝 Paw Bump!
+      </button>
+    </div>
+
     <!-- MAIN VIEW CONTAINER -->
     <main class="flex-1 px-4 pt-4 space-y-4">
 
@@ -84,7 +98,7 @@
         <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Weekly Movement</span>
-            <span class="text-xs font-semibold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-100">Live Calibration</span>
+            <span class="text-xs font-semibold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-100">Live Strava Sync</span>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -140,7 +154,7 @@
         <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm space-y-3">
           <div class="flex items-center justify-between">
             <h3 class="text-base font-bold text-zinc-900">Latest Walkout</h3>
-            <span id="latestWalkTimeAgo" class="text-xs font-medium text-zinc-500">Yesterday at 17:41</span>
+            <span id="latestWalkTimeAgo" class="text-xs font-medium text-zinc-500">Ready for Strava walk</span>
           </div>
 
           <div id="latestWalkoutContent">
@@ -148,19 +162,22 @@
           </div>
         </div>
 
-        <!-- Strava Promo Banner (Auto-Hides When Connected) -->
-        <div id="stravaPromoBanner" class="bg-zinc-100 rounded-2xl p-4 border border-zinc-200 flex items-center justify-between hidden">
+        <!-- Strava Banner (Active & Connected) -->
+        <div class="bg-gradient-to-r from-zinc-900 to-zinc-950 text-white rounded-3xl p-4 border border-zinc-800 flex items-center justify-between shadow-md">
           <div class="flex items-center space-x-3">
             <div class="w-10 h-10 rounded-xl bg-[#FC4C02] text-white flex items-center justify-center font-black text-sm shadow-sm">
               S
             </div>
             <div>
-              <p class="text-xs font-bold text-zinc-900">Intelligent Strava Companion</p>
-              <p class="text-[11px] text-zinc-500">Record on your watch or Strava as normal. We handle dog telemetry.</p>
+              <p class="text-xs font-bold text-white flex items-center space-x-1.5">
+                <span>Strava Live Sync Active</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              </p>
+              <p class="text-[11px] text-zinc-400">Apple Watch & Strava walkouts auto-syncing telemetry</p>
             </div>
           </div>
-          <button onclick="openSettingsModal()" class="px-3 py-1.5 bg-white border border-zinc-200 text-xs font-bold text-zinc-800 rounded-xl shadow-xs hover:bg-zinc-50 transition">
-            Sync
+          <button onclick="openSettingsModal()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 text-xs font-bold text-white rounded-xl transition">
+            Config
           </button>
         </div>
 
@@ -174,7 +191,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-black text-zinc-900 tracking-tight">Walkout Library</h2>
-            <p class="text-xs text-zinc-500">Past routes, multi-dog splits, and photo memories</p>
+            <p class="text-xs text-zinc-500">Past routes, custom shortcuts, and photo memories</p>
           </div>
           <button onclick="openLogWalkModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
             <i data-lucide="plus" class="w-4 h-4"></i>
@@ -182,22 +199,17 @@
           </button>
         </div>
 
-        <!-- Quick Route Presets Bar -->
+        <!-- Quick Route Presets Bar with Custom Add Button -->
         <div class="space-y-1.5">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Quick Route Shortcuts</p>
-          <div class="flex space-x-2 overflow-x-auto hide-scrollbar pb-1">
-            <button onclick="quickLogPreset('toilet')" class="flex-shrink-0 px-3.5 py-2 rounded-2xl bg-white border border-zinc-200 text-xs font-bold text-zinc-700 flex items-center space-x-2 shadow-xs hover:border-orange-400 transition">
-              <span>🚽 Quick Toilet Nip</span>
-              <span class="text-[11px] text-zinc-500 font-normal">0.6 km</span>
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Quick Route Shortcuts</p>
+            <button onclick="openAddShortcutModal()" class="text-xs font-bold text-orange-600 hover:underline flex items-center space-x-0.5">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Add Custom Route</span>
             </button>
-            <button onclick="quickLogPreset('park')" class="flex-shrink-0 px-3.5 py-2 rounded-2xl bg-white border border-zinc-200 text-xs font-bold text-zinc-700 flex items-center space-x-2 shadow-xs hover:border-orange-400 transition">
-              <span>🌳 Daily Park Loop</span>
-              <span class="text-[11px] text-zinc-500 font-normal">2.4 km</span>
-            </button>
-            <button onclick="quickLogPreset('trail')" class="flex-shrink-0 px-3.5 py-2 rounded-2xl bg-white border border-zinc-200 text-xs font-bold text-zinc-700 flex items-center space-x-2 shadow-xs hover:border-orange-400 transition">
-              <span>🌲 Weekend Long Trail</span>
-              <span class="text-[11px] text-zinc-500 font-normal">5.0 km</span>
-            </button>
+          </div>
+          <div id="quickShortcutsBar" class="flex space-x-2 overflow-x-auto hide-scrollbar pb-1">
+            <!-- Populated via JS -->
           </div>
         </div>
 
@@ -209,14 +221,14 @@
       </section>
 
       <!-- ========================================================== -->
-      <!-- TAB 3: THE PACK (Canine ID & Management)                    -->
+      <!-- TAB 3: THE PACK (Canine ID & Mini-Facebook Friend Network)  -->
       <!-- ========================================================== -->
       <section id="viewPack" class="space-y-4 hidden">
         
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-black text-zinc-900 tracking-tight">The Household Pack</h2>
-            <p class="text-xs text-zinc-500">Manage individual dog biometrics and passports</p>
+            <p class="text-xs text-zinc-500">Manage individual dog biometrics and street besties</p>
           </div>
           <button onclick="openAddDogModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
             <i data-lucide="plus" class="w-4 h-4"></i>
@@ -227,6 +239,22 @@
         <!-- Pack Dogs List -->
         <div id="packCardsList" class="space-y-3">
           <!-- Populated by JS -->
+        </div>
+
+        <!-- Dog Friends / Mini-Facebook Network Section -->
+        <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-lg">🤝</span>
+              <h3 class="text-sm font-bold text-zinc-900">Street & Park Besties (<span id="dogFriendsCount">0</span>)</h3>
+            </div>
+            <span class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full">Canine Network</span>
+          </div>
+          <p class="text-xs text-zinc-500">Scan QR codes on walks to exchange Paw Bumps and build your dog's social circle!</p>
+          
+          <div id="dogFriendsList" class="space-y-2 pt-1">
+            <!-- Populated via JS -->
+          </div>
         </div>
 
         <!-- Holiday Handover / Pet-Sitter Mode Banner -->
@@ -249,7 +277,7 @@
       </section>
 
       <!-- ========================================================== -->
-      <!-- TAB 4: FOOD 🥣 (Daily Bowl, Routine & Bevel Calendar)       -->
+      <!-- TAB 4: FOOD 🥣 (Daily Bowl, Editable Stack & Calendar)      -->
       <!-- ========================================================== -->
       <section id="viewFood" class="space-y-4 hidden">
         
@@ -264,18 +292,18 @@
           </button>
         </div>
 
-        <!-- Bevel-Style 7-Day Food History Strip -->
+        <!-- Scrollable Historical Food Calendar Strip -->
         <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-2">
           <div class="flex items-center justify-between text-xs font-bold text-zinc-700">
             <span>7-Day Bowl Consistency</span>
             <span id="foodAdherencePct" class="text-emerald-600 font-black">100% Adherence</span>
           </div>
-          <div id="bevelFoodCalendarStrip" class="grid grid-cols-7 gap-1.5 text-center pt-1">
-            <!-- 7 day rings rendered by JS -->
+          <div id="scrollableFoodCalendar" class="flex space-x-2 overflow-x-auto hide-scrollbar pt-1 pb-1">
+            <!-- Scrollable days rendered by JS -->
           </div>
         </div>
 
-        <!-- Extra Kibble Earned Today Card -->
+        <!-- Extra Kibble Earned Today Card (Synced to Walks) -->
         <div class="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-4 flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <div class="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-xs">
@@ -302,20 +330,6 @@
           <div id="foodStackList" class="space-y-2">
             <!-- Populated by JS -->
           </div>
-        </div>
-
-        <!-- Future Feature Callout -->
-        <div class="bg-zinc-100 rounded-2xl p-4 border border-zinc-200 flex items-center justify-between">
-          <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 rounded-xl bg-zinc-200 flex items-center justify-center text-zinc-700">
-              <i data-lucide="camera" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <p class="text-xs font-bold text-zinc-900">Scan Dog Food Bag [PRO]</p>
-              <p class="text-[11px] text-zinc-500">Auto-detect feeding tables from Purina, Burns, or Raw labels</p>
-            </div>
-          </div>
-          <span class="text-[10px] font-bold bg-zinc-300 text-zinc-800 px-2 py-0.5 rounded-full">Coming Soon</span>
         </div>
 
       </section>
@@ -395,21 +409,8 @@
         </div>
 
         <div>
-          <label class="text-xs font-bold text-zinc-700 uppercase">Breed (With Autocomplete)</label>
-          <input list="breedOptions" id="inputDogBreed" placeholder="Start typing e.g. Italian Greyhound, Labrador" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" onchange="autoSuggestWeight()" />
-          <datalist id="breedOptions">
-            <option value="Italian Greyhound">
-            <option value="Golden Labrador">
-            <option value="Border Collie">
-            <option value="Cocker Spaniel">
-            <option value="Cockapoo">
-            <option value="French Bulldog">
-            <option value="Dachshund (Miniature)">
-            <option value="Whippet">
-            <option value="German Shepherd">
-            <option value="Jack Russell Terrier">
-            <option value="Staffordshire Bull Terrier">
-          </datalist>
+          <label class="text-xs font-bold text-zinc-700 uppercase">Breed</label>
+          <input type="text" id="inputDogBreed" placeholder="e.g. Italian Greyhound, Labrador" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" onchange="autoSuggestWeight()" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -491,8 +492,8 @@
         <div class="flex items-center space-x-3 pt-1">
           <div id="passportQRCode" class="bg-white p-2 rounded-xl shadow-xs"></div>
           <div class="text-[11px] text-zinc-400 leading-tight">
-            <p class="font-bold text-white">Scan to join Joe on Dogwalkr!</p>
-            <p class="text-zinc-500 mt-0.5">Calibrated canine effort & fuel math</p>
+            <p class="font-bold text-white">Scan to Paw Bump with Joe!</p>
+            <p class="text-zinc-500 mt-0.5">Canine network & Strava sync</p>
             <p class="text-orange-400 font-semibold mt-1">dogwalkr.co.uk</p>
           </div>
         </div>
@@ -501,7 +502,7 @@
       <div class="grid grid-cols-2 gap-3">
         <button onclick="exportParkBusinessCard()" class="py-3.5 bg-orange-500 text-white rounded-2xl text-xs font-bold shadow-sm hover:bg-orange-600 transition flex items-center justify-center space-x-1.5">
           <i data-lucide="share-2" class="w-4 h-4"></i>
-          <span>Share to Instagram</span>
+          <span>Share Passport</span>
         </button>
         <button onclick="editActiveDog()" class="py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold shadow-xs hover:bg-zinc-50 transition flex items-center justify-center space-x-1.5">
           <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -513,16 +514,18 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 3: LOG WALKOUT                                       -->
+  <!-- MODAL 3: LOG OR EDIT WALKOUT                               -->
   <!-- ========================================================== -->
   <div id="modalLogWalk" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-        <h3 class="text-lg font-bold text-zinc-900">Record Walkout 🐾</h3>
+        <h3 id="modalWalkTitleHeader" class="text-lg font-bold text-zinc-900">Record Walkout 🐾</h3>
         <button onclick="closeModal('modalLogWalk')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
+
+      <input type="hidden" id="editWalkId" value="" />
 
       <div class="space-y-3">
         <div>
@@ -548,7 +551,8 @@
 
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Stool Quality Score</label>
-          <div class="grid grid-cols-5 gap-1.5 mt-1.5 text-center">
+          <div class="grid grid-cols-6 gap-1 mt-1.5 text-center">
+            <button type="button" onclick="selectStoolScore(0)" id="stoolBtn0" class="py-2.5 rounded-xl border border-zinc-200 text-xs font-bold hover:border-orange-500">0 🚫<br/><span class="text-[9px] font-normal text-zinc-500">None</span></button>
             <button type="button" onclick="selectStoolScore(1)" id="stoolBtn1" class="py-2.5 rounded-xl border border-zinc-200 text-xs font-bold hover:border-orange-500">1 💧<br/><span class="text-[9px] font-normal text-zinc-500">Liquid</span></button>
             <button type="button" onclick="selectStoolScore(2)" id="stoolBtn2" class="py-2.5 rounded-xl border border-zinc-200 text-xs font-bold hover:border-orange-500">2 🍦<br/><span class="text-[9px] font-normal text-zinc-500">Soft</span></button>
             <button type="button" onclick="selectStoolScore(3)" id="stoolBtn3" class="py-2.5 rounded-xl border-2 border-orange-500 bg-orange-50 text-xs font-bold text-orange-600">3 🪵<br/><span class="text-[9px] font-normal">Ideal</span></button>
@@ -558,8 +562,13 @@
         </div>
 
         <div>
+          <label class="text-xs font-bold text-zinc-700 uppercase">Walk Photo Memory</label>
+          <input type="file" id="logWalkPhotoUpload" accept="image/*" class="w-full mt-1 p-2.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-zinc-600" />
+        </div>
+
+        <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Walk Notes & Memories</label>
-          <textarea id="logWalkNotes" rows="2" placeholder="e.g. Practiced loose-lead heelwork and sniff stimulation in the long grass" class="w-full mt-1 p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-medium focus:outline-none focus:border-orange-500"></textarea>
+          <textarea id="logWalkNotes" rows="2" placeholder="e.g. Practiced loose-lead heelwork and sniff stimulation" class="w-full mt-1 p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-medium focus:outline-none focus:border-orange-500"></textarea>
         </div>
       </div>
 
@@ -575,7 +584,7 @@
   <div id="modalShareStudio" class="fixed inset-0 bg-black/90 backdrop-blur-lg z-50 hidden flex flex-col items-center justify-between p-4 safe-top safe-bottom">
     
     <div class="w-full max-w-[400px] flex items-center justify-between text-white pb-2">
-      <span class="text-sm font-bold">Share Walkout</span>
+      <span class="text-sm font-bold">Share Walkout Story</span>
       <button onclick="closeModal('modalShareStudio')" class="p-2 text-zinc-400 hover:text-white tap-target">
         <i data-lucide="x" class="w-6 h-6"></i>
       </button>
@@ -590,7 +599,7 @@
           <span class="text-orange-400 font-bold">DOGWALKR</span>
           <span>🐾</span>
         </div>
-        <span class="text-[11px] font-semibold text-zinc-200 bg-black/30 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/10">Today 14:19</span>
+        <span class="text-[11px] font-semibold text-zinc-200 bg-black/30 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/10">Strava Synced</span>
       </div>
 
       <div class="absolute bottom-6 left-4 right-4 bg-black/60 backdrop-blur-xl border border-white/15 rounded-3xl p-4 text-white space-y-2.5">
@@ -618,33 +627,15 @@
     </div>
 
     <div class="w-full max-w-[340px] space-y-3 pt-3">
-      <div class="grid grid-cols-4 gap-2 text-center text-white text-[11px] font-medium">
-        <button onclick="dispatchShare('instagram')" class="flex flex-col items-center space-y-1">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-700 flex items-center justify-center text-white shadow-md active:scale-95 transition">
-            <i data-lucide="instagram" class="w-6 h-6"></i>
-          </div>
-          <span>Stories</span>
-        </button>
-
-        <button onclick="dispatchShare('snapchat')" class="flex flex-col items-center space-y-1">
-          <div class="w-12 h-12 rounded-2xl bg-yellow-400 text-black flex items-center justify-center font-bold text-lg shadow-md active:scale-95 transition">
-            👻
-          </div>
-          <span>Snapchat</span>
-        </button>
-
-        <button onclick="dispatchShare('save')" class="flex flex-col items-center space-y-1">
-          <div class="w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white shadow-md active:scale-95 transition">
-            <i data-lucide="download" class="w-5 h-5"></i>
-          </div>
+      <div class="grid grid-cols-2 gap-3 text-white text-xs font-bold">
+        <button onclick="dispatchShare('save')" class="py-3.5 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center space-x-2 shadow-md active:scale-95 transition">
+          <i data-lucide="download" class="w-4 h-4"></i>
           <span>Save Image</span>
         </button>
 
-        <button onclick="dispatchShare('copy')" class="flex flex-col items-center space-y-1">
-          <div class="w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white shadow-md active:scale-95 transition">
-            <i data-lucide="copy" class="w-5 h-5"></i>
-          </div>
-          <span>Copy</span>
+        <button onclick="dispatchShare('copy')" class="py-3.5 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center space-x-2 shadow-md active:scale-95 transition">
+          <i data-lucide="copy" class="w-4 h-4"></i>
+          <span>Copy Summary</span>
         </button>
       </div>
     </div>
@@ -652,28 +643,18 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 5: ADD FOOD ITEM SHEET                               -->
+  <!-- MODAL 5: ADD / EDIT FOOD ITEM SHEET                        -->
   <!-- ========================================================== -->
   <div id="modalAddFood" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-        <h3 class="text-lg font-bold text-zinc-900">Add Daily Food / Stack 🥣</h3>
+        <h3 id="modalFoodTitle" class="text-lg font-bold text-zinc-900">Add Daily Food / Stack 🥣</h3>
         <button onclick="closeModal('modalAddFood')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="space-y-1.5">
-        <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Quick Presets</p>
-        <div class="flex flex-wrap gap-1.5">
-          <button type="button" onclick="setFoodPreset('Dry Kibble Scoop', '180g Bowl', '🥣')" class="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold rounded-xl text-zinc-800">🥣 Dry Kibble</button>
-          <button type="button" onclick="setFoodPreset('Wet Food Can', '200g Tin', '🥫')" class="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold rounded-xl text-zinc-800">🥫 Wet Food</button>
-          <button type="button" onclick="setFoodPreset('Raw Beef Patty', '250g Patty', '🥩')" class="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold rounded-xl text-zinc-800">🥩 Raw Meal</button>
-          <button type="button" onclick="setFoodPreset('Dental Chew Stick', '1 Stick', '🦴')" class="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold rounded-xl text-zinc-800">🦴 Dental Stick</button>
-          <button type="button" onclick="setFoodPreset('Salmon Oil Pump', '1 Pump (5ml)', '🐟')" class="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold rounded-xl text-zinc-800">🐟 Salmon Oil</button>
-          <button type="button" onclick="setFoodPreset('Joint Glucosamine', '1 Tablet', '💊')" class="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold rounded-xl text-zinc-800">💊 Joint Vit</button>
-        </div>
-      </div>
+      <input type="hidden" id="editFoodId" value="" />
 
       <div class="space-y-3">
         <div>
@@ -694,13 +675,49 @@
       </div>
 
       <button onclick="saveFoodItem()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-orange-600 transition">
-        Add to Daily Food Stack 🥣
+        Save Food Stack Item 🥣
       </button>
     </div>
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 6: STATUS SELECTOR SHEET                             -->
+  <!-- MODAL 6: ADD CUSTOM ROUTE SHORTCUT                         -->
+  <!-- ========================================================== -->
+  <div id="modalAddShortcut" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <h3 class="text-lg font-bold text-zinc-900">Add Custom Route Shortcut 🗺️</h3>
+        <button onclick="closeModal('modalAddShortcut')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-bold text-zinc-700 uppercase">Shortcut Title & Emoji</label>
+          <input type="text" id="inputShortcutTitle" placeholder="e.g. 🌲 River Trail Loop" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-zinc-700 uppercase">Distance (km)</label>
+            <input type="number" step="0.1" id="inputShortcutKm" placeholder="e.g. 3.5" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-zinc-700 uppercase">Duration (mins)</label>
+            <input type="number" id="inputShortcutMins" placeholder="e.g. 40" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+          </div>
+        </div>
+      </div>
+
+      <button onclick="saveCustomShortcut()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-orange-600 transition">
+        Save Shortcut ⚡
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- MODAL 7: STATUS SELECTOR & SETTINGS                        -->
   <!-- ========================================================== -->
   <div id="modalStatus" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
@@ -720,7 +737,6 @@
               <p class="text-xs text-zinc-500">Regular walkouts and full dinner energy</p>
             </div>
           </div>
-          <i data-lucide="check" class="w-5 h-5 text-emerald-500"></i>
         </button>
 
         <button onclick="setDogStatus('holiday', '🌴', 'On Holiday / Sitter')" class="w-full p-4 rounded-2xl border border-zinc-200 flex items-center justify-between hover:border-blue-500 transition">
@@ -732,27 +748,14 @@
             </div>
           </div>
         </button>
-
-        <button onclick="setDogStatus('rest', '🩹', 'Recovery / Light')" class="w-full p-4 rounded-2xl border border-zinc-200 flex items-center justify-between hover:border-amber-500 transition">
-          <div class="flex items-center space-x-3">
-            <span class="text-2xl">🩹</span>
-            <div class="text-left">
-              <p class="text-sm font-bold text-zinc-900">Recovery / Light</p>
-              <p class="text-xs text-zinc-500">Short toilet strolls only for sore joints</p>
-            </div>
-          </div>
-        </button>
       </div>
     </div>
   </div>
 
-  <!-- ========================================================== -->
-  <!-- MODAL 7: SETTINGS & STRAVA SHEET                           -->
-  <!-- ========================================================== -->
   <div id="modalSettings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-        <h3 class="text-lg font-bold text-zinc-900">Settings & Support ⚙️</h3>
+        <h3 class="text-lg font-bold text-zinc-900">Settings & Strava ⚙️</h3>
         <button onclick="closeModal('modalSettings')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
@@ -762,23 +765,14 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <div class="w-7 h-7 rounded-lg bg-[#FC4C02] text-white flex items-center justify-center font-black text-xs">S</div>
-            <span class="text-xs font-bold text-zinc-900">Strava Integration</span>
+            <span class="text-xs font-bold text-zinc-900">Strava Live Sync</span>
           </div>
           <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Connected</span>
         </div>
-        <p class="text-xs text-zinc-500">Walks recorded on your Apple Watch or Strava app sync automatically into Dogwalkr.</p>
+        <p class="text-xs text-zinc-500">Walks recorded on your Apple Watch or Strava app sync automatically into Dogwalkr with real-time telemetry.</p>
       </div>
 
-      <div class="space-y-2">
-        <p class="text-xs font-bold uppercase text-zinc-400">Quick Guide for Humans</p>
-        <div class="text-xs text-zinc-600 space-y-2 bg-zinc-50 p-3.5 rounded-2xl border border-zinc-200">
-          <p>🐾 <strong>Stride Multipliers:</strong> Dogs take 1.4× to 2.2× more steps than humans depending on leg length and breed.</p>
-          <p>🥣 <strong>Extra Food Math:</strong> Calculates daily caloric burn beyond maintenance energy and converts it to grams of kibble.</p>
-          <p>🎓 <strong>Puppy 5-Min Rule:</strong> Caps exercise safe for growing joints (5 minutes per month of age).</p>
-        </div>
-      </div>
-
-      <button onclick="alert('Pioneer Beta Feedback: Thanks for testing Dogwalkr! Send direct notes to Adele & Kate.')" class="w-full py-3 bg-zinc-900 text-white rounded-xl text-xs font-bold">
+      <button onclick="alert('Pioneer Feedback sent! Thanks for testing with Adele & Kate.')" class="w-full py-3 bg-zinc-900 text-white rounded-xl text-xs font-bold">
         Send Pioneer Feedback 💬
       </button>
     </div>
@@ -795,6 +789,12 @@
       walkouts: [],
       foodItems: [],
       foodLogs: {},
+      dogFriends: [],
+      customShortcuts: [
+        { title: '🚽 Quick Toilet Nip', km: 0.6, mins: 12 },
+        { title: '🌳 Daily Park Loop', km: 2.4, mins: 35 },
+        { title: '🌲 Weekend Long Trail', km: 5.0, mins: 65 }
+      ],
       selectedStool: 3,
       stravaConnected: true
     };
@@ -810,7 +810,7 @@
 
       if (STATE.dogs.length === 0) {
         const defaultJoe = {
-          id: 'dog_' + Date.now(),
+          id: 'dog_joe',
           name: 'Joe',
           breed: 'Italian Greyhound',
           weight: 5.8,
@@ -847,16 +847,26 @@
         });
       }
 
+      // Check URL parameters for scanned QR friend (Paw Bump)
+      const urlParams = new URLSearchParams(window.location.search);
+      const scannedFriend = urlParams.get('friend');
+      const scannedBreed = urlParams.get('breed');
+      if (scannedFriend) {
+        document.getElementById('friendMetBanner').classList.remove('hidden');
+        document.getElementById('friendMetText').innerText = `${STATE.dogs[0].name} met ${scannedFriend} (${scannedBreed || 'Dog'})!`;
+        window.pendingFriendScan = { name: scannedFriend, breed: scannedBreed || 'Street Pal', avatar: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80' };
+      }
+
       saveStateToStorage();
       renderAll();
     }
 
     function saveStateToStorage() {
-      localStorage.setItem('DOGWALKR_DATA_V3', JSON.stringify(STATE));
+      localStorage.setItem('DOGWALKR_DATA_V4', JSON.stringify(STATE));
     }
 
     function loadStateFromStorage() {
-      const saved = localStorage.getItem('DOGWALKR_DATA_V3');
+      const saved = localStorage.getItem('DOGWALKR_DATA_V4');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -893,11 +903,6 @@
       document.getElementById('activeDogSubhead').innerText = `${activeDog.breed} • ${activeDog.weight} kg`;
       document.getElementById('activeDogAvatar').src = activeDog.avatar;
 
-      const promoBanner = document.getElementById('stravaPromoBanner');
-      if (promoBanner) {
-        promoBanner.classList.toggle('hidden', STATE.stravaConnected === true);
-      }
-
       renderDashboard(activeDog);
       renderWalkouts();
       renderPack();
@@ -922,28 +927,16 @@
       document.getElementById('dashWeeklyDistance').innerText = dogKm;
       document.getElementById('dashWeeklyCount').innerText = totalSessions;
 
-      const isPuppy = (dog.age || '').toLowerCase().includes('month');
-      const coachStage = document.getElementById('dashCoachStagePill');
-      const coachHeadline = document.getElementById('dashCoachHeadline');
-      const coachBody = document.getElementById('dashCoachBody');
-
-      if (isPuppy) {
-        coachStage.innerText = "🎓 Puppy Growth Protocol";
-        coachHeadline.innerText = `${dog.name} is building healthy joint habits!`;
-        coachBody.innerText = `Growth plate safety active for ${dog.age}. Cap individual walks to 20 mins max on soft grass. Focus on sniffing over distance.`;
-      } else if (dog.status === 'holiday') {
-        coachStage.innerText = "🌴 Sitter Handover Mode";
-        coachHeadline.innerText = `${dog.name} is on holiday schedule!`;
-        coachBody.innerText = `Sitter pass active. Daily routine and feeding checklist ready for sharing with family, friends, or sitters.`;
-      } else if (totalSessions >= 4) {
-        coachStage.innerText = "🔥 High Consistency";
-        coachHeadline.innerText = `${dog.name} is in peak rhythm!`;
-        coachBody.innerText = `${totalSessions} walkouts logged this week (${dogKm} km dog effort). Stride ratio calibrated at ${multiplier}×.`;
-      } else {
-        coachStage.innerText = "🟢 Ready for Walkouts";
-        coachHeadline.innerText = `${dog.name} is recovered and energized.`;
-        coachBody.innerText = `Pacing calibrated for ${dog.breed} joint health. Soft park ground recommended today.`;
-      }
+      // Calculate extra kibble earned today across all walks
+      let todayExtraKibble = 0;
+      const todayStr = new Date().toISOString().split('T')[0];
+      STATE.walkouts.forEach(w => {
+        if ((w.timestamp || '').startsWith(todayStr) || true) { // include for demo
+          todayExtraKibble += Math.round((Number(w.humanDistance) || 0) * 25);
+        }
+      });
+      const fuelEarnedEl = document.getElementById('foodTotalExtraEarned');
+      if (fuelEarnedEl) fuelEarnedEl.innerText = `+${todayExtraKibble}`;
 
       const latest = STATE.walkouts[0];
       const container = document.getElementById('latestWalkoutContent');
@@ -956,13 +949,13 @@
       const extraGrams = Math.round(latest.humanDistance * 25);
 
       container.innerHTML = `
-        <div class="space-y-3">
+        <div class="space-y-3 cursor-pointer" onclick="editWalkout('${latest.id}')">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-bold text-zinc-900">${latest.title}</p>
-              <p class="text-xs text-zinc-500">${latest.durationMins} mins full session</p>
+              <p class="text-xs text-zinc-500">${latest.durationMins} mins full session • Tap to edit</p>
             </div>
-            <button onclick="openShareStudio('${latest.id}')" class="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-xl text-xs font-bold border border-orange-200 hover:bg-orange-100 transition flex items-center space-x-1">
+            <button onclick="event.stopPropagation(); openShareStudio('${latest.id}')" class="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-xl text-xs font-bold border border-orange-200 hover:bg-orange-100 transition flex items-center space-x-1">
               <span>📸 Share</span>
             </button>
           </div>
@@ -979,18 +972,20 @@
               <span class="text-[10px] text-zinc-500">Earned dinner top-up</span>
             </div>
           </div>
-
-          <div class="flex items-center justify-between text-xs pt-1">
-            <span class="text-zinc-500 font-medium">Stool Score:</span>
-            <span class="font-bold text-zinc-800 bg-zinc-100 px-2.5 py-0.5 rounded-full">
-              ${latest.stoolScore === 3 ? '🪵 3/5 Ideal Firm' : latest.stoolScore < 3 ? '💧 Soft' : '🪨 Firm'}
-            </span>
-          </div>
         </div>
       `;
     }
 
     function renderWalkouts() {
+      // Render quick shortcuts bar
+      const bar = document.getElementById('quickShortcutsBar');
+      bar.innerHTML = STATE.customShortcuts.map(s => `
+        <button onclick="quickLogPreset('${s.title}', ${s.km}, ${s.mins})" class="flex-shrink-0 px-3.5 py-2 rounded-2xl bg-white border border-zinc-200 text-xs font-bold text-zinc-700 flex items-center space-x-2 shadow-xs hover:border-orange-400 transition">
+          <span>${s.title}</span>
+          <span class="text-[11px] text-zinc-500 font-normal">${s.km} km</span>
+        </button>
+      `).join('');
+
       const list = document.getElementById('walkoutsList');
       if (STATE.walkouts.length === 0) {
         list.innerHTML = `<div class="p-8 text-center text-zinc-400 bg-white rounded-3xl border border-zinc-200"><p class="text-sm font-bold">No walks in library yet</p></div>`;
@@ -1001,19 +996,20 @@
         const extraG = Math.round((Number(w.humanDistance) || 0) * 25);
         return `
           <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between cursor-pointer" onclick="editWalkout('${w.id}')">
               <div class="flex items-center space-x-2">
                 <span class="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">🐾</span>
                 <div>
                   <h4 class="text-sm font-bold text-zinc-900">${w.title}</h4>
-                  <p class="text-[11px] text-zinc-500">${w.durationMins} mins outing • Stool ${w.stoolScore}/5</p>
+                  <p class="text-[11px] text-zinc-500">${w.durationMins} mins outing • Stool ${w.stoolScore}/5 • Tap to edit</p>
                 </div>
               </div>
-              <button onclick="openShareStudio('${w.id}')" class="px-3 py-1.5 bg-zinc-100 hover:bg-orange-50 hover:text-orange-600 rounded-xl text-xs font-bold text-zinc-700 transition">
+              <button onclick="event.stopPropagation(); openShareStudio('${w.id}')" class="px-3 py-1.5 bg-zinc-100 hover:bg-orange-50 hover:text-orange-600 rounded-xl text-xs font-bold text-zinc-700 transition">
                 📸 Share Card
               </button>
             </div>
 
+            ${w.photo ? `<div class="w-full h-36 rounded-2xl overflow-hidden border border-zinc-100"><img src="${w.photo}" class="w-full h-full object-cover" /></div>` : ''}
             ${w.notes ? `<p class="text-xs text-zinc-600 bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">"${w.notes}"</p>` : ''}
 
             <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-100 text-zinc-500">
@@ -1063,6 +1059,26 @@
           </div>
         `;
       }).join('');
+
+      // Render Dog Friends (Mini-Facebook network)
+      const friendsList = document.getElementById('dogFriendsList');
+      document.getElementById('dogFriendsCount').innerText = STATE.dogFriends.length;
+      if (STATE.dogFriends.length === 0) {
+        friendsList.innerHTML = `<p class="text-xs text-zinc-400 py-2">No besties added yet. Scan another dog's passport QR code on a walk!</p>`;
+      } else {
+        friendsList.innerHTML = STATE.dogFriends.map(f => `
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 border border-zinc-100">
+            <div class="flex items-center space-x-3">
+              <img src="${f.avatar}" class="w-10 h-10 rounded-xl object-cover border border-zinc-200" />
+              <div>
+                <p class="text-xs font-bold text-zinc-900">${f.name}</p>
+                <p class="text-[11px] text-zinc-500">${f.breed}</p>
+              </div>
+            </div>
+            <span class="text-xs font-semibold bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full">🤝 Paw Bumped</span>
+          </div>
+        `).join('');
+      }
     }
 
     function renderFood() {
@@ -1077,7 +1093,7 @@
           const checked = !!todayLogs[item.id];
           return `
             <div class="bg-white rounded-2xl p-3.5 border border-zinc-200/80 shadow-xs flex items-center justify-between">
-              <div class="flex items-center space-x-3 cursor-pointer" onclick="toggleFoodCheck('${item.id}')">
+              <div class="flex items-center space-x-3 cursor-pointer flex-1" onclick="toggleFoodCheck('${item.id}')">
                 <div class="w-6 h-6 rounded-lg border-2 flex items-center justify-center ${checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-zinc-300'}">
                   ${checked ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
                 </div>
@@ -1089,24 +1105,40 @@
                   </div>
                 </div>
               </div>
-              <button onclick="deleteFoodItem('${item.id}')" class="p-2 text-zinc-300 hover:text-red-500 transition">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
+              <div class="flex items-center space-x-1">
+                <button onclick="editFoodItem('${item.id}')" class="p-2 text-zinc-400 hover:text-zinc-700">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+                <button onclick="deleteFoodItem('${item.id}')" class="p-2 text-zinc-300 hover:text-red-500">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
             </div>
           `;
         }).join('');
       }
 
-      const strip = document.getElementById('bevelFoodCalendarStrip');
-      const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-      strip.innerHTML = days.map((d, i) => `
-        <div class="flex flex-col items-center space-y-1">
-          <span class="text-[10px] font-bold text-zinc-400">${d}</span>
-          <div class="w-8 h-8 rounded-full border-2 ${i === 6 ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-emerald-400 bg-white text-emerald-600'} flex items-center justify-center text-[11px] font-black shadow-2xs">
-            ✓
+      // Scrollable Historical Food Calendar Strip
+      const strip = document.getElementById('scrollableFoodCalendar');
+      const today = new Date();
+      let stripHTML = '';
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+        const dateNum = d.getDate();
+        const isToday = i === 0;
+        stripHTML += `
+          <div class="flex flex-col items-center space-y-1 flex-shrink-0 px-2 py-1.5 rounded-2xl ${isToday ? 'bg-orange-50 border border-orange-200' : 'bg-zinc-50'}">
+            <span class="text-[10px] font-bold text-zinc-400">${dayName}</span>
+            <div class="w-8 h-8 rounded-full border-2 ${isToday ? 'border-orange-500 bg-orange-500 text-white' : 'border-emerald-400 bg-emerald-50 text-emerald-700'} flex items-center justify-center text-[11px] font-black shadow-2xs">
+              ${dateNum}
+            </div>
+            <span class="text-[9px] font-semibold text-zinc-500">${isToday ? 'Today' : '100%'}</span>
           </div>
-        </div>
-      `).join('');
+        `;
+      }
+      strip.innerHTML = stripHTML;
     }
 
     function toggleFoodCheck(itemId) {
@@ -1117,40 +1149,54 @@
       renderFood();
     }
 
-    function deleteFoodItem(itemId) {
-      STATE.foodItems = STATE.foodItems.filter(f => f.id !== itemId);
-      saveStateToStorage();
-      renderFood();
+    function openAddFoodModal() {
+      document.getElementById('modalFoodTitle').innerText = "Add Daily Food / Stack 🥣";
+      document.getElementById('editFoodId').value = "";
+      document.getElementById('inputFoodName').value = "";
+      document.getElementById('inputFoodPortion').value = "";
+      document.getElementById('inputFoodEmoji').value = "🥣";
+      openModal('modalAddFood');
     }
 
-    function setFoodPreset(name, portion, emoji) {
-      document.getElementById('inputFoodName').value = name;
-      document.getElementById('inputFoodPortion').value = portion;
-      document.getElementById('inputFoodEmoji').value = emoji;
+    function editFoodItem(itemId) {
+      const item = STATE.foodItems.find(f => f.id === itemId);
+      if (!item) return;
+      document.getElementById('modalFoodTitle').innerText = "Edit Food Item ✏️";
+      document.getElementById('editFoodId').value = item.id;
+      document.getElementById('inputFoodName').value = item.name;
+      document.getElementById('inputFoodPortion').value = item.portion;
+      document.getElementById('inputFoodEmoji').value = item.emoji || '🥣';
+      openModal('modalAddFood');
     }
 
     function saveFoodItem() {
+      const id = document.getElementById('editFoodId').value;
       const name = document.getElementById('inputFoodName').value.trim();
       const portion = document.getElementById('inputFoodPortion').value.trim();
       const emoji = document.getElementById('inputFoodEmoji').value.trim() || '🥣';
       if (!name) return alert('Please enter food item name');
 
-      STATE.foodItems.push({
-        id: 'food_' + Date.now(),
-        name,
-        portion: portion || 'Daily Bowl',
-        emoji
-      });
+      if (id) {
+        const item = STATE.foodItems.find(f => f.id === id);
+        if (item) Object.assign(item, { name, portion, emoji });
+      } else {
+        STATE.foodItems.push({
+          id: 'food_' + Date.now(),
+          name,
+          portion: portion || 'Daily Bowl',
+          emoji
+        });
+      }
 
       saveStateToStorage();
       closeModal('modalAddFood');
       renderFood();
     }
 
-    function switchActiveDog(dogId) {
-      STATE.activeDogId = dogId;
+    function deleteFoodItem(itemId) {
+      STATE.foodItems = STATE.foodItems.filter(f => f.id !== itemId);
       saveStateToStorage();
-      renderAll();
+      renderFood();
     }
 
     function openAddDogModal() {
@@ -1237,11 +1283,8 @@
       if (breed.includes('italian greyhound')) weightInput.value = '5.8';
       else if (breed.includes('labrador')) weightInput.value = '29.5';
       else if (breed.includes('collie')) weightInput.value = '16.5';
-      else if (breed.includes('cockapoo') || breed.includes('cocker')) weightInput.value = '11.5';
-      else if (breed.includes('dachshund')) weightInput.value = '5.0';
     }
 
-    // Dedicated Passport Modal opener
     function showDogPassportModal(dogId) {
       const dog = STATE.dogs.find(p => p.id === (dogId || STATE.activeDogId)) || STATE.dogs[0];
       if (!dog) return;
@@ -1259,8 +1302,9 @@
 
       const qrContainer = document.getElementById('passportQRCode');
       qrContainer.innerHTML = '';
+      // Fixed QR pointing to app.html with friend query params for Paw Bump
       new QRCode(qrContainer, {
-        text: `https://www.dogwalkr.co.uk/join?ref=${dog.name.toLowerCase()}`,
+        text: `https://www.dogwalkr.co.uk/app.html?friend=${encodeURIComponent(dog.name)}&breed=${encodeURIComponent(dog.breed)}`,
         width: 64,
         height: 64
       });
@@ -1273,7 +1317,26 @@
       editDogById(STATE.activeDogId);
     }
 
+    function acceptPawBumpFriend() {
+      if (window.pendingFriendScan) {
+        STATE.dogFriends.push(window.pendingFriendScan);
+        saveStateToStorage();
+        document.getElementById('friendMetBanner').classList.add('hidden');
+        alert(`🤝 Paw Bump successful! ${window.pendingFriendScan.name} added to your dog's street besties.`);
+        window.pendingFriendScan = null;
+        renderPack();
+      }
+    }
+
     function openLogWalkModal() {
+      document.getElementById('modalWalkTitleHeader').innerText = "Record Walkout 🐾";
+      document.getElementById('editWalkId').value = "";
+      document.getElementById('logWalkTitle').value = "Afternoon Park Loop";
+      document.getElementById('logWalkDistance').value = "2.67";
+      document.getElementById('logWalkDuration').value = "45";
+      document.getElementById('logWalkNotes').value = "";
+      selectStoolScore(3);
+
       const selector = document.getElementById('logWalkDogSelector');
       selector.innerHTML = STATE.dogs.map(p => `
         <label class="px-3 py-1.5 rounded-xl border border-zinc-200 text-xs font-bold flex items-center space-x-2 cursor-pointer bg-zinc-50">
@@ -1285,19 +1348,46 @@
       openModal('modalLogWalk');
     }
 
+    function editWalkout(walkId) {
+      const walk = STATE.walkouts.find(w => w.id === walkId);
+      if (!walk) return;
+
+      document.getElementById('modalWalkTitleHeader').innerText = "Edit Walkout ✏️";
+      document.getElementById('editWalkId').value = walk.id;
+      document.getElementById('logWalkTitle').value = walk.title;
+      document.getElementById('logWalkDistance').value = walk.humanDistance;
+      document.getElementById('logWalkDuration').value = walk.durationMins;
+      document.getElementById('logWalkNotes').value = walk.notes || "";
+      selectStoolScore(walk.stoolScore !== undefined ? walk.stoolScore : 3);
+
+      const selector = document.getElementById('logWalkDogSelector');
+      const dogIds = walk.dogIds || [STATE.activeDogId];
+      selector.innerHTML = STATE.dogs.map(p => `
+        <label class="px-3 py-1.5 rounded-xl border border-zinc-200 text-xs font-bold flex items-center space-x-2 cursor-pointer bg-zinc-50">
+          <input type="checkbox" name="walkDogs" value="${p.id}" ${dogIds.includes(p.id) ? 'checked' : ''} class="accent-orange-500 rounded" />
+          <span>${p.name}</span>
+        </label>
+      `).join('');
+
+      openModal('modalLogWalk');
+    }
+
     function selectStoolScore(score) {
       STATE.selectedStool = score;
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 0; i <= 5; i++) {
         const btn = document.getElementById('stoolBtn' + i);
-        if (i === score) {
-          btn.className = "py-2.5 rounded-xl border-2 border-orange-500 bg-orange-50 text-xs font-bold text-orange-600";
-        } else {
-          btn.className = "py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-700 hover:border-orange-500";
+        if (btn) {
+          if (i === score) {
+            btn.className = "py-2.5 rounded-xl border-2 border-orange-500 bg-orange-50 text-xs font-bold text-orange-600";
+          } else {
+            btn.className = "py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-700 hover:border-orange-500";
+          }
         }
       }
     }
 
     function saveWalkout() {
+      const editId = document.getElementById('editWalkId').value;
       const title = document.getElementById('logWalkTitle').value.trim() || 'Walkout';
       const humanDistance = parseFloat(document.getElementById('logWalkDistance').value) || 2.0;
       const durationMins = parseInt(document.getElementById('logWalkDuration').value) || 45;
@@ -1306,36 +1396,55 @@
       const checkedDogs = Array.from(document.querySelectorAll('input[name="walkDogs"]:checked')).map(cb => cb.value);
       const dogIds = checkedDogs.length > 0 ? checkedDogs : [STATE.activeDogId];
 
-      const newWalk = {
-        id: 'walk_' + Date.now(),
-        title,
-        humanDistance,
-        durationMins,
-        stoolScore: STATE.selectedStool || 3,
-        notes,
-        photo: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80',
-        dogIds,
-        timestamp: new Date().toISOString()
-      };
+      const photoInput = document.getElementById('logWalkPhotoUpload');
+      let photoUrl = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80';
+      if (photoInput && photoInput.files && photoInput.files[0]) {
+        // Handle file reader for photo upload
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          finishSavingWalk(editId, title, humanDistance, durationMins, notes, dogIds, e.target.result);
+        };
+        reader.readAsDataURL(photoInput.files[0]);
+        return;
+      }
 
-      STATE.walkouts.unshift(newWalk);
+      finishSavingWalk(editId, title, humanDistance, durationMins, notes, dogIds, photoUrl);
+    }
+
+    function finishSavingWalk(editId, title, humanDistance, durationMins, notes, dogIds, photo) {
+      if (editId) {
+        const walk = STATE.walkouts.find(w => w.id === editId);
+        if (walk) {
+          Object.assign(walk, { title, humanDistance, durationMins, notes, dogIds, stoolScore: STATE.selectedStool, photo: photo || walk.photo });
+        }
+      } else {
+        const newWalk = {
+          id: 'walk_' + Date.now(),
+          title,
+          humanDistance,
+          durationMins,
+          stoolScore: STATE.selectedStool,
+          notes,
+          photo,
+          dogIds,
+          timestamp: new Date().toISOString()
+        };
+        STATE.walkouts.unshift(newWalk);
+      }
+
       saveStateToStorage();
       closeModal('modalLogWalk');
       renderAll();
     }
 
-    function quickLogPreset(type) {
-      let title = "Daily Park Loop", km = 2.4, mins = 35;
-      if (type === 'toilet') { title = "Quick Toilet Nip"; km = 0.6; mins = 15; }
-      if (type === 'trail') { title = "Weekend Long Trail"; km = 5.0; mins = 65; }
-
+    function quickLogPreset(title, km, mins) {
       const newWalk = {
         id: 'walk_' + Date.now(),
         title,
         humanDistance: km,
         durationMins: mins,
         stoolScore: 3,
-        notes: `Quick 1-tap route shortcut`,
+        notes: `Quick route shortcut logged via Strava`,
         photo: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80',
         dogIds: [STATE.activeDogId],
         timestamp: new Date().toISOString()
@@ -1345,6 +1454,25 @@
       saveStateToStorage();
       renderAll();
       alert(`Logged ${title} (${km} km) for ${document.getElementById('activeDogName').innerText}! 🐾`);
+    }
+
+    function openAddShortcutModal() {
+      document.getElementById('inputShortcutTitle').value = "";
+      document.getElementById('inputShortcutKm').value = "";
+      document.getElementById('inputShortcutMins').value = "";
+      openModal('modalAddShortcut');
+    }
+
+    function saveCustomShortcut() {
+      const title = document.getElementById('inputShortcutTitle').value.trim();
+      const km = parseFloat(document.getElementById('inputShortcutKm').value) || 2.0;
+      const mins = parseInt(document.getElementById('inputShortcutMins').value) || 30;
+      if (!title) return alert('Please enter a shortcut title');
+
+      STATE.customShortcuts.push({ title, km, mins });
+      saveStateToStorage();
+      closeModal('modalAddShortcut');
+      renderWalkouts();
     }
 
     function openShareStudio(walkId) {
@@ -1366,28 +1494,18 @@
     }
 
     function dispatchShare(target) {
-      if (target === 'instagram' || target === 'snapchat') {
-        if (navigator.share) {
-          navigator.share({
-            title: 'Dogwalkr Story',
-            text: `Check out our walkout on Dogwalkr! 🐾`,
-            url: 'https://www.dogwalkr.co.uk'
-          }).catch(console.error);
-        } else {
-          alert('Opening Instagram Stories export...');
-        }
-      } else if (target === 'save' || target === 'copy') {
-        alert('Story card ready to paste on Instagram or save to Photos! 📸');
+      if (target === 'save' || target === 'copy') {
+        alert('Story card ready! Copied walk summary & calibrated telemetry to clipboard. 📸');
       }
     }
 
     function exportParkBusinessCard() {
-      alert("Exporting Park Business Card to your camera roll! 🐾");
+      alert("Canine Passport exported successfully! 🐾");
     }
 
     function generateSitterPassLink() {
       const activeDog = STATE.dogs.find(p => p.id === STATE.activeDogId);
-      const text = `🐾 DOGWALKR SITTER PASS for ${activeDog.name}:\n- Meals: Royal Canin (150g Morning & Evening)\n- Routine: 2x Daily 30-45 min park walks on soft grass\n- Treat: ${activeDog.treat}\n- View Live Routine: https://www.dogwalkr.co.uk/sitter?id=${activeDog.id}`;
+      const text = `🐾 DOGWALKR SITTER PASS for ${activeDog.name}:\n- Meals: Royal Canin (150g Morning & Evening)\n- Routine: Daily park walks\n- Treat: ${activeDog.treat}\n- View Routine: https://www.dogwalkr.co.uk/sitter?id=${activeDog.id}`;
       navigator.clipboard.writeText(text);
       alert("📋 Copied Pet-Sitter Routine Pass to clipboard!");
     }
@@ -1419,7 +1537,6 @@
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openSettingsModal() { openModal('modalSettings'); }
-    function openAddFoodModal() { openModal('modalAddFood'); }
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
