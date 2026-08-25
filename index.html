@@ -1,221 +1,134 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="scroll-smooth">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dogwalkr — The Strava for Dogs (dogwalkr.co.uk)</title>
-  <!-- Tailwind CSS CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Dogwalkr 🐾 | The Smart Canine Companion for Strava</title>
+  
+  <meta name="description" content="Turn your everyday Strava walks into calibrated canine telemetry. Calculate dog stride multipliers, growth plate safety, and earned dinner bowl fuel." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#FFFFFF" />
+
+  <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Inter Font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
   <style>
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    .glow-strava {
-      box-shadow: 0 0 50px -10px rgba(252, 76, 2, 0.25);
-    }
-    .badge-blur {
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
   </style>
 </head>
-<body class="bg-black text-white min-h-screen antialiased selection:bg-[#FC4C02] selection:text-white flex flex-col justify-between overflow-x-hidden">
 
-  <!-- Subtle Ambient Glow -->
-  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-[#FC4C02]/15 blur-[140px] pointer-events-none rounded-full"></div>
+<body class="bg-zinc-950 text-zinc-100 flex flex-col min-h-screen selection:bg-orange-500 selection:text-white">
 
-  <!-- Navigation Bar -->
-  <header class="relative z-20 border-b border-zinc-900 bg-black/50 badge-blur">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="h-9 w-9 rounded-xl bg-[#FC4C02] flex items-center justify-center text-white shadow-lg shadow-orange-500/25">
-          <svg class="h-5 w-5 fill-white" viewBox="0 0 24 24">
-            <path d="M12 14c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm-6-2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-9-4c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-          </svg>
-        </div>
-        <span class="text-xl font-extrabold tracking-tight text-white">DOGWALKR<span class="text-[#FC4C02]">.</span></span>
-      </div>
+  <!-- TOP NAVIGATION BAR -->
+  <header class="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/80 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto w-full">
+    <a href="/" class="flex items-center space-x-2">
+      <span class="text-xl font-black tracking-tight text-white flex items-center">
+        DOGWALKR <span class="text-orange-500 ml-1">🐾</span>
+      </span>
+    </a>
 
-      <nav class="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-widest text-zinc-400">
-        <a href="#how-it-works" class="hover:text-white transition">How It Works</a>
-        <a href="#joint-safety" class="hover:text-white transition">Joint Safety</a>
-        <a href="#kibble-fuel" class="hover:text-white transition">Kibble Fuel</a>
-        <a href="#strava-sync" class="hover:text-white transition">Strava Sync</a>
-      </nav>
-
-      <div class="flex items-center gap-3">
-        <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800 text-zinc-300">
-          <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Beta v1.0
-        </span>
-      </div>
+    <div class="flex items-center space-x-3">
+      <a href="app.html" class="px-4 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-md transition transform active:scale-95">
+        Launch Web App 🚀
+      </a>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <main class="relative z-10 max-w-7xl mx-auto px-6 py-10 md:py-16 flex-grow flex items-center w-full">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center w-full">
-      
-      <!-- Left Column: Friendly & High-Tech Copy -->
-      <div class="lg:col-span-7 flex flex-col items-start text-left gap-5">
-        
-        <!-- Live Badges -->
-        <div class="flex flex-wrap items-center gap-2.5">
-          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#FC4C02]/10 border border-[#FC4C02]/30 text-[#FC4C02] text-xs font-bold uppercase tracking-wider">
-            <svg class="h-3.5 w-3.5 fill-[#FC4C02]" viewBox="0 0 24 24">
-              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7.008 13.828h4.172"/>
-            </svg>
-            STRAVA WEBHOOK API LIVE
-          </div>
-          <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-semibold">
-            ✨ Works with your phone’s GPS — no expensive collar needed
-          </span>
-        </div>
+  <!-- HERO SECTION -->
+  <main class="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-20 max-w-4xl mx-auto text-center space-y-8">
+    
+    <!-- Pioneer Badge -->
+    <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold">
+      <span>🐕 Pioneer Beta Program</span>
+      <span>•</span>
+      <span class="text-zinc-300">Free Access</span>
+    </div>
 
-        <!-- Headline -->
-        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05] text-white">
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-[#FC4C02] to-amber-500">Strava</span> for your dog.
-        </h1>
+    <!-- Main Headline -->
+    <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-white max-w-3xl leading-[1.1]">
+      Your Dog's Intelligent Companion to <span class="text-[#FC4C02]">Strava</span>.
+    </h1>
 
-        <!-- Subtitle -->
-        <p class="text-base sm:text-lg text-zinc-300 max-w-xl leading-relaxed">
-          Sync your regular walks and runs straight from Strava. Dogwalkr calculates your pup’s real exercise effort, protects their joints, tells you exactly how much extra kibble they earned, and gives you a cheeky debrief from their point of view.
-        </p>
+    <!-- Subheadline -->
+    <p class="text-base sm:text-lg text-zinc-400 max-w-2xl leading-relaxed">
+      Record your walks on your Apple Watch or Strava as normal. Dogwalkr transforms raw human steps into calibrated canine distance, puppy growth-plate protection, and extra dinner bowl fuel.
+    </p>
 
-        <form 
-        action="https://app.kit.com/forms/9842359/subscriptions" 
-        method="post" 
-        data-sv-form="9842359"
-        data-uid="2cb41d36aa"
-        class="flex flex-col sm:flex-row gap-2.5 w-full"
-      >
-        <input 
-          type="email" 
-          name="email_address" 
-          placeholder="Enter your email" 
-          required 
-          class="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3.5 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 text-sm font-medium"
-        />
-        <button 
-          type="submit" 
-          class="bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider px-6 py-3.5 rounded-xl transition shadow-lg shadow-orange-500/20 active:scale-95 shrink-0"
-        >
-          Join Beta →
-        </button>
-      </form>
-
-        <!-- Trust Badges -->
-        <div class="flex flex-wrap items-center gap-y-2 gap-x-5 pt-1 text-xs text-zinc-400 font-medium">
-          <div class="flex items-center gap-1.5">
-            <svg class="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Instant 1-Click Strava Sync</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <svg class="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Puppy to Senior Protection</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <svg class="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Free Early Access</span>
-          </div>
-        </div>
-
+    <!-- CTA & Fast Launch Box -->
+    <div class="w-full max-w-md bg-zinc-900/90 border border-zinc-800 p-6 rounded-3xl shadow-2xl space-y-4 text-left">
+      <div class="space-y-1">
+        <h2 class="text-sm font-bold text-white">Join as a Pioneer Tester</h2>
+        <p class="text-xs text-zinc-400">Launch the web app directly or register for exclusive feature updates.</p>
       </div>
 
-      <!-- Right Column: Live Athletic Telemetry HUD Card -->
-      <div class="lg:col-span-5 flex justify-center lg:justify-end w-full">
-        <div class="w-full max-w-sm rounded-3xl bg-zinc-950 border border-zinc-800/90 p-6 glow-strava relative overflow-hidden shadow-2xl">
-          
-          <!-- Activity Header -->
-          <div class="flex items-center justify-between pb-4 border-b border-zinc-900">
-            <div class="flex items-center gap-3">
-              <div class="h-10 w-10 rounded-full bg-[#FC4C02]/10 border border-[#FC4C02]/30 flex items-center justify-center text-lg shadow-inner">
-                🐾
-              </div>
-              <div>
-                <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Morning Trail Base Building</div>
-                <div class="text-sm font-bold text-white tracking-tight">Audrey • Whippet Cross (5.5kg)</div>
-              </div>
-            </div>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black bg-[#FC4C02] text-white tracking-wider">STRAVA</span>
-          </div>
+      <div class="flex flex-col sm:flex-row gap-2.5">
+        <a href="app.html" class="flex-1 py-3.5 bg-orange-500 hover:bg-orange-600 text-white text-center font-bold text-sm rounded-2xl shadow-lg transition flex items-center justify-center space-x-2">
+          <span>Open Web App</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+      </div>
 
-          <!-- Stride Telemetry Metric -->
-          <div class="grid grid-cols-2 gap-4 py-5 border-b border-zinc-900">
-            <div>
-              <div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Dog Distance (GPS Cadence)</div>
-              <div class="text-3xl font-black tracking-tight text-white mt-0.5">5.2 <span class="text-xs font-semibold text-zinc-400">km</span></div>
-              <div class="text-[10px] text-orange-400 font-medium mt-0.5">+2.2 km stride bonus</div>
-            </div>
-            <div>
-              <div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Human Walk</div>
-              <div class="text-3xl font-black tracking-tight text-zinc-400 mt-0.5">3.0 <span class="text-xs font-semibold text-zinc-400">km</span></div>
-              <div class="text-[10px] text-zinc-400 mt-0.5">32m • 5:24/km pace</div>
-            </div>
-          </div>
+      <p class="text-[11px] text-zinc-500 text-center">
+        Tip: Open in Safari on iPhone $\rightarrow$ tap <strong>Share</strong> $\rightarrow$ <strong>"Add to Home Screen"</strong> for the native experience.
+      </p>
+    </div>
 
-          <!-- Kibble Fuel Recovery -->
-          <div class="py-4 border-b border-zinc-900">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Post-Walk Fuel Top-Up</div>
-                <div class="text-2xl font-extrabold text-white mt-0.5">+42g <span class="text-xs font-normal text-zinc-400">kibble</span></div>
-              </div>
-              <div class="text-right">
-                <div class="text-[10px] text-zinc-400 uppercase tracking-wider">Energy Burn</div>
-                <div class="text-sm font-bold text-zinc-300">160 active kcal</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Joint & Thermal Safety Grid -->
-          <div class="grid grid-cols-3 gap-2 py-4 text-center">
-            <div class="p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800">
-              <div class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">Joints</div>
-              <div class="text-xs font-bold text-emerald-400 mt-0.5">Safe Cap</div>
-            </div>
-            <div class="p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800">
-              <div class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">Paw Temp</div>
-              <div class="text-xs font-bold text-emerald-400 mt-0.5">16°C (Cool)</div>
-            </div>
-            <div class="p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800">
-              <div class="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">Sniff Stops</div>
-              <div class="text-xs font-bold text-zinc-200 mt-0.5">14 stops</div>
-            </div>
-          </div>
-
-          <!-- First Person AI Debrief -->
-          <div class="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-[11px] text-zinc-300 italic leading-relaxed">
-            "Adele thought we only did 3km. My rapid stride logged 5.2km on the trail. Zone 2 base stable. Mum owes me 42g of kibble."
-          </div>
-
+    <!-- FEATURE PILL GRID -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full pt-8 text-left">
+      
+      <!-- Card 1: Stride Math -->
+      <div class="p-5 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-2">
+        <div class="w-10 h-10 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
+          <i data-lucide="footprints" class="w-5 h-5"></i>
         </div>
+        <h3 class="text-base font-bold text-white">Canine Stride Multipliers</h3>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          Short legs take more steps. Auto-calibrates effort ($1.44\times$ to $2.10\times$) so you see true dog distance instead of human mileage.
+        </p>
+      </div>
+
+      <!-- Card 2: Growth Plate & Runna Coaching -->
+      <div class="p-5 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-2">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+          <i data-lucide="activity" class="w-5 h-5"></i>
+        </div>
+        <h3 class="text-base font-bold text-white">Puppy Growth Plate Coach</h3>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          Protects developing joints with intelligent 5-minute rules, surface warnings, and dynamic daily readiness debriefs.
+        </p>
+      </div>
+
+      <!-- Card 3: Food Bowl & Strava Stories -->
+      <div class="p-5 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-2">
+        <div class="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+          <i data-lucide="utensils" class="w-5 h-5"></i>
+        </div>
+        <h3 class="text-base font-bold text-white">Dinner Fuel & 9:16 Stories</h3>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          Calculates exact extra kibble grams earned and exports Strava-inspired 9:16 story cards straight to Instagram.
+        </p>
       </div>
 
     </div>
+
   </main>
 
-  <!-- Footer -->
-  <footer class="relative z-10 border-t border-zinc-900 py-6 text-center text-xs text-zinc-400">
-    <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div>© 2026 Dogwalkr (`dogwalkr.co.uk`). All rights reserved.</div>
-      <div class="flex items-center gap-6">
-        <a href="#" class="hover:text-zinc-300 transition">Privacy Policy</a>
-        <a href="#" class="hover:text-zinc-300 transition">Terms of Service</a>
-        <a href="https://strava.com" target="_blank" class="hover:text-[#FC4C02] transition">Powered by Strava</a>
-      </div>
+  <!-- FOOTER -->
+  <footer class="border-t border-zinc-900 px-6 py-8 text-center text-xs text-zinc-600 max-w-6xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+    <p>© 2026 Dogwalkr. Designed with ❤️ for dogs and their humans.</p>
+    <div class="flex items-center space-x-4 text-zinc-500">
+      <a href="app.html" class="hover:text-white transition">Web App</a>
+      <a href="mailto:hello@dogwalkr.co.uk" class="hover:text-white transition">Contact</a>
     </div>
   </footer>
 
+  <script>
+    if (window.lucide) lucide.createIcons();
+  </script>
 </body>
 </html>
