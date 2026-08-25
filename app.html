@@ -39,7 +39,7 @@
   <!-- Mobile Frame Container -->
   <div id="appContainer" class="w-full max-w-[430px] min-h-screen bg-[#F2F2F7] flex flex-col relative pb-28 shadow-2xl overflow-x-hidden">
 
-    <!-- TOP APP BAR (Padded safely below iPhone status bar) -->
+    <!-- TOP APP BAR -->
     <header class="safe-top px-5 pb-3 bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-200/80 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="relative">
@@ -110,7 +110,7 @@
           </div>
         </div>
 
-        <!-- Daily Dog Coach (Food-free, strictly activity & pacing) -->
+        <!-- Daily Dog Coach (Activity & Pacing Only) -->
         <div class="bg-gradient-to-br from-orange-500 to-amber-600 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
           <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
           
@@ -142,7 +142,7 @@
       </section>
 
       <!-- ========================================================== -->
-      <!-- TAB 2: WALKOUTS (Streamlined Library & Manual Fallback)     -->
+      <!-- TAB 2: WALKOUTS (Workout Library)                          -->
       <!-- ========================================================== -->
       <section id="viewWalkouts" class="space-y-4 hidden">
         
@@ -157,7 +157,6 @@
           </button>
         </div>
 
-        <!-- Walkouts List -->
         <div id="walkoutsList" class="space-y-3">
           <!-- Populated by JS -->
         </div>
@@ -165,14 +164,14 @@
       </section>
 
       <!-- ========================================================== -->
-      <!-- TAB 3: THE PACK (Household & Birthday-Driven Age Tracking)  -->
+      <!-- TAB 3: THE PACK (Household & Birthdays)                    -->
       <!-- ========================================================== -->
       <section id="viewPack" class="space-y-4 hidden">
         
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-black text-zinc-900 tracking-tight">Household Pack</h2>
-            <p class="text-xs text-zinc-500">Adele Roberts & Kate Holderness</p>
+            <p id="packHouseholdSubtitle" class="text-xs text-zinc-500">Adele Roberts & Kate Holderness</p>
           </div>
           <button onclick="openAddDogModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
             <i data-lucide="plus" class="w-4 h-4"></i>
@@ -180,7 +179,6 @@
           </button>
         </div>
 
-        <!-- Pack Dogs List -->
         <div id="packCardsList" class="space-y-3">
           <!-- Populated by JS -->
         </div>
@@ -202,7 +200,7 @@
       </section>
 
       <!-- ========================================================== -->
-      <!-- TAB 4: FOOD 🥣 (Dog Bowl Fuel & Feeding Checklist)          -->
+      <!-- TAB 4: FOOD 🥣 (Dog Bowl Fuel & Feeding Routine)           -->
       <!-- ========================================================== -->
       <section id="viewFood" class="space-y-4 hidden">
         
@@ -220,8 +218,8 @@
         <!-- Scrollable Historical Food Calendar Strip -->
         <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-2">
           <div class="flex items-center justify-between text-xs font-bold text-zinc-700">
-            <span>7-Day Bowl Consistency</span>
-            <span id="foodAdherencePct" class="text-emerald-600 font-black">100% Adherence</span>
+            <span>7-Day Bowl Consistency (Tap day to view)</span>
+            <span id="foodSelectedDateLabel" class="text-orange-600 font-black">Today</span>
           </div>
           <div id="scrollableFoodCalendar" class="flex space-x-2 overflow-x-auto hide-scrollbar pt-1 pb-1">
             <!-- Scrollable days rendered by JS -->
@@ -245,11 +243,11 @@
           <span class="text-xs font-semibold text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-full">Synced</span>
         </div>
 
-        <!-- Daily Feeding Checklist -->
+        <!-- Daily Feeding Routine -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Today's Feeding Routine</span>
-            <span class="text-xs text-zinc-500" id="foodCurrentDateLabel">Today</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Feeding Routine Checklist</span>
+            <span class="text-xs text-zinc-500" id="foodRoutineDateHeader">Today</span>
           </div>
 
           <div id="foodStackList" class="space-y-2">
@@ -262,7 +260,7 @@
     </main>
 
     <!-- ========================================================== -->
-    <!-- BOTTOM TAB NAVIGATION BAR (Dog Bowl 🥣 Icon Branded)       -->
+    <!-- BOTTOM TAB NAVIGATION BAR                                  -->
     <!-- ========================================================== -->
     <nav class="safe-bottom fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/95 backdrop-blur-xl border-t border-zinc-200/80 px-4 pt-2 z-40 flex items-center justify-between">
       
@@ -276,10 +274,10 @@
         <span class="text-[10px] font-semibold mt-1">Walkouts</span>
       </button>
 
-      <!-- Center Action Button: Manual Walk Logger -->
+      <!-- Center Action Button: Clean White Paw Icon Inside Orange Block -->
       <div class="flex-1 flex justify-center -mt-5">
         <button onclick="openLogWalkModal()" aria-label="Log Walk" class="w-14 h-14 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 text-white shadow-lg flex items-center justify-center border-4 border-[#F2F2F7] active:scale-95 transition transform">
-          <i data-lucide="paw-print" class="w-7 h-7"></i>
+          <i data-lucide="paw-print" class="w-7 h-7 text-white"></i>
         </button>
       </div>
 
@@ -288,9 +286,11 @@
         <span class="text-[10px] font-semibold mt-1">The Pack</span>
       </button>
 
-      <!-- Food Tab using Dog Bowl Icon 🥣 -->
+      <!-- Food Tab Navigation Icon (Clean Dog Bowl representation) -->
       <button onclick="openTab('food')" id="navTabFood" class="flex-1 flex flex-col items-center py-1 text-zinc-400 tap-target">
-        <span class="text-lg leading-none">🥣</span>
+        <div class="w-5 h-5 flex items-center justify-center">
+          <i data-lucide="utensils-crossed" class="w-4 h-4"></i>
+        </div>
         <span class="text-[10px] font-semibold mt-1">Food</span>
       </button>
 
@@ -299,7 +299,7 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 1: ADD / EDIT DOG SHEET (With Birthday Selector)     -->
+  <!-- MODAL 1: ADD / EDIT DOG SHEET                              -->
   <!-- ========================================================== -->
   <div id="modalAddDog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -326,18 +326,18 @@
       <div class="space-y-3">
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Dog's Name</label>
-          <input type="text" id="inputDogName" placeholder="e.g. Joe, Bertie" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+          <input type="text" id="inputDogName" placeholder="e.g. Joe, Bertie" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
         </div>
 
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Breed</label>
-          <input type="text" id="inputDogBreed" placeholder="e.g. Italian Greyhound, Pug" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" onchange="autoSuggestWeight()" />
+          <input type="text" id="inputDogBreed" placeholder="e.g. Italian Greyhound, Pug" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" onchange="autoSuggestWeight()" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs font-bold text-zinc-700 uppercase">Weight (kg)</label>
-            <input type="number" step="0.1" id="inputDogWeight" placeholder="e.g. 5.8" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+            <input type="number" step="0.1" id="inputDogWeight" placeholder="e.g. 5.8" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
           </div>
           <div>
             <label class="text-xs font-bold text-zinc-700 uppercase">Date of Birth</label>
@@ -347,7 +347,7 @@
 
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Favourite Treat</label>
-          <input type="text" id="inputDogTreat" placeholder="e.g. Markies biscuits" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+          <input type="text" id="inputDogTreat" placeholder="e.g. Markies biscuits" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
         </div>
       </div>
 
@@ -388,7 +388,7 @@
           <div id="passportQRCode" class="bg-white p-2 rounded-xl shadow-xs"></div>
           <div class="text-[11px] text-zinc-400 leading-tight">
             <p class="font-bold text-white">Household Dog ID</p>
-            <p class="text-zinc-500 mt-0.5">Adele Roberts & Kate Holderness</p>
+            <p id="passportHouseholdText" class="text-zinc-500 mt-0.5">Adele & Kate</p>
             <p class="text-orange-400 font-semibold mt-1">dogwalkr.co.uk</p>
           </div>
         </div>
@@ -423,7 +423,7 @@
       <div class="space-y-3">
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Walkout Title</label>
-          <input type="text" id="logWalkTitle" value="Afternoon Park Loop" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+          <input type="text" id="logWalkTitle" placeholder="e.g. Afternoon Park Loop" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
         </div>
 
         <div>
@@ -434,11 +434,11 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs font-bold text-zinc-700 uppercase">Human Distance (km)</label>
-            <input type="number" step="0.01" id="logWalkDistance" value="2.67" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+            <input type="number" step="0.01" id="logWalkDistance" placeholder="e.g. 2.5" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
           </div>
           <div>
             <label class="text-xs font-bold text-zinc-700 uppercase">Total Outing (mins)</label>
-            <input type="number" id="logWalkDuration" value="45" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+            <input type="number" id="logWalkDuration" placeholder="e.g. 40" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
           </div>
         </div>
 
@@ -461,11 +461,10 @@
 
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Walk Notes</label>
-          <textarea id="logWalkNotes" rows="2" placeholder="e.g. Practiced loose-lead heelwork" class="w-full mt-1 p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-medium focus:outline-none focus:border-orange-500"></textarea>
+          <textarea id="logWalkNotes" rows="2" placeholder="e.g. Practiced loose-lead heelwork" class="w-full mt-1 p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-medium placeholder:text-zinc-400 focus:outline-none focus:border-orange-500"></textarea>
         </div>
       </div>
 
-      <!-- Clean button copy as requested -->
       <button onclick="saveWalkout()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-orange-600 transition">
         Save Walkout 🐾
       </button>
@@ -489,16 +488,16 @@
       <div class="space-y-3">
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Item Name</label>
-          <input type="text" id="inputFoodName" placeholder="e.g. Royal Canin / Salmon Oil" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+          <input type="text" id="inputFoodName" placeholder="e.g. Royal Canin / Salmon Oil" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs font-bold text-zinc-700 uppercase">Portion</label>
-            <input type="text" id="inputFoodPortion" placeholder="e.g. 150g Bowl" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+            <input type="text" id="inputFoodPortion" placeholder="e.g. 150g Bowl" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
           </div>
           <div>
-            <label class="text-xs font-bold text-zinc-700 uppercase">Emoji</label>
+            <label class="text-xs font-bold text-zinc-700 uppercase">Emoji / Icon</label>
             <input type="text" id="inputFoodEmoji" value="🥣" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm text-center font-bold focus:outline-none focus:border-orange-500" />
           </div>
         </div>
@@ -511,17 +510,25 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 5: SETTINGS & STRAVA OAUTH CONNECT                   -->
+  <!-- MODAL 5: SETTINGS & HOUSEHOLD & STRAVA OAUTH               -->
   <!-- ========================================================== -->
   <div id="modalSettings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-        <h3 class="text-lg font-bold text-zinc-900">Settings & Strava Sync ⚙️</h3>
+        <h3 class="text-lg font-bold text-zinc-900">Settings & Household ⚙️</h3>
         <button onclick="closeModal('modalSettings')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
+      <!-- Household Names Setup -->
+      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
+        <label class="text-xs font-bold text-zinc-900 uppercase">Household Owner Names</label>
+        <input type="text" id="inputHouseholdNames" value="Adele Roberts & Kate Holderness" class="w-full p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" onchange="saveHouseholdNames(this.value)" />
+        <p class="text-[11px] text-zinc-500">Displayed across your household pack and passport cards.</p>
+      </div>
+
+      <!-- Strava Sync Integration Toggle -->
       <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
@@ -531,14 +538,14 @@
           <span id="stravaBadgeStatus" class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Connected</span>
         </div>
         <p class="text-xs text-zinc-500">Connect your personal Strava account to auto-sync walks tagged with your household dogs.</p>
-        <button onclick="toggleStravaConnection()" id="stravaConnectBtn" class="w-full py-2.5 bg-zinc-900 text-white rounded-xl text-xs font-bold">
+        <button onclick="toggleStravaConnection()" id="stravaConnectBtn" class="w-full py-2.5 bg-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition">
           Disconnect / Reconnect Strava
         </button>
       </div>
 
-      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
+      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-1">
         <p class="text-xs font-bold text-zinc-900">Studio Fondue & Pioneer Beta</p>
-        <p class="text-xs text-zinc-500">Dogwalkr v1.0. Built for Adele Roberts & Kate Holderness.</p>
+        <p class="text-xs text-zinc-500">Dogwalkr v1.0. Built for mobile-first canine pacing.</p>
       </div>
     </div>
   </div>
@@ -576,12 +583,14 @@
     const STATE = {
       activeTab: 'dashboard',
       activeDogId: null,
+      householdNames: 'Adele Roberts & Kate Holderness',
       dogs: [],
       walkouts: [],
       foodItems: [],
       foodLogs: {},
       selectedStool: 3,
-      stravaConnected: true
+      stravaConnected: true,
+      selectedFoodDate: new Date().toISOString().split('T')[0]
     };
 
     function calculateStrideRatio(weightKg) {
@@ -656,11 +665,11 @@
     }
 
     function saveStateToStorage() {
-      localStorage.setItem('DOGWALKR_DATA_V5', JSON.stringify(STATE));
+      localStorage.setItem('DOGWALKR_DATA_V6', JSON.stringify(STATE));
     }
 
     function loadStateFromStorage() {
-      const saved = localStorage.getItem('DOGWALKR_DATA_V5');
+      const saved = localStorage.getItem('DOGWALKR_DATA_V6');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -695,6 +704,14 @@
       document.getElementById('activeDogSubhead').innerText = `${activeDog.breed} • ${activeDog.weight} kg`;
       document.getElementById('activeDogAvatar').src = activeDog.avatar;
 
+      const sub = document.getElementById('packHouseholdSubtitle');
+      if (sub) sub.innerText = STATE.householdNames;
+
+      const inputNames = document.getElementById('inputHouseholdNames');
+      if (inputNames && document.activeElement !== inputNames) {
+        inputNames.value = STATE.householdNames;
+      }
+
       renderDashboard(activeDog);
       renderWalkouts();
       renderPack();
@@ -719,7 +736,6 @@
       document.getElementById('dashWeeklyDistance').innerText = dogKm;
       document.getElementById('dashWeeklyCount').innerText = totalSessions;
 
-      // Smart walk-synced fuel math calculation
       let todayExtraKibble = 0;
       STATE.walkouts.forEach(w => {
         todayExtraKibble += Math.round((Number(w.humanDistance) || 0) * 25);
@@ -840,14 +856,17 @@
 
     function renderFood() {
       const list = document.getElementById('foodStackList');
-      const todayStr = new Date().toISOString().split('T')[0];
-      const todayLogs = STATE.foodLogs[todayStr] || {};
+      const targetDate = STATE.selectedFoodDate || new Date().toISOString().split('T')[0];
+      const dayLogs = STATE.foodLogs[targetDate] || {};
+
+      document.getElementById('foodSelectedDateLabel').innerText = targetDate === new Date().toISOString().split('T')[0] ? 'Today' : targetDate;
+      document.getElementById('foodRoutineDateHeader').innerText = targetDate;
 
       if (STATE.foodItems.length === 0) {
         list.innerHTML = `<p class="text-xs text-zinc-400 text-center py-6">No food items added.</p>`;
       } else {
         list.innerHTML = STATE.foodItems.map(item => {
-          const checked = !!todayLogs[item.id];
+          const checked = !!dayLogs[item.id];
           return `
             <div class="bg-white rounded-2xl p-3.5 border border-zinc-200/80 shadow-xs flex items-center justify-between">
               <div class="flex items-center space-x-3 cursor-pointer flex-1" onclick="toggleFoodCheck('${item.id}')">
@@ -876,26 +895,32 @@
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
         const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
         const dateNum = d.getDate();
-        const isToday = i === 0;
+        const isSelected = dateStr === targetDate;
         stripHTML += `
-          <div class="flex flex-col items-center space-y-1 flex-shrink-0 px-2 py-1.5 rounded-2xl ${isToday ? 'bg-orange-50 border border-orange-200' : 'bg-zinc-50'}">
-            <span class="text-[10px] font-bold text-zinc-400">${dayName}</span>
-            <div class="w-8 h-8 rounded-full border-2 ${isToday ? 'border-orange-500 bg-orange-500 text-white' : 'border-emerald-400 bg-emerald-50 text-emerald-700'} flex items-center justify-center text-[11px] font-black shadow-2xs">
+          <div onclick="selectFoodDate('${dateStr}')" class="flex flex-col items-center space-y-1 flex-shrink-0 px-2.5 py-2 rounded-2xl cursor-pointer transition ${isSelected ? 'bg-orange-500 text-white shadow-md' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100'}">
+            <span class="text-[10px] font-bold ${isSelected ? 'text-orange-100' : 'text-zinc-400'}">${dayName}</span>
+            <div class="w-8 h-8 rounded-full border-2 ${isSelected ? 'border-white bg-orange-600 text-white' : 'border-emerald-400 bg-emerald-50 text-emerald-700'} flex items-center justify-center text-[11px] font-black">
               ${dateNum}
             </div>
-            <span class="text-[9px] font-semibold text-zinc-500">${isToday ? 'Today' : '100%'}</span>
+            <span class="text-[9px] font-semibold ${isSelected ? 'text-orange-100' : 'text-zinc-500'}">${isSelected ? 'Active' : '100%'}</span>
           </div>
         `;
       }
       strip.innerHTML = stripHTML;
     }
 
+    function selectFoodDate(dateStr) {
+      STATE.selectedFoodDate = dateStr;
+      renderFood();
+    }
+
     function toggleFoodCheck(itemId) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (!STATE.foodLogs[todayStr]) STATE.foodLogs[todayStr] = {};
-      STATE.foodLogs[todayStr][itemId] = !STATE.foodLogs[todayStr][itemId];
+      const targetDate = STATE.selectedFoodDate || new Date().toISOString().split('T')[0];
+      if (!STATE.foodLogs[targetDate]) STATE.foodLogs[targetDate] = {};
+      STATE.foodLogs[targetDate][itemId] = !STATE.foodLogs[targetDate][itemId];
       saveStateToStorage();
       renderFood();
     }
@@ -910,13 +935,14 @@
     function saveFoodItem() {
       const name = document.getElementById('inputFoodName').value.trim();
       const portion = document.getElementById('inputFoodPortion').value.trim();
+      const emoji = document.getElementById('inputFoodEmoji').value.trim() || '🥣';
       if (!name) return alert('Please enter item name');
 
       STATE.foodItems.push({
         id: 'food_' + Date.now(),
         name,
         portion: portion || 'Daily Bowl',
-        emoji: '🥣'
+        emoji
       });
 
       saveStateToStorage();
@@ -1019,6 +1045,7 @@
       document.getElementById('passportCardName').innerText = dog.name;
       document.getElementById('passportCardBreed').innerText = `${dog.breed} • ${dog.weight} kg`;
       document.getElementById('passportCardAge').innerText = calculateAge(dog.dob);
+      document.getElementById('passportHouseholdText').innerText = STATE.householdNames;
 
       const qrContainer = document.getElementById('passportQRCode');
       qrContainer.innerHTML = '';
@@ -1039,9 +1066,9 @@
     function openLogWalkModal() {
       document.getElementById('modalWalkTitleHeader').innerText = "Record Walkout 🐾";
       document.getElementById('editWalkId').value = "";
-      document.getElementById('logWalkTitle').value = "Afternoon Park Walk";
-      document.getElementById('logWalkDistance').value = "2.5";
-      document.getElementById('logWalkDuration').value = "40";
+      document.getElementById('logWalkTitle').value = "";
+      document.getElementById('logWalkDistance').value = "";
+      document.getElementById('logWalkDuration').value = "";
       document.getElementById('logWalkNotes').value = "";
       selectStoolScore(3);
 
@@ -1104,8 +1131,8 @@
 
     function saveWalkout() {
       const editId = document.getElementById('editWalkId').value;
-      const title = document.getElementById('logWalkTitle').value.trim() || 'Walkout';
-      const humanDistance = parseFloat(document.getElementById('logWalkDistance').value) || 2.0;
+      const title = document.getElementById('logWalkTitle').value.trim() || 'Afternoon Park Walk';
+      const humanDistance = parseFloat(document.getElementById('logWalkDistance').value) || 2.5;
       const durationMins = parseInt(document.getElementById('logWalkDuration').value) || 40;
       const notes = document.getElementById('logWalkNotes').value.trim();
 
@@ -1158,6 +1185,14 @@
       document.getElementById('stravaBadgeStatus').innerText = STATE.stravaConnected ? "Connected" : "Disconnected";
       document.getElementById('stravaBadgeStatus').className = STATE.stravaConnected ? "text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full" : "text-[10px] font-bold bg-zinc-200 text-zinc-600 px-2 py-0.5 rounded-full";
       alert(STATE.stravaConnected ? "Strava OAuth connected successfully! 🐾" : "Strava disconnected.");
+    }
+
+    function saveHouseholdNames(newName) {
+      if (newName.trim()) {
+        STATE.householdNames = newName.trim();
+        saveStateToStorage();
+        renderAll();
+      }
     }
 
     function handlePhotoUpload(event, previewId) {
