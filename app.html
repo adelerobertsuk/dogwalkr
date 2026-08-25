@@ -14,8 +14,6 @@
   <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Canvas library for crisp Story/Passport exports -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <!-- QR Code generation library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -33,16 +31,6 @@
     }
     .safe-top { padding-top: max(env(safe-area-inset-top), 16px); }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 24px); }
-    .glass-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-    }
-    .glass-dark {
-      background: rgba(28, 28, 30, 0.85);
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-    }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .tap-target { min-height: 48px; min-width: 48px; }
@@ -58,17 +46,17 @@
     <header class="safe-top px-5 pt-3 pb-3 bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-200/80 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="relative">
-          <button onclick="openPupPassportModal()" aria-label="Open Pup Passport" class="w-11 h-11 rounded-full overflow-hidden border-2 border-orange-500 shadow-sm flex items-center justify-center bg-orange-100">
-            <img id="activePupAvatar" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80" alt="Dog Avatar" class="w-full h-full object-cover" />
+          <button onclick="showDogPassportModal()" aria-label="Open Dog Passport" class="w-11 h-11 rounded-full overflow-hidden border-2 border-orange-500 shadow-sm flex items-center justify-center bg-orange-100">
+            <img id="activeDogAvatar" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80" alt="Dog Avatar" class="w-full h-full object-cover" />
           </button>
-          <span id="activePupStatusDot" class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+          <span id="activeDogStatusDot" class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
         </div>
         <div>
-          <div class="flex items-center space-x-1.5 cursor-pointer" onclick="openPackModal()">
-            <h1 id="activePupName" class="text-lg font-bold text-zinc-900 tracking-tight">Joe</h1>
+          <div class="flex items-center space-x-1.5 cursor-pointer" onclick="openPackTab()">
+            <h1 id="activeDogName" class="text-lg font-bold text-zinc-900 tracking-tight">Joe</h1>
             <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-500"></i>
           </div>
-          <p id="activePupSubhead" class="text-xs font-medium text-zinc-500">Italian Greyhound • Active 🟢</p>
+          <p id="activeDogSubhead" class="text-xs font-medium text-zinc-500">Italian Greyhound • Active 🟢</p>
         </div>
       </div>
 
@@ -92,7 +80,7 @@
       <!-- ========================================================== -->
       <section id="viewDashboard" class="space-y-4 block">
 
-        <!-- Weekly Activity Strip (Human-friendly 2-metric layout) -->
+        <!-- Weekly Activity Strip -->
         <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Weekly Movement</span>
@@ -103,7 +91,7 @@
             <div class="bg-zinc-50 rounded-2xl p-3.5 border border-zinc-100">
               <div class="flex items-center space-x-1.5 text-zinc-500 mb-1">
                 <i data-lucide="paw-print" class="w-4 h-4 text-orange-500"></i>
-                <span class="text-xs font-semibold">Pup Distance</span>
+                <span class="text-xs font-semibold">Dog Distance</span>
               </div>
               <div class="flex items-baseline space-x-1">
                 <span id="dashWeeklyDistance" class="text-2xl font-black text-zinc-900">0.0</span>
@@ -126,15 +114,15 @@
           </div>
         </div>
 
-        <!-- Smart Ambient Canine Coach & Debrief (Runna-style intelligence) -->
+        <!-- Smart Ambient Canine Coach & Debrief -->
         <div class="bg-gradient-to-br from-orange-500 to-amber-600 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
           <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
           
           <div class="flex items-center justify-between mb-2.5">
             <div class="flex items-center space-x-2">
-              <span class="bg-white/20 text-white text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider backdrop-blur-sm">Daily Canine Coach</span>
+              <span class="bg-white/20 text-white text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider backdrop-blur-sm">Daily Dog Coach</span>
             </div>
-            <span id="dashCoachStagePill" class="text-xs font-medium text-orange-100">Adult Training</span>
+            <span id="dashCoachStagePill" class="text-xs font-medium text-orange-100">Adult Routine</span>
           </div>
 
           <h2 id="dashCoachHeadline" class="text-lg font-bold leading-tight mb-1">Joe is recovered and ready for walkouts!</h2>
@@ -148,7 +136,7 @@
           </div>
         </div>
 
-        <!-- Latest Walkout Card (With Stool Score & Biometrics) -->
+        <!-- Latest Walkout Card -->
         <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm space-y-3">
           <div class="flex items-center justify-between">
             <h3 class="text-base font-bold text-zinc-900">Latest Walkout</h3>
@@ -156,19 +144,19 @@
           </div>
 
           <div id="latestWalkoutContent">
-            <!-- Populated via JS or shows empty state -->
+            <!-- Populated via JS -->
           </div>
         </div>
 
-        <!-- Strava Companion Value Callout -->
-        <div class="bg-zinc-100 rounded-2xl p-4 border border-zinc-200 flex items-center justify-between">
+        <!-- Strava Promo Banner (Auto-Hides When Connected) -->
+        <div id="stravaPromoBanner" class="bg-zinc-100 rounded-2xl p-4 border border-zinc-200 flex items-center justify-between hidden">
           <div class="flex items-center space-x-3">
             <div class="w-10 h-10 rounded-xl bg-[#FC4C02] text-white flex items-center justify-center font-black text-sm shadow-sm">
               S
             </div>
             <div>
               <p class="text-xs font-bold text-zinc-900">Intelligent Strava Companion</p>
-              <p class="text-[11px] text-zinc-500">Record on your watch or Strava as normal. We handle pup telemetry.</p>
+              <p class="text-[11px] text-zinc-500">Record on your watch or Strava as normal. We handle dog telemetry.</p>
             </div>
           </div>
           <button onclick="openSettingsModal()" class="px-3 py-1.5 bg-white border border-zinc-200 text-xs font-bold text-zinc-800 rounded-xl shadow-xs hover:bg-zinc-50 transition">
@@ -194,7 +182,7 @@
           </button>
         </div>
 
-        <!-- Quick Route Presets Bar (1-Tap for frequent walks) -->
+        <!-- Quick Route Presets Bar -->
         <div class="space-y-1.5">
           <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Quick Route Shortcuts</p>
           <div class="flex space-x-2 overflow-x-auto hide-scrollbar pb-1">
@@ -232,7 +220,7 @@
           </div>
           <button onclick="openAddDogModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
             <i data-lucide="plus" class="w-4 h-4"></i>
-            <span>Add Pup</span>
+            <span>Add Dog</span>
           </button>
         </div>
 
@@ -249,9 +237,9 @@
             </span>
             <span class="text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full">PRO</span>
           </div>
-          <h3 class="text-sm font-bold text-zinc-900">Leaving your pup with friends or a sitter?</h3>
+          <h3 class="text-sm font-bold text-zinc-900">Leaving your dog with friends or a sitter?</h3>
           <p class="text-xs text-zinc-600 leading-relaxed">
-            Generate a secure link so family (like Vicky) or dog sitters can view feeding routines and log walks without creating an account.
+            Generate a secure link so family, friends, or dog sitters can view feeding routines and log walks without creating an account.
           </p>
           <button onclick="generateSitterPassLink()" class="mt-2 w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-xs">
             📋 Copy Pet-Sitter Routine Pass
@@ -316,7 +304,7 @@
           </div>
         </div>
 
-        <!-- Future Feature Callout: Food Bag Label Scanner -->
+        <!-- Future Feature Callout -->
         <div class="bg-zinc-100 rounded-2xl p-4 border border-zinc-200 flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <div class="w-9 h-9 rounded-xl bg-zinc-200 flex items-center justify-center text-zinc-700">
@@ -375,12 +363,12 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 1: ADD / EDIT DOG SHEET (Passport Setup)             -->
+  <!-- MODAL 1: ADD / EDIT DOG SHEET                              -->
   <!-- ========================================================== -->
   <div id="modalAddDog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-        <h3 id="modalDogTitle" class="text-lg font-bold text-zinc-900">Add New Pup 🐾</h3>
+        <h3 id="modalDogTitle" class="text-lg font-bold text-zinc-900">Add New Dog 🐾</h3>
         <button onclick="closeModal('modalAddDog')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
@@ -389,7 +377,7 @@
       <!-- Photo Picker -->
       <div class="flex flex-col items-center space-y-2">
         <div class="relative w-24 h-24 rounded-full overflow-hidden border-2 border-orange-500 shadow-sm bg-zinc-100 flex items-center justify-center">
-          <img id="previewDogPhoto" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80" alt="Pup Preview" class="w-full h-full object-cover" />
+          <img id="previewDogPhoto" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80" alt="Dog Preview" class="w-full h-full object-cover" />
           <label for="dogPhotoUpload" class="absolute inset-0 bg-black/30 flex items-center justify-center cursor-pointer text-white opacity-90 hover:opacity-100">
             <i data-lucide="camera" class="w-6 h-6"></i>
           </label>
@@ -398,10 +386,8 @@
         <span class="text-xs text-zinc-500 font-medium">Tap photo to change</span>
       </div>
 
-      <!-- Hidden Dog ID field for Editing -->
       <input type="hidden" id="editDogId" value="" />
 
-      <!-- Form Fields -->
       <div class="space-y-3">
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Dog's Name</label>
@@ -451,28 +437,26 @@
         </div>
       </div>
 
-      <button onclick="savePupProfile()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-orange-600 transition">
+      <button onclick="saveDogProfile()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-orange-600 transition">
         Save Dog Profile 🐾
       </button>
     </div>
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 2: FULL-SCREEN CANINE PASSPORT & PARK BUSINESS CARD -->
+  <!-- MODAL 2: CANINE PASSPORT & PARK BUSINESS CARD              -->
   <!-- ========================================================== -->
-  <div id="modalPupPassport" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div id="modalDogPassport" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-[#F2F2F7] rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[92vh] overflow-y-auto">
       
       <div class="flex items-center justify-between">
         <span class="text-xs font-bold uppercase tracking-wider text-orange-600 bg-orange-100 px-3 py-1 rounded-full">Canine Digital Passport</span>
-        <button onclick="closeModal('modalPupPassport')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
+        <button onclick="closeModal('modalDogPassport')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <!-- Exportable Story / Park Card Container -->
-      <div id="exportableParkCard" class="bg-gradient-to-br from-zinc-900 via-zinc-950 to-neutral-900 text-white rounded-3xl p-6 space-y-4 shadow-xl border border-zinc-800 relative overflow-hidden">
-        
+      <div class="bg-gradient-to-br from-zinc-900 via-zinc-950 to-neutral-900 text-white rounded-3xl p-6 space-y-4 shadow-xl border border-zinc-800">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <span class="text-orange-500 font-black text-sm tracking-tight">DOGWALKR 🐾</span>
@@ -481,7 +465,7 @@
         </div>
 
         <div class="flex items-center space-x-4">
-          <img id="passportCardAvatar" src="" alt="Pup" class="w-20 h-20 rounded-2xl object-cover border-2 border-orange-500 shadow-md" />
+          <img id="passportCardAvatar" src="" alt="Dog" class="w-20 h-20 rounded-2xl object-cover border-2 border-orange-500 shadow-md" />
           <div>
             <h3 id="passportCardName" class="text-2xl font-black text-white leading-tight">Joe</h3>
             <p id="passportCardBreed" class="text-xs font-semibold text-zinc-400">Italian Greyhound • 5.8 kg</p>
@@ -504,7 +488,6 @@
           </div>
         </div>
 
-        <!-- Built-in QR Code for Park Sharing / Referral -->
         <div class="flex items-center space-x-3 pt-1">
           <div id="passportQRCode" class="bg-white p-2 rounded-xl shadow-xs"></div>
           <div class="text-[11px] text-zinc-400 leading-tight">
@@ -513,16 +496,14 @@
             <p class="text-orange-400 font-semibold mt-1">dogwalkr.co.uk</p>
           </div>
         </div>
-
       </div>
 
-      <!-- Action Buttons for Card -->
       <div class="grid grid-cols-2 gap-3">
         <button onclick="exportParkBusinessCard()" class="py-3.5 bg-orange-500 text-white rounded-2xl text-xs font-bold shadow-sm hover:bg-orange-600 transition flex items-center justify-center space-x-1.5">
           <i data-lucide="share-2" class="w-4 h-4"></i>
           <span>Share to Instagram</span>
         </button>
-        <button onclick="editActivePup()" class="py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold shadow-xs hover:bg-zinc-50 transition flex items-center justify-center space-x-1.5">
+        <button onclick="editActiveDog()" class="py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold shadow-xs hover:bg-zinc-50 transition flex items-center justify-center space-x-1.5">
           <i data-lucide="pencil" class="w-4 h-4"></i>
           <span>Edit Profile</span>
         </button>
@@ -532,7 +513,7 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 3: LOG WALKOUT (With Multi-Pup Tagging & Memories)   -->
+  <!-- MODAL 3: LOG WALKOUT                                       -->
   <!-- ========================================================== -->
   <div id="modalLogWalk" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -543,19 +524,15 @@
         </button>
       </div>
 
-      <!-- Form Core -->
       <div class="space-y-3">
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Walkout Title</label>
           <input type="text" id="logWalkTitle" value="Afternoon Park Loop" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
         </div>
 
-        <!-- Multi-Dog Selection Selector -->
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Who Came Along?</label>
-          <div id="logWalkPupSelector" class="flex flex-wrap gap-2 mt-1.5">
-            <!-- Dynamically populated checkboxes for household pups -->
-          </div>
+          <div id="logWalkDogSelector" class="flex flex-wrap gap-2 mt-1.5"></div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -564,12 +541,11 @@
             <input type="number" step="0.01" id="logWalkDistance" value="2.67" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
           </div>
           <div>
-            <label class="text-xs font-bold text-zinc-700 uppercase">Duration (mins)</label>
-            <input type="number" id="logWalkDuration" value="35" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
+            <label class="text-xs font-bold text-zinc-700 uppercase">Total Outing (mins)</label>
+            <input type="number" id="logWalkDuration" value="45" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
           </div>
         </div>
 
-        <!-- Stool Quality Score (1-5 Visual Selector) -->
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Stool Quality Score</label>
           <div class="grid grid-cols-5 gap-1.5 mt-1.5 text-center">
@@ -581,16 +557,9 @@
           </div>
         </div>
 
-        <!-- Notes / Walk Diary -->
         <div>
           <label class="text-xs font-bold text-zinc-700 uppercase">Walk Notes & Memories</label>
-          <textarea id="logWalkNotes" rows="2" placeholder="e.g. Joe met a golden retriever and practiced loose-lead heelwork" class="w-full mt-1 p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-medium focus:outline-none focus:border-orange-500"></textarea>
-        </div>
-
-        <!-- Walk Photo Upload -->
-        <div>
-          <label class="text-xs font-bold text-zinc-700 uppercase">Attach Walk Photo</label>
-          <input type="file" id="logWalkPhotoInput" accept="image/*" class="w-full mt-1 text-xs text-zinc-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" />
+          <textarea id="logWalkNotes" rows="2" placeholder="e.g. Practiced loose-lead heelwork and sniff stimulation in the long grass" class="w-full mt-1 p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-medium focus:outline-none focus:border-orange-500"></textarea>
         </div>
       </div>
 
@@ -612,39 +581,32 @@
       </button>
     </div>
 
-    <!-- 9:16 Canvas Frame -->
     <div class="relative w-full max-w-[340px] aspect-[9/16] bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl border border-zinc-800" id="shareCanvasStory">
-      
-      <!-- Background Image -->
       <img id="shareStoryBgImage" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80" alt="Walkout" class="w-full h-full object-cover" />
-      
-      <!-- Gradient Tint Overlay for contrast -->
       <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80"></div>
 
-      <!-- Top HUD Badge -->
       <div class="absolute top-6 left-5 right-5 flex items-center justify-between">
         <div class="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center space-x-1.5 text-xs font-black tracking-tight">
           <span class="text-orange-400 font-bold">DOGWALKR</span>
           <span>🐾</span>
         </div>
-        <span id="shareStoryDatePill" class="text-[11px] font-semibold text-zinc-200 bg-black/30 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/10">Today 14:19</span>
+        <span class="text-[11px] font-semibold text-zinc-200 bg-black/30 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/10">Today 14:19</span>
       </div>
 
-      <!-- Bottom Frosted Athlete Stats Overlay -->
       <div class="absolute bottom-6 left-4 right-4 bg-black/60 backdrop-blur-xl border border-white/15 rounded-3xl p-4 text-white space-y-2.5">
         <div>
           <h4 id="shareStoryTitle" class="text-base font-black leading-tight text-white">Afternoon Parkland Trail</h4>
-          <p id="shareStorySubtitle" class="text-xs font-medium text-zinc-300" id="shareStoryPupTag">Joe • Italian Greyhound</p>
+          <p id="shareStorySubtitle" class="text-xs font-medium text-zinc-300">Joe • Italian Greyhound</p>
         </div>
 
         <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
           <div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Pup Distance</span>
-            <p id="shareStoryDistance" class="text-xl font-black text-white">6.91 km</p>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Dog Distance</span>
+            <p id="shareStoryDistance" class="text-xl font-black text-white">3.84 km</p>
           </div>
           <div>
             <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Extra Fuel Earned</span>
-            <p id="shareStoryFuel" class="text-xl font-black text-amber-400">+68g Kibble</p>
+            <p id="shareStoryFuel" class="text-xl font-black text-amber-400">+67g Kibble</p>
           </div>
         </div>
 
@@ -653,10 +615,8 @@
           <span>Calibrated Telemetry</span>
         </div>
       </div>
-
     </div>
 
-    <!-- 1-Tap Target Share Buttons (Strava Inspired) -->
     <div class="w-full max-w-[340px] space-y-3 pt-3">
       <div class="grid grid-cols-4 gap-2 text-center text-white text-[11px] font-medium">
         <button onclick="dispatchShare('instagram')" class="flex flex-col items-center space-y-1">
@@ -703,7 +663,6 @@
         </button>
       </div>
 
-      <!-- Quick Preset Chips -->
       <div class="space-y-1.5">
         <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Quick Presets</p>
         <div class="flex flex-wrap gap-1.5">
@@ -741,19 +700,19 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 6: STATUS SELECTOR SHEET (Bevel Inspired)             -->
+  <!-- MODAL 6: STATUS SELECTOR SHEET                             -->
   <!-- ========================================================== -->
   <div id="modalStatus" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-        <h3 class="text-lg font-bold text-zinc-900">Pup Activity Status</h3>
+        <h3 class="text-lg font-bold text-zinc-900">Dog Activity Status</h3>
         <button onclick="closeModal('modalStatus')" class="p-2 text-zinc-400 hover:text-zinc-700 tap-target">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
       <div class="space-y-2">
-        <button onclick="setPupStatus('active', '🟢', 'Active & Ready')" class="w-full p-4 rounded-2xl border border-zinc-200 flex items-center justify-between hover:border-emerald-500 transition">
+        <button onclick="setDogStatus('active', '🟢', 'Active & Ready')" class="w-full p-4 rounded-2xl border border-zinc-200 flex items-center justify-between hover:border-emerald-500 transition">
           <div class="flex items-center space-x-3">
             <span class="text-2xl">🟢</span>
             <div class="text-left">
@@ -764,7 +723,7 @@
           <i data-lucide="check" class="w-5 h-5 text-emerald-500"></i>
         </button>
 
-        <button onclick="setPupStatus('holiday', '🌴', 'On Holiday / Sitter')" class="w-full p-4 rounded-2xl border border-zinc-200 flex items-center justify-between hover:border-blue-500 transition">
+        <button onclick="setDogStatus('holiday', '🌴', 'On Holiday / Sitter')" class="w-full p-4 rounded-2xl border border-zinc-200 flex items-center justify-between hover:border-blue-500 transition">
           <div class="flex items-center space-x-3">
             <span class="text-2xl">🌴</span>
             <div class="text-left">
@@ -774,7 +733,7 @@
           </div>
         </button>
 
-        <button onclick="setPupStatus('rest', '🩹', 'Recovery / Light')" class="w-full p-4 rounded-2xl border border-zinc-200 flex items-center justify-between hover:border-amber-500 transition">
+        <button onclick="setDogStatus('rest', '🩹', 'Recovery / Light')" class="w-full p-4 rounded-2xl border border-zinc-200 flex items-center justify-between hover:border-amber-500 transition">
           <div class="flex items-center space-x-3">
             <span class="text-2xl">🩹</span>
             <div class="text-left">
@@ -788,7 +747,7 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- MODAL 7: SETTINGS & STRAVA SYNC SHEET                       -->
+  <!-- MODAL 7: SETTINGS & STRAVA SHEET                           -->
   <!-- ========================================================== -->
   <div id="modalSettings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -799,7 +758,6 @@
         </button>
       </div>
 
-      <!-- Strava Sync Status -->
       <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
@@ -811,7 +769,6 @@
         <p class="text-xs text-zinc-500">Walks recorded on your Apple Watch or Strava app sync automatically into Dogwalkr.</p>
       </div>
 
-      <!-- How It Works (Accessible Guide) -->
       <div class="space-y-2">
         <p class="text-xs font-bold uppercase text-zinc-400">Quick Guide for Humans</p>
         <div class="text-xs text-zinc-600 space-y-2 bg-zinc-50 p-3.5 rounded-2xl border border-zinc-200">
@@ -828,35 +785,32 @@
   </div>
 
   <!-- ========================================================== -->
-  <!-- JAVASCRIPT STATE ENGINE & INTERACTION LOGIC                -->
+  <!-- JAVASCRIPT STATE ENGINE                                    -->
   <!-- ========================================================== -->
   <script>
-    // --- STATE DATA STRUCTURES ---
     const STATE = {
       activeTab: 'dashboard',
-      activePupId: null,
-      pups: [],
+      activeDogId: null,
+      dogs: [],
       walkouts: [],
       foodItems: [],
-      foodLogs: {}, // date keyed checkmarks { '2026-08-25': { itemId: true } }
-      selectedStool: 3
+      foodLogs: {},
+      selectedStool: 3,
+      stravaConnected: true
     };
 
-    // Stride ratio lookup based on weight/breed
     function calculateStrideRatio(weightKg) {
-      if (weightKg < 8) return 1.44; // Italian Greyhound, Jack Russell
-      if (weightKg < 18) return 1.72; // Cocker Spaniel, Border Collie
-      return 2.10; // Labrador, Retriever
+      if (weightKg < 8) return 1.44;
+      if (weightKg < 18) return 1.72;
+      return 2.10;
     }
 
-    // Default Initialization
     function initApp() {
       loadStateFromStorage();
 
-      // If no pups exist, create Joe as default
-      if (STATE.pups.length === 0) {
+      if (STATE.dogs.length === 0) {
         const defaultJoe = {
-          id: 'pup_' + Date.now(),
+          id: 'dog_' + Date.now(),
           name: 'Joe',
           breed: 'Italian Greyhound',
           weight: 5.8,
@@ -867,11 +821,10 @@
           status: 'active',
           avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80'
         };
-        STATE.pups.push(defaultJoe);
-        STATE.activePupId = defaultJoe.id;
+        STATE.dogs.push(defaultJoe);
+        STATE.activeDogId = defaultJoe.id;
       }
 
-      // If no food items exist, setup default stack
       if (STATE.foodItems.length === 0) {
         STATE.foodItems = [
           { id: 'food_1', name: 'Royal Canin Adult', portion: '150g Bowl', emoji: '🥣' },
@@ -880,17 +833,16 @@
         ];
       }
 
-      // If no walkouts exist, seed 1 initial walk
       if (STATE.walkouts.length === 0) {
         STATE.walkouts.push({
           id: 'walk_' + Date.now(),
-          title: 'Morning Parkland Trail Shakeout',
+          title: 'Morning Parkland Trail Outing',
           humanDistance: 2.67,
-          durationMins: 35,
+          durationMins: 45,
           stoolScore: 3,
           notes: 'Joe had great loose lead pacing across the park grass.',
           photo: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80',
-          pupIds: [STATE.activePupId || STATE.pups[0].id],
+          dogIds: [STATE.activeDogId || STATE.dogs[0].id],
           timestamp: new Date().toISOString()
         });
       }
@@ -899,7 +851,6 @@
       renderAll();
     }
 
-    // --- STORAGE HELPERS ---
     function saveStateToStorage() {
       localStorage.setItem('DOGWALKR_DATA_V3', JSON.stringify(STATE));
     }
@@ -910,13 +861,14 @@
         try {
           const parsed = JSON.parse(saved);
           Object.assign(STATE, parsed);
+          if (parsed.pups && !parsed.dogs) STATE.dogs = parsed.pups;
+          if (parsed.activePupId && !STATE.activeDogId) STATE.activeDogId = parsed.activePupId;
         } catch (e) {
           console.error("Storage parse error", e);
         }
       }
     }
 
-    // --- TAB SWITCHER ---
     function openTab(tabName) {
       STATE.activeTab = tabName;
       ['dashboard', 'walkouts', 'pack', 'food'].forEach(t => {
@@ -931,18 +883,22 @@
       renderAll();
     }
 
-    // --- RENDER MASTER ---
+    function openPackTab() { openTab('pack'); }
+
     function renderAll() {
-      const activePup = STATE.pups.find(p => p.id === STATE.activePupId) || STATE.pups[0];
-      if (!activePup) return;
+      const activeDog = STATE.dogs.find(p => p.id === STATE.activeDogId) || STATE.dogs[0];
+      if (!activeDog) return;
 
-      // Header update
-      document.getElementById('activePupName').innerText = activePup.name;
-      document.getElementById('activePupSubhead').innerText = `${activePup.breed} • ${activePup.weight} kg`;
-      document.getElementById('activePupAvatar').src = activePup.avatar;
+      document.getElementById('activeDogName').innerText = activeDog.name;
+      document.getElementById('activeDogSubhead').innerText = `${activeDog.breed} • ${activeDog.weight} kg`;
+      document.getElementById('activeDogAvatar').src = activeDog.avatar;
 
-      // Render Tab Specifics
-      renderDashboard(activePup);
+      const promoBanner = document.getElementById('stravaPromoBanner');
+      if (promoBanner) {
+        promoBanner.classList.toggle('hidden', STATE.stravaConnected === true);
+      }
+
+      renderDashboard(activeDog);
       renderWalkouts();
       renderPack();
       renderFood();
@@ -950,51 +906,45 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    // --- RENDER DASHBOARD ---
-    function renderDashboard(pup) {
-      const multiplier = calculateStrideRatio(pup.weight);
-
-      // Sum weekly totals
-      let totalHumanKm = 0;
-      let totalSessions = 0;
-      let totalExtraFuelGrams = 0;
+    function renderDashboard(dog) {
+      const multiplier = calculateStrideRatio(dog.weight);
+      let totalHumanKm = 0, totalSessions = 0;
 
       STATE.walkouts.forEach(w => {
-        if (w.pupIds.includes(pup.id)) {
+        const ids = w.dogIds || w.pupIds || [];
+        if (ids.includes(dog.id)) {
           totalHumanKm += Number(w.humanDistance) || 0;
           totalSessions++;
         }
       });
 
-      const pupKm = (totalHumanKm * multiplier).toFixed(1);
-      document.getElementById('dashWeeklyDistance').innerText = pupKm;
+      const dogKm = (totalHumanKm * multiplier).toFixed(1);
+      document.getElementById('dashWeeklyDistance').innerText = dogKm;
       document.getElementById('dashWeeklyCount').innerText = totalSessions;
 
-      // Smart Canine Coach debrief synthesis
-      const isPuppy = (pup.age || '').toLowerCase().includes('month');
+      const isPuppy = (dog.age || '').toLowerCase().includes('month');
       const coachStage = document.getElementById('dashCoachStagePill');
       const coachHeadline = document.getElementById('dashCoachHeadline');
       const coachBody = document.getElementById('dashCoachBody');
 
       if (isPuppy) {
         coachStage.innerText = "🎓 Puppy Growth Protocol";
-        coachHeadline.innerText = `${pup.name} is building healthy joint habits!`;
-        coachBody.innerText = `Growth plate safety active for ${pup.age}. Cap individual walks to 20 mins max on soft grass. Focus on sniffing over distance.`;
-      } else if (pup.status === 'holiday') {
+        coachHeadline.innerText = `${dog.name} is building healthy joint habits!`;
+        coachBody.innerText = `Growth plate safety active for ${dog.age}. Cap individual walks to 20 mins max on soft grass. Focus on sniffing over distance.`;
+      } else if (dog.status === 'holiday') {
         coachStage.innerText = "🌴 Sitter Handover Mode";
-        coachHeadline.innerText = `${pup.name} is on holiday schedule!`;
-        coachBody.innerText = `Sitter pass active. Daily routine and feeding checklist ready for sharing with family or sitters.`;
+        coachHeadline.innerText = `${dog.name} is on holiday schedule!`;
+        coachBody.innerText = `Sitter pass active. Daily routine and feeding checklist ready for sharing with family, friends, or sitters.`;
       } else if (totalSessions >= 4) {
         coachStage.innerText = "🔥 High Consistency";
-        coachHeadline.innerText = `${pup.name} is in peak rhythm!`;
-        coachBody.innerText = `${totalSessions} walkouts logged this week (${pupKm} km canine effort). Stride ratio calibrated at ${multiplier}×.`;
+        coachHeadline.innerText = `${dog.name} is in peak rhythm!`;
+        coachBody.innerText = `${totalSessions} walkouts logged this week (${dogKm} km dog effort). Stride ratio calibrated at ${multiplier}×.`;
       } else {
         coachStage.innerText = "🟢 Ready for Walkouts";
-        coachHeadline.innerText = `${pup.name} is recovered and energized.`;
-        coachBody.innerText = `Pacing calibrated for ${pup.breed} joint health. Soft park ground recommended today.`;
+        coachHeadline.innerText = `${dog.name} is recovered and energized.`;
+        coachBody.innerText = `Pacing calibrated for ${dog.breed} joint health. Soft park ground recommended today.`;
       }
 
-      // Latest Walkout Card
       const latest = STATE.walkouts[0];
       const container = document.getElementById('latestWalkoutContent');
       if (!latest) {
@@ -1002,7 +952,7 @@
         return;
       }
 
-      const walkPupKm = ((Number(latest.humanDistance) || 0) * multiplier).toFixed(2);
+      const walkDogKm = ((Number(latest.humanDistance) || 0) * multiplier).toFixed(2);
       const extraGrams = Math.round(latest.humanDistance * 25);
 
       container.innerHTML = `
@@ -1010,7 +960,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-bold text-zinc-900">${latest.title}</p>
-              <p class="text-xs text-zinc-500">${latest.durationMins} mins moving time</p>
+              <p class="text-xs text-zinc-500">${latest.durationMins} mins full session</p>
             </div>
             <button onclick="openShareStudio('${latest.id}')" class="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-xl text-xs font-bold border border-orange-200 hover:bg-orange-100 transition flex items-center space-x-1">
               <span>📸 Share</span>
@@ -1019,8 +969,8 @@
 
           <div class="grid grid-cols-2 gap-2 bg-zinc-50 p-3 rounded-2xl border border-zinc-100">
             <div>
-              <span class="text-[10px] font-bold uppercase text-zinc-400">Pup Distance</span>
-              <p class="text-base font-black text-zinc-900">${walkPupKm} km</p>
+              <span class="text-[10px] font-bold uppercase text-zinc-400">Dog Distance</span>
+              <p class="text-base font-black text-zinc-900">${walkDogKm} km</p>
               <span class="text-[10px] text-zinc-500">Human: ${latest.humanDistance} km</span>
             </div>
             <div>
@@ -1030,7 +980,6 @@
             </div>
           </div>
 
-          <!-- Stool Health Score Badge -->
           <div class="flex items-center justify-between text-xs pt-1">
             <span class="text-zinc-500 font-medium">Stool Score:</span>
             <span class="font-bold text-zinc-800 bg-zinc-100 px-2.5 py-0.5 rounded-full">
@@ -1041,7 +990,6 @@
       `;
     }
 
-    // --- RENDER WALKOUTS ---
     function renderWalkouts() {
       const list = document.getElementById('walkoutsList');
       if (STATE.walkouts.length === 0) {
@@ -1058,7 +1006,7 @@
                 <span class="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">🐾</span>
                 <div>
                   <h4 class="text-sm font-bold text-zinc-900">${w.title}</h4>
-                  <p class="text-[11px] text-zinc-500">${w.durationMins} mins • Stool ${w.stoolScore}/5</p>
+                  <p class="text-[11px] text-zinc-500">${w.durationMins} mins outing • Stool ${w.stoolScore}/5</p>
                 </div>
               </div>
               <button onclick="openShareStudio('${w.id}')" class="px-3 py-1.5 bg-zinc-100 hover:bg-orange-50 hover:text-orange-600 rounded-xl text-xs font-bold text-zinc-700 transition">
@@ -1077,15 +1025,14 @@
       }).join('');
     }
 
-    // --- RENDER PACK ---
     function renderPack() {
       const list = document.getElementById('packCardsList');
-      list.innerHTML = STATE.pups.map(p => {
-        const isSelected = p.id === STATE.activePupId;
+      list.innerHTML = STATE.dogs.map(p => {
+        const isSelected = p.id === STATE.activeDogId;
         return `
           <div class="bg-white rounded-3xl p-4 border ${isSelected ? 'border-orange-500 ring-2 ring-orange-500/20' : 'border-zinc-200/80'} shadow-sm space-y-3">
             <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3 cursor-pointer" onclick="switchActivePup('${p.id}')">
+              <div class="flex items-center space-x-3 cursor-pointer flex-1" onclick="showDogPassportModal('${p.id}')">
                 <img src="${p.avatar}" alt="${p.name}" class="w-12 h-12 rounded-2xl object-cover border border-zinc-200 shadow-xs" />
                 <div>
                   <div class="flex items-center space-x-2">
@@ -1096,19 +1043,18 @@
                 </div>
               </div>
 
-              <!-- Pack Card Actions -->
               <div class="flex items-center space-x-1">
-                <button onclick="editPupById('${p.id}')" aria-label="Edit Dog" class="p-2 text-zinc-400 hover:text-zinc-800 transition tap-target flex items-center justify-center">
+                <button onclick="editDogById('${p.id}')" aria-label="Edit Dog" class="p-2 text-zinc-400 hover:text-zinc-800 transition tap-target flex items-center justify-center">
                   <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
-                <button onclick="deletePupById('${p.id}')" aria-label="Delete Dog" class="p-2 text-zinc-400 hover:text-red-500 transition tap-target flex items-center justify-center">
+                <button onclick="deleteDogById('${p.id}')" aria-label="Delete Dog" class="p-2 text-zinc-400 hover:text-red-500 transition tap-target flex items-center justify-center">
                   <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
               </div>
             </div>
 
             <div class="flex items-center justify-between pt-2 border-t border-zinc-100 text-xs font-semibold">
-              <button onclick="openPupPassportModal('${p.id}')" class="text-orange-600 hover:underline flex items-center space-x-1">
+              <button onclick="showDogPassportModal('${p.id}')" class="text-orange-600 hover:underline flex items-center space-x-1">
                 <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
                 <span>Park Business Card & QR</span>
               </button>
@@ -1119,7 +1065,6 @@
       }).join('');
     }
 
-    // --- RENDER FOOD ---
     function renderFood() {
       const list = document.getElementById('foodStackList');
       const todayStr = new Date().toISOString().split('T')[0];
@@ -1152,7 +1097,6 @@
         }).join('');
       }
 
-      // Bevel-Style 7-Day Food Strip
       const strip = document.getElementById('bevelFoodCalendarStrip');
       const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
       strip.innerHTML = days.map((d, i) => `
@@ -1165,7 +1109,6 @@
       `).join('');
     }
 
-    // --- FOOD INTERACTION ---
     function toggleFoodCheck(itemId) {
       const todayStr = new Date().toISOString().split('T')[0];
       if (!STATE.foodLogs[todayStr]) STATE.foodLogs[todayStr] = {};
@@ -1204,15 +1147,14 @@
       renderFood();
     }
 
-    // --- PUP PROFILE ACTIONS ---
-    function switchActivePup(pupId) {
-      STATE.activePupId = pupId;
+    function switchActiveDog(dogId) {
+      STATE.activeDogId = dogId;
       saveStateToStorage();
       renderAll();
     }
 
     function openAddDogModal() {
-      document.getElementById('modalDogTitle').innerText = "Add New Pup 🐾";
+      document.getElementById('modalDogTitle').innerText = "Add New Dog 🐾";
       document.getElementById('editDogId').value = "";
       document.getElementById('inputDogName').value = "";
       document.getElementById('inputDogBreed').value = "";
@@ -1225,33 +1167,33 @@
       openModal('modalAddDog');
     }
 
-    function editPupById(pupId) {
-      const pup = STATE.pups.find(p => p.id === pupId);
-      if (!pup) return;
-      document.getElementById('modalDogTitle').innerText = `Edit ${pup.name}'s Profile ✏️`;
-      document.getElementById('editDogId').value = pup.id;
-      document.getElementById('inputDogName').value = pup.name;
-      document.getElementById('inputDogBreed').value = pup.breed;
-      document.getElementById('inputDogWeight').value = pup.weight;
-      document.getElementById('inputDogAge').value = pup.age || "";
-      document.getElementById('inputDogTreat').value = pup.treat || "";
-      document.getElementById('inputDogBest').value = pup.best || "";
-      document.getElementById('inputDogWorst').value = pup.worst || "";
-      document.getElementById('previewDogPhoto').src = pup.avatar;
+    function editDogById(dogId) {
+      const dog = STATE.dogs.find(p => p.id === dogId);
+      if (!dog) return;
+      document.getElementById('modalDogTitle').innerText = `Edit ${dog.name}'s Profile ✏️`;
+      document.getElementById('editDogId').value = dog.id;
+      document.getElementById('inputDogName').value = dog.name;
+      document.getElementById('inputDogBreed').value = dog.breed;
+      document.getElementById('inputDogWeight').value = dog.weight;
+      document.getElementById('inputDogAge').value = dog.age || "";
+      document.getElementById('inputDogTreat').value = dog.treat || "";
+      document.getElementById('inputDogBest').value = dog.best || "";
+      document.getElementById('inputDogWorst').value = dog.worst || "";
+      document.getElementById('previewDogPhoto').src = dog.avatar;
       openModal('modalAddDog');
     }
 
-    function deletePupById(pupId) {
-      if (STATE.pups.length <= 1) return alert("You must keep at least one pup in the pack!");
-      if (confirm("Delete this pup profile?")) {
-        STATE.pups = STATE.pups.filter(p => p.id !== pupId);
-        if (STATE.activePupId === pupId) STATE.activePupId = STATE.pups[0].id;
+    function deleteDogById(dogId) {
+      if (STATE.dogs.length <= 1) return alert("You must keep at least one dog in the pack!");
+      if (confirm("Delete this dog profile?")) {
+        STATE.dogs = STATE.dogs.filter(p => p.id !== dogId);
+        if (STATE.activeDogId === dogId) STATE.activeDogId = STATE.dogs[0].id;
         saveStateToStorage();
         renderAll();
       }
     }
 
-    function savePupProfile() {
+    function saveDogProfile() {
       const id = document.getElementById('editDogId').value;
       const name = document.getElementById('inputDogName').value.trim();
       const breed = document.getElementById('inputDogBreed').value.trim();
@@ -1262,16 +1204,14 @@
       const worst = document.getElementById('inputDogWorst').value.trim() || 'Chews toys';
       const avatar = document.getElementById('previewDogPhoto').src;
 
-      if (!name) return alert('Please enter pup name');
+      if (!name) return alert('Please enter dog name');
 
       if (id) {
-        // Edit existing
-        const pup = STATE.pups.find(p => p.id === id);
-        if (pup) Object.assign(pup, { name, breed, weight, age, treat, best, worst, avatar });
+        const dog = STATE.dogs.find(p => p.id === id);
+        if (dog) Object.assign(dog, { name, breed, weight, age, treat, best, worst, avatar });
       } else {
-        // Create new with unique ID
-        const newPup = {
-          id: 'pup_' + Date.now(),
+        const newDog = {
+          id: 'dog_' + Date.now(),
           name,
           breed: breed || 'Mixed Breed',
           weight,
@@ -1282,8 +1222,8 @@
           avatar,
           status: 'active'
         };
-        STATE.pups.push(newPup);
-        STATE.activePupId = newPup.id;
+        STATE.dogs.push(newDog);
+        STATE.activeDogId = newDog.id;
       }
 
       saveStateToStorage();
@@ -1301,43 +1241,43 @@
       else if (breed.includes('dachshund')) weightInput.value = '5.0';
     }
 
-    // --- CANINE PASSPORT & PARK CARD ---
-    function openPupPassportModal(pupId) {
-      const pup = STATE.pups.find(p => p.id === (pupId || STATE.activePupId)) || STATE.pups[0];
-      if (!pup) return;
+    // Dedicated Passport Modal opener
+    function showDogPassportModal(dogId) {
+      const dog = STATE.dogs.find(p => p.id === (dogId || STATE.activeDogId)) || STATE.dogs[0];
+      if (!dog) return;
 
-      document.getElementById('passportCardAvatar').src = pup.avatar;
-      document.getElementById('passportCardName').innerText = pup.name;
-      document.getElementById('passportCardBreed').innerText = `${pup.breed} • ${pup.weight} kg`;
-      document.getElementById('passportCardMultiplier').innerText = `${calculateStrideRatio(pup.weight)}× Stride Multiplier`;
-      document.getElementById('passportCardTreat').innerText = pup.treat || 'Markies Biscuits';
-      document.getElementById('passportCardBest').innerText = pup.best || 'Sprint zooms';
-      document.getElementById('passportCardWorst').innerText = pup.worst || 'Nibbles shoes';
+      STATE.activeDogId = dog.id;
+      saveStateToStorage();
 
-      // Generate QR Code
+      document.getElementById('passportCardAvatar').src = dog.avatar;
+      document.getElementById('passportCardName').innerText = dog.name;
+      document.getElementById('passportCardBreed').innerText = `${dog.breed} • ${dog.weight} kg`;
+      document.getElementById('passportCardMultiplier').innerText = `${calculateStrideRatio(dog.weight)}× Stride Multiplier`;
+      document.getElementById('passportCardTreat').innerText = dog.treat || 'Markies Biscuits';
+      document.getElementById('passportCardBest').innerText = dog.best || 'Sprint zooms';
+      document.getElementById('passportCardWorst').innerText = dog.worst || 'Nibbles shoes';
+
       const qrContainer = document.getElementById('passportQRCode');
       qrContainer.innerHTML = '';
       new QRCode(qrContainer, {
-        text: `https://www.dogwalkr.co.uk/join?ref=${pup.name.toLowerCase()}`,
+        text: `https://www.dogwalkr.co.uk/join?ref=${dog.name.toLowerCase()}`,
         width: 64,
         height: 64
       });
 
-      openModal('modalPupPassport');
+      openModal('modalDogPassport');
     }
 
-    function editActivePup() {
-      closeModal('modalPupPassport');
-      editPupById(STATE.activePupId);
+    function editActiveDog() {
+      closeModal('modalDogPassport');
+      editDogById(STATE.activeDogId);
     }
 
-    // --- WALKOUT RECORDING ---
     function openLogWalkModal() {
-      // Setup pup checkboxes for multi-dog households
-      const selector = document.getElementById('logWalkPupSelector');
-      selector.innerHTML = STATE.pups.map(p => `
+      const selector = document.getElementById('logWalkDogSelector');
+      selector.innerHTML = STATE.dogs.map(p => `
         <label class="px-3 py-1.5 rounded-xl border border-zinc-200 text-xs font-bold flex items-center space-x-2 cursor-pointer bg-zinc-50">
-          <input type="checkbox" name="walkPups" value="${p.id}" ${p.id === STATE.activePupId ? 'checked' : ''} class="accent-orange-500 rounded" />
+          <input type="checkbox" name="walkDogs" value="${p.id}" ${p.id === STATE.activeDogId ? 'checked' : ''} class="accent-orange-500 rounded" />
           <span>${p.name}</span>
         </label>
       `).join('');
@@ -1360,11 +1300,11 @@
     function saveWalkout() {
       const title = document.getElementById('logWalkTitle').value.trim() || 'Walkout';
       const humanDistance = parseFloat(document.getElementById('logWalkDistance').value) || 2.0;
-      const durationMins = parseInt(document.getElementById('logWalkDuration').value) || 30;
+      const durationMins = parseInt(document.getElementById('logWalkDuration').value) || 45;
       const notes = document.getElementById('logWalkNotes').value.trim();
 
-      const checkedPups = Array.from(document.querySelectorAll('input[name="walkPups"]:checked')).map(cb => cb.value);
-      const pupIds = checkedPups.length > 0 ? checkedPups : [STATE.activePupId];
+      const checkedDogs = Array.from(document.querySelectorAll('input[name="walkDogs"]:checked')).map(cb => cb.value);
+      const dogIds = checkedDogs.length > 0 ? checkedDogs : [STATE.activeDogId];
 
       const newWalk = {
         id: 'walk_' + Date.now(),
@@ -1374,7 +1314,7 @@
         stoolScore: STATE.selectedStool || 3,
         notes,
         photo: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80',
-        pupIds,
+        dogIds,
         timestamp: new Date().toISOString()
       };
 
@@ -1385,9 +1325,9 @@
     }
 
     function quickLogPreset(type) {
-      let title = "Daily Park Loop", km = 2.4, mins = 25;
-      if (type === 'toilet') { title = "Quick Toilet Nip"; km = 0.6; mins = 10; }
-      if (type === 'trail') { title = "Weekend Long Trail"; km = 5.0; mins = 50; }
+      let title = "Daily Park Loop", km = 2.4, mins = 35;
+      if (type === 'toilet') { title = "Quick Toilet Nip"; km = 0.6; mins = 15; }
+      if (type === 'trail') { title = "Weekend Long Trail"; km = 5.0; mins = 65; }
 
       const newWalk = {
         id: 'walk_' + Date.now(),
@@ -1397,29 +1337,28 @@
         stoolScore: 3,
         notes: `Quick 1-tap route shortcut`,
         photo: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80',
-        pupIds: [STATE.activePupId],
+        dogIds: [STATE.activeDogId],
         timestamp: new Date().toISOString()
       };
 
       STATE.walkouts.unshift(newWalk);
       saveStateToStorage();
       renderAll();
-      alert(`Logged ${title} (${km} km) for ${document.getElementById('activePupName').innerText}! 🐾`);
+      alert(`Logged ${title} (${km} km) for ${document.getElementById('activeDogName').innerText}! 🐾`);
     }
 
-    // --- 9:16 SOCIAL SHARE STUDIO ---
     function openShareStudio(walkId) {
       const walk = STATE.walkouts.find(w => w.id === walkId) || STATE.walkouts[0];
-      const pup = STATE.pups.find(p => p.id === STATE.activePupId) || STATE.pups[0];
-      if (!walk || !pup) return;
+      const dog = STATE.dogs.find(p => p.id === STATE.activeDogId) || STATE.dogs[0];
+      if (!walk || !dog) return;
 
-      const multiplier = calculateStrideRatio(pup.weight);
-      const pupKm = (Number(walk.humanDistance) * multiplier).toFixed(2);
+      const multiplier = calculateStrideRatio(dog.weight);
+      const dogKm = (Number(walk.humanDistance) * multiplier).toFixed(2);
       const extraGrams = Math.round(Number(walk.humanDistance) * 25);
 
       document.getElementById('shareStoryTitle').innerText = walk.title;
-      document.getElementById('shareStorySubtitle').innerText = `${pup.name} • ${pup.breed}`;
-      document.getElementById('shareStoryDistance').innerText = `${pupKm} km`;
+      document.getElementById('shareStorySubtitle').innerText = `${dog.name} • ${dog.breed}`;
+      document.getElementById('shareStoryDistance').innerText = `${dogKm} km`;
       document.getElementById('shareStoryFuel').innerText = `+${extraGrams}g Kibble`;
       document.getElementById('shareStoryBgImage').src = walk.photo;
 
@@ -1443,23 +1382,21 @@
     }
 
     function exportParkBusinessCard() {
-      alert("Exporting Joe's Park Business Card to your camera roll! 🐾");
+      alert("Exporting Park Business Card to your camera roll! 🐾");
     }
 
-    // --- PET-SITTER PASS ---
     function generateSitterPassLink() {
-      const activePup = STATE.pups.find(p => p.id === STATE.activePupId);
-      const text = `🐾 DOGWALKR SITTER PASS for ${activePup.name}:\n- Meals: Royal Canin (150g Morning & Evening)\n- Routine: 2x Daily 30 min park walks on soft grass\n- Treat: ${activePup.treat}\n- View Live Routine: https://www.dogwalkr.co.uk/sitter?id=${activePup.id}`;
+      const activeDog = STATE.dogs.find(p => p.id === STATE.activeDogId);
+      const text = `🐾 DOGWALKR SITTER PASS for ${activeDog.name}:\n- Meals: Royal Canin (150g Morning & Evening)\n- Routine: 2x Daily 30-45 min park walks on soft grass\n- Treat: ${activeDog.treat}\n- View Live Routine: https://www.dogwalkr.co.uk/sitter?id=${activeDog.id}`;
       navigator.clipboard.writeText(text);
       alert("📋 Copied Pet-Sitter Routine Pass to clipboard!");
     }
 
-    // --- STATUS TOGGLE ---
     function openStatusModal() { openModal('modalStatus'); }
-    function setPupStatus(statusKey, emoji, label) {
-      const pup = STATE.pups.find(p => p.id === STATE.activePupId);
-      if (pup) {
-        pup.status = statusKey;
+    function setDogStatus(statusKey, emoji, label) {
+      const dog = STATE.dogs.find(p => p.id === STATE.activeDogId);
+      if (dog) {
+        dog.status = statusKey;
         saveStateToStorage();
       }
       document.getElementById('headerStatusEmoji').innerText = emoji;
@@ -1468,7 +1405,6 @@
       renderAll();
     }
 
-    // --- PHOTO UPLOAD HELPER ---
     function handlePhotoUpload(event, previewId) {
       const file = event.target.files[0];
       if (file) {
@@ -1480,15 +1416,11 @@
       }
     }
 
-    // --- GENERIC MODAL CONTROLS ---
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openPackModal() { openTab('pack'); }
-    function openPupPassportModal() { openPupPassportModal(STATE.activePupId); }
     function openSettingsModal() { openModal('modalSettings'); }
     function openAddFoodModal() { openModal('modalAddFood'); }
 
-    // Kickoff on load
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
