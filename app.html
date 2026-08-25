@@ -13,6 +13,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
     tailwind.config = {
@@ -49,7 +50,7 @@
 
 <body class="h-full flex flex-col justify-between bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-200">
 
-  <!-- ================= TOP BAR ================= -->
+  <!-- ================= TOP HEADER ================= -->
   <header class="px-5 pt-4 pb-3 border-b border-zinc-200/80 dark:border-zinc-900 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-zinc-950/90 backdrop-blur-xl z-30 transition-colors">
     <div class="flex items-center gap-3">
       <div id="pupAvatarBadge" class="w-10 h-10 rounded-2xl bg-orange-100 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 flex items-center justify-center text-xl shadow-sm">
@@ -61,14 +62,14 @@
             <option value="barney" class="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">Barney (Labrador)</option>
             <option value="poppy" class="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">Poppy (Spaniel)</option>
             <option value="milo" class="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">Milo (Dachshund)</option>
-            <option value="custom" class="bg-white dark:bg-zinc-900 text-orange-600 dark:text-orange-400 font-bold">+ Add Another Pup</option>
+            <option value="custom" class="bg-white dark:bg-zinc-900 text-orange-600 dark:text-orange-400 font-bold">+ Add Household Pup</option>
           </select>
         </div>
-        <p id="pupMetaSubtitle" class="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">28.5 kg • Stride Multiplier: 1.44×</p>
+        <p id="pupMetaSubtitle" class="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">28.5 kg • Stride Ratio: 1.44×</p>
       </div>
     </div>
 
-    <!-- Right Utility Buttons -->
+    <!-- Controls -->
     <div class="flex items-center gap-2">
       <button onclick="cycleThemeMode()" id="themeBtn" title="Toggle Day / Night / Auto" class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center text-xs active:scale-95 transition">
         ☀️
@@ -79,12 +80,28 @@
     </div>
   </header>
 
-  <!-- ================= MAIN CONTENT ================= -->
-  <main id="tabContent" class="flex-1 overflow-y-auto hide-scrollbar px-4 py-5 max-w-md mx-auto w-full">
+  <!-- ================= MAIN VIEW CONTAINER ================= -->
+  <main id="tabContent" class="flex-1 overflow-y-auto hide-scrollbar px-4 py-5 max-w-md mx-auto w-full space-y-4">
     
-    <!-- TAB 1: WALKOUTS (DASHBOARD) -->
+    <!-- ================= TAB 1: WALKOUTS (DASHBOARD) ================= -->
     <div id="view-walkouts" class="tab-pane space-y-4">
-      <!-- Weekly Activity Summary -->
+      
+      <!-- 1. AMBIENT TRAIL WEATHER & SURFACE WIDGET -->
+      <section class="bg-gradient-to-r from-sky-50 to-orange-50/50 dark:from-zinc-900 dark:to-zinc-900/60 border border-sky-100 dark:border-zinc-800/80 rounded-3xl p-4 shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-base">⛅</span>
+            <span class="text-xs font-black text-zinc-900 dark:text-white">Trail Conditions • London NW</span>
+          </div>
+          <span class="text-[11px] font-bold text-sky-700 dark:text-sky-400 bg-sky-100/80 dark:bg-sky-500/10 px-2.5 py-0.5 rounded-full">19°C • Dry</span>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 font-medium pt-0.5">
+          <span>🌧️ Rain Risk: <strong class="text-zinc-900 dark:text-white font-bold">10% (No coat needed)</strong></span>
+          <span>🐾 Paw Heat: <strong class="text-emerald-600 dark:text-emerald-400 font-bold">Safe Cool Turf</strong></span>
+        </div>
+      </section>
+
+      <!-- 2. ROLLING 7-DAY LOAD -->
       <section class="bg-white dark:bg-zinc-900/80 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-5 shadow-sm dark:shadow-2xl space-y-4 transition-colors">
         <div class="flex items-center justify-between">
           <div>
@@ -114,7 +131,7 @@
         </div>
       </section>
 
-      <!-- Pup Recovery Debrief -->
+      <!-- 3. BEVEL AMBIENT RECOVERY DEBRIEF -->
       <section class="bg-gradient-to-b from-orange-50/50 to-white dark:from-zinc-900 dark:to-zinc-950 border border-orange-100 dark:border-zinc-800/80 rounded-3xl p-5 space-y-3 transition-colors shadow-sm">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -125,7 +142,7 @@
         </div>
 
         <p id="intelDebriefText" class="text-xs text-zinc-600 dark:text-zinc-300 font-medium leading-relaxed">
-          Barney completed a 4.8 km human loop (6.9 km canine effort). Joint impact stayed low on grass. Scoop an extra <strong>48g kibble top-up</strong> to match today's burn.
+          Barney completed a 4.8 km human loop (6.9 km canine effort). Joint impact stayed low on soft parkland. Scoop an extra <strong>48g kibble top-up</strong> to match today's burn.
         </p>
 
         <div class="flex items-center gap-2 pt-1 overflow-x-auto hide-scrollbar">
@@ -138,14 +155,16 @@
         </div>
       </section>
 
-      <!-- Recent Walkouts Feed -->
-      <div class="space-y-3">
+      <!-- 4. LATEST WALKOUT ONLY (CLEAN HERO CARD) -->
+      <div class="space-y-2.5">
         <div class="flex items-center justify-between px-1">
-          <h3 class="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Recent Walkouts</h3>
-          <span class="text-[11px] font-semibold text-orange-600 dark:text-orange-500">Live Sync</span>
+          <h3 class="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Latest Walkout</h3>
+          <button onclick="setActiveNav('library')" class="text-[11px] font-bold text-orange-600 dark:text-orange-500 hover:underline">
+            View All History →
+          </button>
         </div>
 
-        <div id="activityFeedList" class="space-y-3">
+        <div id="latestWalkoutHero">
           <article class="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-4 space-y-3 shadow-sm dark:shadow-lg transition-colors">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2.5">
@@ -153,8 +172,8 @@
                   🐾
                 </div>
                 <div>
-                  <h4 class="text-sm font-black text-zinc-900 dark:text-white">Morning Trail Loop</h4>
-                  <p class="text-[10px] text-zinc-400 font-medium">Today at 08:30 • Parkland Path</p>
+                  <h4 class="text-sm font-black text-zinc-900 dark:text-white">Morning Trail Shakeout</h4>
+                  <p class="text-[10px] text-zinc-400 font-medium">Today at 08:30 • Parkland Loop</p>
                 </div>
               </div>
               <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 rounded-full">Synced</span>
@@ -175,96 +194,97 @@
               </div>
             </div>
 
-            <details class="text-[11px] text-zinc-500 dark:text-zinc-400 group">
-              <summary class="cursor-pointer font-bold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 list-none flex items-center justify-between pt-1">
-                <span>Health & Stride Breakdown</span>
-                <span class="group-open:rotate-180 transition-transform">▼</span>
-              </summary>
-              <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 mt-2 space-y-1.5 text-[11px]">
-                <div class="flex justify-between"><span class="text-zinc-400">Human Distance:</span> <span class="text-zinc-800 dark:text-zinc-200 font-medium">4.80 km</span></div>
-                <div class="flex justify-between"><span class="text-zinc-400">Stride Ratio:</span> <span class="text-zinc-800 dark:text-zinc-200 font-medium">1.44×</span></div>
-                <div class="flex justify-between"><span class="text-zinc-400">Stool Quality:</span> <span class="text-emerald-600 dark:text-emerald-400 font-medium">Score 3 (Healthy)</span></div>
-                <div class="flex justify-between"><span class="text-zinc-400">Surface Type:</span> <span class="text-zinc-800 dark:text-zinc-200 font-medium">85% Soft Grass</span></div>
+            <!-- Stool Inline Tagger for Synced Walkouts -->
+            <div class="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs">
+              <span class="text-[11px] text-zinc-500 font-medium">Stool Quality:</span>
+              <div class="flex items-center gap-1.5" id="heroStoolTags">
+                <button onclick="setStoolForLatest(1)" class="px-2 py-1 text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-300">1</button>
+                <button onclick="setStoolForLatest(2)" class="px-2 py-1 text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-300">2</button>
+                <button onclick="setStoolForLatest(3)" class="px-2 py-1 text-[10px] font-bold bg-orange-500 text-white rounded-lg shadow-sm">3 ✨</button>
+                <button onclick="setStoolForLatest(4)" class="px-2 py-1 text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-300">4</button>
+                <button onclick="setStoolForLatest(5)" class="px-2 py-1 text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-300">5</button>
               </div>
-            </details>
+            </div>
           </article>
         </div>
       </div>
+
     </div>
 
-    <!-- TAB 2: ROUTES -->
-    <div id="view-routes" class="tab-pane hidden space-y-4">
+    <!-- ================= TAB 2: LIBRARY (FULL HISTORY & SHARE STUDIO) ================= -->
+    <div id="view-library" class="tab-pane hidden space-y-4">
       <section class="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-5 space-y-4 shadow-sm">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-500">Surface Safety</span>
-            <h2 class="text-base font-black text-zinc-900 dark:text-white">Dog-Safe Routes</h2>
+            <span class="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-500">Walkout Archive</span>
+            <h2 class="text-base font-black text-zinc-900 dark:text-white">Walk History & Photos</h2>
           </div>
-          <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-500/30">Near You</span>
+          <button onclick="openModal('quickLogModal')" class="px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 text-orange-600 dark:text-orange-400 font-bold text-xs">
+            + Log Walk
+          </button>
         </div>
 
-        <p class="text-xs text-zinc-600 dark:text-zinc-300 font-medium leading-relaxed">
-          Local trails checked for soft grass surfaces, shade cover, and clean water points.
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+          Tap any walkout to review biometric splits, add a photo, and create a shareable card with the Dogwalkr overlay.
         </p>
 
-        <div class="space-y-2.5 pt-2">
-          <div onclick="alert('Opening trail guide for Parkland Meadow Loop!')" class="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-3.5 flex items-center justify-between cursor-pointer hover:border-orange-400 transition-colors">
-            <div>
-              <h4 class="text-xs font-black text-zinc-900 dark:text-white">Parkland Meadow Loop</h4>
-              <p class="text-[10px] text-zinc-500 font-medium">3.8 km • 92% Soft Grass • Off-Lead Safe</p>
-            </div>
-            <span class="text-xs font-bold text-orange-600">★ 4.9</span>
-          </div>
-
-          <div onclick="alert('Opening trail guide for Riverbank Canopy Trail!')" class="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-3.5 flex items-center justify-between cursor-pointer hover:border-orange-400 transition-colors">
-            <div>
-              <h4 class="text-xs font-black text-zinc-900 dark:text-white">Riverbank Canopy Trail</h4>
-              <p class="text-[10px] text-zinc-500 font-medium">5.2 km • Full Shade • 2 Water Stations</p>
-            </div>
-            <span class="text-xs font-bold text-orange-600">★ 4.8</span>
-          </div>
+        <!-- Dynamic History Feed -->
+        <div id="libraryFeedList" class="space-y-3 pt-1">
+          <!-- Populated from Supabase and Local Walks -->
         </div>
       </section>
     </div>
 
-    <!-- TAB 3: PACK (LOCKED PREVIEW) -->
+    <!-- ================= TAB 3: PACK (HOUSEHOLD PUPS) ================= -->
     <div id="view-pack" class="tab-pane hidden space-y-4">
       <section class="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-5 space-y-4 shadow-sm">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-500">Community</span>
-            <h2 class="text-base font-black text-zinc-900 dark:text-white">Pioneer Pack</h2>
+            <span class="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-500">Your Household</span>
+            <h2 class="text-base font-black text-zinc-900 dark:text-white">The Pack</h2>
           </div>
-          <span class="text-[11px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-200 dark:border-orange-500/30">Preview</span>
+          <button onclick="openModal('addDogModal')" class="px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 text-orange-600 dark:text-orange-400 font-bold text-xs active:scale-95 transition">
+            + Add Pup
+          </button>
         </div>
 
-        <div class="bg-gradient-to-tr from-orange-500 to-amber-500 rounded-2xl p-4 text-white space-y-1 shadow-md">
-          <p class="text-[10px] uppercase font-black tracking-wider text-orange-100">Monthly Milestone</p>
-          <h3 class="text-sm font-black">50 km Pioneer Badge</h3>
-          <p class="text-[11px] text-orange-50 font-medium">Log 50km of pup distance this month. You're at 34.2 km!</p>
-        </div>
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+          Keep track of each dog in your home with calibrated stride ratios, food allowances, and health notes.
+        </p>
 
-        <div class="space-y-2 pt-1">
-          <h4 class="text-xs font-black text-zinc-900 dark:text-white">Local Northwest Clubs</h4>
-          <div class="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-3 flex items-center justify-between text-xs">
-            <span class="font-bold text-zinc-800 dark:text-zinc-200">🦮 Northwest Labradors</span>
-            <span class="text-[10px] text-zinc-500">142 Pups</span>
+        <div class="space-y-2.5 pt-1" id="packListContainer">
+          <div class="p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🦮</span>
+              <div>
+                <h4 class="text-xs font-black text-zinc-900 dark:text-white">Barney</h4>
+                <p class="text-[10px] text-zinc-500">Golden Labrador • 28.5 kg • Stride: 1.44×</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 rounded-full">Active</span>
           </div>
-          <div class="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-3 flex items-center justify-between text-xs">
-            <span class="font-bold text-zinc-800 dark:text-zinc-200">🐶 High-Energy Spaniels</span>
-            <span class="text-[10px] text-zinc-500">98 Pups</span>
+
+          <div class="p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl flex items-center justify-between opacity-80">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🐶</span>
+              <div>
+                <h4 class="text-xs font-black text-zinc-900 dark:text-white">Poppy</h4>
+                <p class="text-[10px] text-zinc-500">Cocker Spaniel • 11.2 kg • Stride: 1.64×</p>
+              </div>
+            </div>
+            <button onclick="switchActiveDog('poppy')" class="text-xs font-bold text-orange-600 hover:underline">Select</button>
           </div>
         </div>
       </section>
     </div>
 
-    <!-- TAB 4: STACK -->
-    <div id="view-stack" class="tab-pane hidden space-y-4">
+    <!-- ================= TAB 4: FUEL (FOOD & HEALTH PANTRY) ================= -->
+    <div id="view-fuel" class="tab-pane hidden space-y-4">
       <section class="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-5 space-y-4 shadow-sm">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-500">Daily Fuel & Health</span>
-            <h2 class="text-base font-black text-zinc-900 dark:text-white">Pup Routine Stack</h2>
+            <span class="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-500">Canine Fuel & Nutrition</span>
+            <h2 class="text-base font-black text-zinc-900 dark:text-white">Daily Pantry & Supplements</h2>
           </div>
           <button onclick="openModal('addStackItemModal')" class="px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 text-orange-600 dark:text-orange-400 font-bold text-xs flex items-center gap-1 active:scale-95 transition">
             <span>+</span> Add Item
@@ -293,9 +313,9 @@
       <span class="text-[10px] font-bold">Walkouts</span>
     </button>
 
-    <button onclick="setActiveNav('routes')" id="nav-routes" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
-      <i data-lucide="map" class="w-5 h-5"></i>
-      <span class="text-[10px] font-bold">Routes</span>
+    <button onclick="setActiveNav('library')" id="nav-library" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
+      <i data-lucide="book-open" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold">Library</span>
     </button>
 
     <button onclick="openModal('quickLogModal')" class="w-12 h-12 -mt-5 rounded-2xl bg-gradient-to-tr from-orange-600 to-orange-500 text-white flex items-center justify-center text-xl shadow-lg shadow-orange-500/30 active:scale-90 transition">
@@ -307,25 +327,67 @@
       <span class="text-[10px] font-bold">Pack</span>
     </button>
 
-    <button onclick="setActiveNav('stack')" id="nav-stack" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
-      <i data-lucide="shield-check" class="w-5 h-5"></i>
-      <span class="text-[10px] font-bold">Stack</span>
+    <button onclick="setActiveNav('fuel')" id="nav-fuel" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
+      <i data-lucide="utensils" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold">Fuel</span>
     </button>
   </nav>
 
-  <!-- ================= MODALS ================= -->
+  <!-- ================= MODALS & SHEETS ================= -->
 
-  <!-- SETTINGS & INTEGRATIONS MODAL -->
+  <!-- 1. SHARE STUDIO & PHOTO OVERLAY MODAL -->
+  <div id="shareModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl transition-colors">
+      <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+        <h3 class="text-sm font-black text-zinc-900 dark:text-white flex items-center gap-1.5"><span>📸</span> Share Walkout Card</h3>
+        <button onclick="closeModal('shareModal')" class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <!-- Preview Share Card -->
+      <div class="relative bg-gradient-to-tr from-orange-600 to-amber-500 rounded-2xl p-4 text-white space-y-3 shadow-lg overflow-hidden">
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="text-[10px] font-black uppercase tracking-wider text-orange-200">Dogwalkr Telemetry</span>
+            <h4 id="shareCardTitle" class="text-base font-black">Morning Trail Shakeout</h4>
+          </div>
+          <div class="w-7 h-7 bg-white/20 rounded-xl flex items-center justify-center text-sm">🐾</div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2 bg-black/20 rounded-xl p-2.5 backdrop-blur-sm">
+          <div>
+            <p class="text-[9px] uppercase font-bold text-orange-200">Pup Distance</p>
+            <p id="shareCardDistance" class="text-base font-black">6.91 km</p>
+          </div>
+          <div>
+            <p class="text-[9px] uppercase font-bold text-orange-200">Extra Fuel</p>
+            <p id="shareCardFuel" class="text-base font-black">+68g Kibble</p>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center text-[10px] font-bold text-orange-100 pt-1">
+          <span>Barney • Golden Labrador</span>
+          <span>dogwalkr.co.uk</span>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="alert('Photo card copied to clipboard for Instagram / Strava!')" class="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition">
+          Export Instagram Story Overlay
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. SETTINGS & INTEGRATIONS MODAL -->
   <div id="settingsModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-sm rounded-3xl p-6 space-y-5 shadow-2xl transition-colors">
       <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
         <h3 class="text-base font-black text-zinc-900 dark:text-white flex items-center gap-2">
           <i data-lucide="settings" class="w-4 h-4 text-orange-500"></i> Settings & Sync
         </h3>
-        <button onclick="closeModal('settingsModal')" class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('settingsModal')" class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
-      <!-- Owner Info -->
       <div class="space-y-2">
         <label class="text-[10px] uppercase font-bold text-zinc-500">Owner Profile</label>
         <div class="p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl flex items-center justify-between">
@@ -337,16 +399,12 @@
         </div>
       </div>
 
-      <!-- Live Integrations -->
       <div class="space-y-2.5">
         <label class="text-[10px] uppercase font-bold text-zinc-500">Live Device Sync</label>
         
-        <!-- Strava Card -->
         <div class="p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl flex items-center justify-between">
           <div class="flex items-center gap-2.5">
-            <div class="w-7 h-7 rounded-xl bg-[#FC4C02]/10 flex items-center justify-center text-[#FC4C02] font-black text-xs">
-              S
-            </div>
+            <div class="w-7 h-7 rounded-xl bg-[#FC4C02]/10 flex items-center justify-center text-[#FC4C02] font-black text-xs">S</div>
             <div>
               <p class="text-xs font-bold text-zinc-900 dark:text-white">Strava GPS</p>
               <p class="text-[10px] text-zinc-500">Auto-pull walks & runs</p>
@@ -357,7 +415,6 @@
           </button>
         </div>
 
-        <!-- Apple Watch Card -->
         <div class="p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <div class="w-7 h-7 rounded-xl bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300">
@@ -374,14 +431,13 @@
         </div>
       </div>
 
-      <!-- Feedback CTA -->
       <button onclick="closeModal('settingsModal'); openModal('feedbackModal');" class="w-full py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs active:scale-95 transition">
         💬 Send Beta Feedback
       </button>
     </div>
   </div>
 
-  <!-- LOG WALK MODAL -->
+  <!-- 3. LOG WALK MODAL -->
   <div id="quickLogModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 space-y-4 shadow-2xl transition-colors">
       <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
@@ -424,39 +480,39 @@
     </div>
   </div>
 
-  <!-- ADD PUP MODAL -->
+  <!-- 4. ADD PUP MODAL -->
   <div id="addDogModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-xs rounded-3xl p-6 space-y-4 shadow-2xl transition-colors">
       <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
-        <h3 class="text-sm font-black text-zinc-900 dark:text-white">Add Another Pup</h3>
+        <h3 class="text-sm font-black text-zinc-900 dark:text-white">Add Household Pup</h3>
         <button onclick="closeModal('addDogModal')" class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
       <form id="addDogForm" onsubmit="handleAddDog(event)" class="space-y-3">
         <div>
           <label class="text-[10px] uppercase font-bold text-zinc-500">Dog's Name</label>
-          <input type="text" id="newDogName" placeholder="e.g. Copper" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
+          <input type="text" id="newDogName" placeholder="e.g. Bonnie" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
         </div>
         <div>
           <label class="text-[10px] uppercase font-bold text-zinc-500">Breed</label>
-          <input type="text" id="newDogBreed" placeholder="e.g. Golden Retriever" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
+          <input type="text" id="newDogBreed" placeholder="e.g. Cocker Spaniel" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
         </div>
         <div>
           <label class="text-[10px] uppercase font-bold text-zinc-500">Weight (kg)</label>
-          <input type="number" step="0.1" id="newDogWeight" placeholder="e.g. 24.5" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
+          <input type="number" step="0.1" id="newDogWeight" placeholder="e.g. 12.5" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
         </div>
         <button type="submit" class="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition">
-          Save Pup Profile
+          Save Pup to Pack
         </button>
       </form>
     </div>
   </div>
 
-  <!-- ADD TO STACK MODAL -->
+  <!-- 5. ADD TO FUEL MODAL -->
   <div id="addStackItemModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-xs rounded-3xl p-6 space-y-4 shadow-2xl transition-colors">
       <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
-        <h3 class="text-sm font-black text-zinc-900 dark:text-white flex items-center gap-1.5"><span>💊</span> Add to Stack</h3>
+        <h3 class="text-sm font-black text-zinc-900 dark:text-white flex items-center gap-1.5"><span>🥣</span> Add Food / Supplement</h3>
         <button onclick="closeModal('addStackItemModal')" class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
@@ -472,26 +528,26 @@
       <form id="addStackForm" onsubmit="handleAddNewStackItem(event)" class="space-y-3 pt-1">
         <div>
           <label class="text-[10px] uppercase font-bold text-zinc-500">Item Name</label>
-          <input type="text" id="stackItemName" placeholder="e.g. Seaweed Kelp Powder" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
+          <input type="text" id="stackItemName" placeholder="e.g. Raw Beef Patty / Salmon Oil" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="text-[10px] uppercase font-bold text-zinc-500">Schedule / Note</label>
-            <input type="text" id="stackItemNote" placeholder="e.g. Morning bowl" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
+            <label class="text-[10px] uppercase font-bold text-zinc-500">Schedule / Portion</label>
+            <input type="text" id="stackItemNote" placeholder="e.g. 200g Morning Bowl" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
           </div>
           <div>
             <label class="text-[10px] uppercase font-bold text-zinc-500">Emoji Icon</label>
-            <input type="text" id="stackItemEmoji" placeholder="🌿" value="🌿" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-center text-zinc-900 dark:text-white focus:outline-none focus:border-orange-500" />
+            <input type="text" id="stackItemEmoji" placeholder="🌿" value="🥣" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-center text-zinc-900 dark:text-white focus:outline-none focus:border-orange-500" />
           </div>
         </div>
         <button type="submit" class="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition">
-          Add to Daily Stack 🐾
+          Add to Daily Fuel 🐾
         </button>
       </form>
     </div>
   </div>
 
-  <!-- FEEDBACK MODAL -->
+  <!-- 6. FEEDBACK MODAL -->
   <div id="feedbackModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-xs rounded-3xl p-6 space-y-4 shadow-2xl transition-colors">
       <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
@@ -513,6 +569,10 @@
 
   <!-- ================= JAVASCRIPT STATE ENGINE ================= -->
   <script>
+    const SUPABASE_URL = "https://rrrjojbxjektdhrkahvh.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycmpvamJ4amVrdGRocmthaHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTk2MzIsImV4cCI6MjA3MTY5NTYzMn0.UfP6Wk1856YQn2N7x5g4J47V_u1w7Q6B9_0j_zYwPfk";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
     let themeMode = localStorage.getItem('dogwalkr_theme') || 'day';
 
     function applyTheme() {
@@ -557,7 +617,7 @@
       const target = document.getElementById(`view-${tab}`);
       if (target) target.classList.remove('hidden');
 
-      ['walkouts', 'routes', 'pack', 'stack'].forEach(key => {
+      ['walkouts', 'library', 'pack', 'fuel'].forEach(key => {
         const btn = document.getElementById(`nav-${key}`);
         if (btn) {
           if (key === tab) {
@@ -586,6 +646,7 @@
 
     function renderStackItems() {
       const container = document.getElementById('stackItemsContainer');
+      if (!container) return;
       container.innerHTML = '';
       
       let completedCount = 0;
@@ -606,7 +667,8 @@
         container.appendChild(el);
       });
 
-      document.getElementById('stackAdherenceLabel').innerText = `${completedCount} of ${pupStackItems.length} Completed`;
+      const label = document.getElementById('stackAdherenceLabel');
+      if (label) label.innerText = `${completedCount} of ${pupStackItems.length} Completed`;
     }
 
     function toggleStackItem(id) {
@@ -624,26 +686,76 @@
       e.preventDefault();
       const title = document.getElementById('stackItemName').value;
       const note = document.getElementById('stackItemNote').value;
-      const emoji = document.getElementById('stackItemEmoji').value || '💊';
+      const emoji = document.getElementById('stackItemEmoji').value || '🥣';
 
-      pupStackItems.push({
-        id: Date.now(),
-        title,
-        note,
-        emoji,
-        checked: false
-      });
-
+      pupStackItems.push({ id: Date.now(), title, note, emoji, checked: false });
       renderStackItems();
       closeModal('addStackItemModal');
       document.getElementById('addStackForm').reset();
+    }
+
+    function setStoolForLatest(score) {
+      alert(`Updated stool score to Score ${score} ✨`);
+    }
+
+    function openShareStudio(title, distance, fuel) {
+      document.getElementById('shareCardTitle').innerText = title;
+      document.getElementById('shareCardDistance').innerText = `${distance} km`;
+      document.getElementById('shareCardFuel').innerText = `+${fuel}g Kibble`;
+      openModal('shareModal');
+    }
+
+    async function loadLiveWalksFromSupabase() {
+      if (!supabaseClient) return;
+      try {
+        const { data: walks, error } = await supabaseClient
+          .from('walks')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (error || !walks || walks.length === 0) return;
+
+        const libFeed = document.getElementById('libraryFeedList');
+        if (!libFeed) return;
+        libFeed.innerHTML = '';
+
+        walks.forEach(walk => {
+          const canineKm = parseFloat(walk.dog_distance_km || (walk.distance_km * 1.44)).toFixed(2);
+          const durationMins = Math.round((walk.moving_time_seconds || 0) / 60) || Math.round(walk.duration_minutes || 30);
+          const fuelGrams = walk.extra_kibble_grams || Math.round((28.5 * 0.95 * (walk.distance_km || 3)) / 3.8);
+          const walkDate = new Date(walk.created_at || Date.now()).toLocaleDateString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+
+          const card = document.createElement('article');
+          card.className = "bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-3.5 space-y-2.5";
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-xs font-black text-zinc-900 dark:text-white">${walk.title || 'Outdoor Walkout'}</h4>
+                <p class="text-[10px] text-zinc-500 font-medium">${walkDate} • Barney</p>
+              </div>
+              <button onclick="openShareStudio('${walk.title || 'Walkout'}', '${canineKm}', '${fuelGrams}')" class="px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[10px] font-bold text-orange-600 dark:text-orange-400">
+                📸 Share
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
+              <span>Pup Load: <strong>${canineKm} km</strong></span>
+              <span>Time: <strong>${durationMins} min</strong></span>
+              <span class="text-orange-600 font-bold">+${fuelGrams}g</span>
+            </div>
+          `;
+          libFeed.appendChild(card);
+        });
+      } catch (err) {
+        console.log("Supabase feed error:", err);
+      }
     }
 
     function checkOffJointFromIntel() {
       const jointItem = pupStackItems.find(i => i.title.includes('Glucosamine') || i.title.includes('Joint'));
       if (jointItem) jointItem.checked = true;
       renderStackItems();
-      alert('Checked off Joint Supplement in your Stack! 💊');
+      alert('Checked off Joint Supplement in your Fuel pantry! 💊');
     }
 
     function logExtraFuelFromIntel(grams) {
@@ -652,22 +764,10 @@
         fuelItem.note = `+${grams}g kibble top-up logged`;
         fuelItem.checked = true;
       } else {
-        pupStackItems.push({
-          id: Date.now(),
-          title: "Post-Walk Extra Fuel",
-          note: `+${grams}g kibble top-up logged`,
-          emoji: "🥣",
-          checked: true
-        });
+        pupStackItems.push({ id: Date.now(), title: "Post-Walk Extra Fuel", note: `+${grams}g kibble top-up logged`, emoji: "🥣", checked: true });
       }
       renderStackItems();
-      alert(`Logged +${grams}g extra fuel top-up to Stack! 🥣`);
-    }
-
-    function init() {
-      applyTheme();
-      renderStackItems();
-      lucide.createIcons();
+      alert(`Logged +${grams}g extra fuel top-up to Fuel! 🥣`);
     }
 
     function switchActiveDog(key) {
@@ -679,7 +779,7 @@
       const multiplier = (1.3 + (40 - currentDog.weight) * 0.012).toFixed(2);
       
       document.getElementById('pupAvatarBadge').innerText = currentDog.emoji;
-      document.getElementById('pupMetaSubtitle').innerText = `${currentDog.weight} kg • Stride Multiplier: ${multiplier}×`;
+      document.getElementById('pupMetaSubtitle').innerText = `${currentDog.weight} kg • Stride Ratio: ${multiplier}×`;
       document.getElementById('weeklyPupKm').innerHTML = `${currentDog.km} <span class="text-[10px] text-zinc-500 font-bold">km</span>`;
       document.getElementById('weeklyKibble').innerHTML = `+${currentDog.kibble} <span class="text-[10px] text-zinc-500 font-bold">g</span>`;
       document.getElementById('weeklyWalkCount').innerText = currentDog.walks;
@@ -709,27 +809,7 @@
       const canineKm = (humanKm * multiplier).toFixed(2);
       const extraGrams = Math.round((currentDog.weight * 0.95 * humanKm) / 3.8);
 
-      const feed = document.getElementById('activityFeedList');
-      const newCard = document.createElement('article');
-      newCard.className = "bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-4 space-y-3 shadow-sm dark:shadow-lg transition-colors";
-      newCard.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-orange-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-orange-600 dark:text-orange-400">🐾</div>
-            <div>
-              <h4 class="text-sm font-black text-zinc-900 dark:text-white">${title}</h4>
-              <p class="text-[10px] text-zinc-400 font-medium">Just now • ${currentDog.name}</p>
-            </div>
-          </div>
-          <span class="text-[10px] font-bold px-2 py-0.5 bg-orange-100 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 text-orange-700 dark:text-orange-400 rounded-full">Manual</span>
-        </div>
-        <div class="grid grid-cols-3 gap-2 bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200/70 dark:border-zinc-800/60 rounded-2xl p-3 text-center">
-          <div><p class="text-[9px] uppercase font-bold text-zinc-500">Pup Distance</p><p class="text-base font-black text-zinc-900 dark:text-white mt-0.5">${canineKm} <span class="text-[9px] text-zinc-500 font-normal">km</span></p></div>
-          <div><p class="text-[9px] uppercase font-bold text-zinc-500">Duration</p><p class="text-base font-black text-zinc-900 dark:text-white mt-0.5">${mins} <span class="text-[9px] text-zinc-500 font-normal">min</span></p></div>
-          <div><p class="text-[9px] uppercase font-bold text-orange-700 dark:text-zinc-500">Extra Kibble</p><p class="text-base font-black text-orange-600 dark:text-orange-400 mt-0.5">+${extraGrams} <span class="text-[9px] text-orange-700 dark:text-zinc-500 font-normal">g</span></p></div>
-        </div>
-      `;
-      feed.prepend(newCard);
+      alert(`Walk saved: ${title} (${canineKm} km canine load)!`);
       closeModal('quickLogModal');
       document.getElementById('quickLogForm').reset();
     }
@@ -757,57 +837,6 @@
       alert('Thank you! Your feedback has been sent directly to Adele & Kate 🐾');
       closeModal('feedbackModal');
       document.getElementById('feedbackForm').reset();
-    }
-
-    async function loadLiveWalksFromSupabase() {
-      const SUPABASE_URL = "https://rrrjojbxjektdhrkahvh.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycmpvamJ4amVrdGRocmthaHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMTk2MzIsImV4cCI6MjA3MTY5NTYzMn0.UfP6Wk1856YQn2N7x5g4J47V_u1w7Q6B9_0j_zYwPfk";
-      const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-      if (!supabaseClient) return;
-
-      try {
-        const { data: walks, error } = await supabaseClient
-          .from('walks')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        if (error || !walks || walks.length === 0) return;
-
-        const feed = document.getElementById('activityFeedList');
-        if (!feed) return;
-        feed.innerHTML = '';
-
-        walks.forEach(walk => {
-          const canineKm = parseFloat(walk.dog_distance_km || (walk.distance_km * 1.44)).toFixed(2);
-          const durationMins = Math.round((walk.moving_time_seconds || 0) / 60) || Math.round(walk.duration_minutes || 30);
-          const fuelGrams = walk.extra_kibble_grams || Math.round((28.5 * 0.95 * (walk.distance_km || 3)) / 3.8);
-          const walkDate = new Date(walk.created_at || Date.now()).toLocaleDateString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
-
-          const card = document.createElement('article');
-          card.className = "bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-4 space-y-3 shadow-sm dark:shadow-lg transition-colors";
-          card.innerHTML = `
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-orange-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-orange-600 dark:text-orange-400">🐾</div>
-                <div>
-                  <h4 class="text-sm font-black text-zinc-900 dark:text-white">${walk.title || 'Outdoor Walkout'}</h4>
-                  <p class="text-[10px] text-zinc-400 font-medium">${walkDate} • Barney</p>
-                </div>
-              </div>
-              <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 rounded-full">Synced</span>
-            </div>
-            <div class="grid grid-cols-3 gap-2 bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200/70 dark:border-zinc-800/60 rounded-2xl p-3 text-center">
-              <div><p class="text-[9px] uppercase font-bold text-zinc-500">Pup Distance</p><p class="text-base font-black text-zinc-900 dark:text-white mt-0.5">${canineKm} <span class="text-[9px] text-zinc-500 font-normal">km</span></p></div>
-              <div><p class="text-[9px] uppercase font-bold text-zinc-500">Duration</p><p class="text-base font-black text-zinc-900 dark:text-white mt-0.5">${durationMins} <span class="text-[9px] text-zinc-500 font-normal">min</span></p></div>
-              <div><p class="text-[9px] uppercase font-bold text-orange-700 dark:text-zinc-500">Extra Kibble</p><p class="text-base font-black text-orange-600 dark:text-orange-400 mt-0.5">+${fuelGrams} <span class="text-[9px] text-orange-700 dark:text-zinc-500 font-normal">g</span></p></div>
-            </div>
-          `;
-          feed.appendChild(card);
-        });
-      } catch (err) {
-        console.log("Supabase feed error:", err);
-      }
     }
 
     function init() {
