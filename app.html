@@ -132,10 +132,10 @@
         </p>
 
         <div class="flex items-center gap-2 pt-1 overflow-x-auto hide-scrollbar">
-          <button onclick="alert('Logged 48g kibble top-up to daily fuel log!')" class="px-3 py-1.5 rounded-xl bg-orange-500 text-white dark:bg-orange-500/10 dark:border dark:border-orange-500/30 dark:text-orange-400 text-[11px] font-bold shrink-0 shadow-sm active:scale-95 transition">
+          <button onclick="logExtraFuelFromIntel(48)" class="px-3 py-1.5 rounded-xl bg-orange-500 text-white dark:bg-orange-500/10 dark:border dark:border-orange-500/30 dark:text-orange-400 text-[11px] font-bold shrink-0 shadow-sm active:scale-95 transition">
             + Log 48g Extra Fuel
           </button>
-          <button onclick="alert('Checked off daily joint supplements.')" class="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-[11px] font-bold shrink-0 active:scale-95 transition">
+          <button onclick="checkOffJointFromIntel()" class="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-[11px] font-bold shrink-0 active:scale-95 transition">
             💊 Glucosamine Given
           </button>
         </div>
@@ -261,50 +261,32 @@
       </section>
     </div>
 
-    <!-- TAB 4: STACK (HEALTH & SUPPLEMENTS) -->
+    <!-- TAB 4: STACK (HEALTH & SUPPLEMENT PANTRY) -->
     <div id="view-stack" class="tab-pane hidden space-y-4">
       <section class="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800/80 rounded-3xl p-5 space-y-4 shadow-sm">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-500">Daily Routine</span>
-            <h2 class="text-base font-black text-zinc-900 dark:text-white">Health & Fuel Stack</h2>
+            <span class="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-500">Daily Fuel & Health</span>
+            <h2 class="text-base font-black text-zinc-900 dark:text-white">Pup Routine Stack</h2>
           </div>
-          <span class="text-[11px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full">Daily Log</span>
+          <button onclick="openModal('addStackItemModal')" class="px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 text-orange-600 dark:text-orange-400 font-bold text-xs flex items-center gap-1 active:scale-95 transition">
+            <span>+</span> Add Item
+          </button>
         </div>
 
-        <div class="space-y-2.5">
-          <label class="flex items-center justify-between p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl cursor-pointer">
-            <div class="flex items-center gap-3">
-              <input type="checkbox" checked class="w-4 h-4 accent-orange-500 rounded" />
-              <div>
-                <p class="text-xs font-bold text-zinc-900 dark:text-white">Glucosamine Joint Complex</p>
-                <p class="text-[10px] text-zinc-500">Morning ration • Cartilage protection</p>
-              </div>
-            </div>
-            <span class="text-xs">💊</span>
-          </label>
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+          Check off daily joint supplements, coat oils, and earned post-walk fuel rations.
+        </p>
 
-          <label class="flex items-center justify-between p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl cursor-pointer">
-            <div class="flex items-center gap-3">
-              <input type="checkbox" checked class="w-4 h-4 accent-orange-500 rounded" />
-              <div>
-                <p class="text-xs font-bold text-zinc-900 dark:text-white">Wild Salmon Omega-3 Oil</p>
-                <p class="text-[10px] text-zinc-500">Evening bowl • Coat & systemic recovery</p>
-              </div>
-            </div>
-            <span class="text-xs">🐟</span>
-          </label>
+        <!-- Dynamic Stack List -->
+        <div id="stackItemsContainer" class="space-y-2.5 pt-1">
+          <!-- Populated by JavaScript -->
+        </div>
 
-          <label class="flex items-center justify-between p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl cursor-pointer">
-            <div class="flex items-center gap-3">
-              <input type="checkbox" class="w-4 h-4 accent-orange-500 rounded" />
-              <div>
-                <p class="text-xs font-bold text-zinc-900 dark:text-white">Post-Walk Extra Kibble Top-Up</p>
-                <p class="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">+68g earned from today's walkouts</p>
-              </div>
-            </div>
-            <span class="text-xs">🥣</span>
-          </label>
+        <!-- Adherence Score Footer -->
+        <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs font-bold text-zinc-500">
+          <span>Daily Routine Status</span>
+          <span id="stackAdherenceLabel" class="text-orange-600 dark:text-orange-400">2 of 3 Completed</span>
         </div>
       </section>
     </div>
@@ -411,7 +393,47 @@
     </div>
   </div>
 
-  <!-- 3. IN-APP FEEDBACK MODAL -->
+  <!-- 3. ADD TO STACK MODAL -->
+  <div id="addStackItemModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-xs rounded-3xl p-6 space-y-4 shadow-2xl transition-colors">
+      <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+        <h3 class="text-sm font-black text-zinc-900 dark:text-white flex items-center gap-1.5"><span>💊</span> Add to Stack</h3>
+        <button onclick="closeModal('addStackItemModal')" class="text-zinc-400 hover:text-zinc-900 dark:hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <!-- Quick Preset Buttons -->
+      <div>
+        <label class="text-[10px] uppercase font-bold text-zinc-500">Quick Presets</label>
+        <div class="flex flex-wrap gap-1.5 mt-1.5">
+          <button type="button" onclick="fillStackPreset('Green-Lipped Mussel', 'Joint protection tablet', '🦪')" class="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-orange-100 rounded-lg text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">🦪 Green Mussel</button>
+          <button type="button" onclick="fillStackPreset('Probiotic Digestive Powder', 'Gut & stool balance', '🦠')" class="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-orange-100 rounded-lg text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">🦠 Probiotics</button>
+          <button type="button" onclick="fillStackPreset('Dental Care Stick', 'Evening plaque defense', '🦷')" class="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-orange-100 rounded-lg text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">🦷 Dental Stick</button>
+        </div>
+      </div>
+
+      <form id="addStackForm" onsubmit="handleAddNewStackItem(event)" class="space-y-3 pt-1">
+        <div>
+          <label class="text-[10px] uppercase font-bold text-zinc-500">Item Name</label>
+          <input type="text" id="stackItemName" placeholder="e.g. Seaweed Kelp Powder" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[10px] uppercase font-bold text-zinc-500">Schedule / Note</label>
+            <input type="text" id="stackItemNote" placeholder="e.g. Morning bowl" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-orange-500" />
+          </div>
+          <div>
+            <label class="text-[10px] uppercase font-bold text-zinc-500">Emoji Icon</label>
+            <input type="text" id="stackItemEmoji" placeholder="🌿" value="🌿" required class="w-full mt-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-center text-zinc-900 dark:text-white focus:outline-none focus:border-orange-500" />
+          </div>
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition">
+          Add to Daily Stack 🐾
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. IN-APP FEEDBACK MODAL -->
   <div id="feedbackModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 w-full max-w-xs rounded-3xl p-6 space-y-4 shadow-2xl transition-colors">
       <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
@@ -433,7 +455,6 @@
 
   <!-- ================= JAVASCRIPT STATE ENGINE ================= -->
   <script>
-    // Theme Engine: 'day' | 'night' | 'auto'
     let themeMode = localStorage.getItem('dogwalkr_theme') || 'day';
 
     function applyTheme() {
@@ -501,8 +522,96 @@
     let currentDog = DOG_PRESETS.barney;
     let selectedStoolScore = 3;
 
+    // Active Health Stack Data
+    let pupStackItems = [
+      { id: 1, title: "Glucosamine Joint Complex", note: "Morning ration • Cartilage protection", emoji: "💊", checked: true },
+      { id: 2, title: "Wild Salmon Omega-3 Oil", note: "Evening bowl • Coat & recovery", emoji: "🐟", checked: true },
+      { id: 3, title: "Post-Walk Extra Fuel Top-Up", note: "+68g kibble earned today", emoji: "🥣", checked: false }
+    ];
+
+    function renderStackItems() {
+      const container = document.getElementById('stackItemsContainer');
+      container.innerHTML = '';
+      
+      let completedCount = 0;
+      pupStackItems.forEach(item => {
+        if (item.checked) completedCount++;
+        const el = document.createElement('label');
+        el.className = "flex items-center justify-between p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl cursor-pointer hover:border-orange-300 transition-colors";
+        el.innerHTML = `
+          <div class="flex items-center gap-3">
+            <input type="checkbox" onchange="toggleStackItem(${item.id})" ${item.checked ? 'checked' : ''} class="w-4 h-4 accent-orange-500 rounded cursor-pointer" />
+            <div>
+              <p class="text-xs font-bold text-zinc-900 dark:text-white ${item.checked ? 'line-through text-zinc-400 dark:text-zinc-500' : ''}">${item.title}</p>
+              <p class="text-[10px] text-zinc-500 font-medium">${item.note}</p>
+            </div>
+          </div>
+          <span class="text-base">${item.emoji}</span>
+        `;
+        container.appendChild(el);
+      });
+
+      document.getElementById('stackAdherenceLabel').innerText = `${completedCount} of ${pupStackItems.length} Completed`;
+    }
+
+    function toggleStackItem(id) {
+      pupStackItems = pupStackItems.map(item => item.id === id ? { ...item, checked: !item.checked } : item);
+      renderStackItems();
+    }
+
+    function fillStackPreset(title, note, emoji) {
+      document.getElementById('stackItemName').value = title;
+      document.getElementById('stackItemNote').value = note;
+      document.getElementById('stackItemEmoji').value = emoji;
+    }
+
+    function handleAddNewStackItem(e) {
+      e.preventDefault();
+      const title = document.getElementById('stackItemName').value;
+      const note = document.getElementById('stackItemNote').value;
+      const emoji = document.getElementById('stackItemEmoji').value || '💊';
+
+      pupStackItems.push({
+        id: Date.now(),
+        title,
+        note,
+        emoji,
+        checked: false
+      });
+
+      renderStackItems();
+      closeModal('addStackItemModal');
+      document.getElementById('addStackForm').reset();
+    }
+
+    function checkOffJointFromIntel() {
+      const jointItem = pupStackItems.find(i => i.title.includes('Glucosamine') || i.title.includes('Joint'));
+      if (jointItem) jointItem.checked = true;
+      renderStackItems();
+      alert('Checked off Joint Supplement in your Stack! 💊');
+    }
+
+    function logExtraFuelFromIntel(grams) {
+      let fuelItem = pupStackItems.find(i => i.title.includes('Extra Fuel'));
+      if (fuelItem) {
+        fuelItem.note = `+${grams}g kibble top-up logged`;
+        fuelItem.checked = true;
+      } else {
+        pupStackItems.push({
+          id: Date.now(),
+          title: "Post-Walk Extra Fuel",
+          note: `+${grams}g kibble top-up logged`,
+          emoji: "🥣",
+          checked: true
+        });
+      }
+      renderStackItems();
+      alert(`Logged +${grams}g extra fuel top-up to Stack! 🥣`);
+    }
+
     function init() {
       applyTheme();
+      renderStackItems();
       lucide.createIcons();
     }
 
