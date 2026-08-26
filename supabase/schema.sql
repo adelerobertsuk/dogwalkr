@@ -282,3 +282,38 @@ create policy "Allow anon insert household_members" on public.household_members
 drop policy if exists "Allow anon delete household_members" on public.household_members;
 create policy "Allow anon delete household_members" on public.household_members
   for delete using (true);
+
+-- ==========================================================
+-- food_logs (2026-08-26): one row per (food_item_id, date) actual
+-- feeding event, replacing the old STATE.foodLogs client-only
+-- checkbox state. That state lived only in browser memory and was
+-- never written to Supabase at all — it reset on every page reload
+-- and, worse, never synced between Adele's and Kate's devices,
+-- which defeats the entire point of a shared household feeding
+-- log. fed_by records which linked household member (see
+-- household_members above) logged the feed; the item's own
+-- `portion` column already covers the amount, so it isn't
+-- duplicated here. Checking a box off deletes its row — there is no
+-- "unfed" history, only a record of feeds that actually happened.
+-- ==========================================================
+create table if not exists public.food_logs (
+  id uuid primary key default gen_random_uuid(),
+  food_item_id uuid not null references public.food_items(id) on delete cascade,
+  fed_date date not null,
+  fed_by text,
+  created_at timestamptz not null default now(),
+  unique (food_item_id, fed_date)
+);
+create index if not exists food_logs_fed_date_idx on public.food_logs (fed_date);
+
+alter table public.food_logs enable row level security;
+
+drop policy if exists "Allow anon read food_logs" on public.food_logs;
+create policy "Allow anon read food_logs" on public.food_logs
+  for select using (true);
+drop policy if exists "Allow anon insert food_logs" on public.food_logs;
+create policy "Allow anon insert food_logs" on public.food_logs
+  for insert with check (true);
+drop policy if exists "Allow anon delete food_logs" on public.food_logs;
+create policy "Allow anon delete food_logs" on public.food_logs
+  for delete using (true);

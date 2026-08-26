@@ -219,14 +219,14 @@
       </section>
 
       <!-- ========================================================== -->
-      <!-- TAB 4: FOOD 🥣 (Dog Bowl Fuel & Feeding Routine)           -->
+      <!-- TAB 4: FOOD 🥣 (Dog's Food Bowl log, per dog)              -->
       <!-- ========================================================== -->
       <section id="viewFood" class="space-y-4 hidden">
-        
+
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-black text-zinc-900 tracking-tight">Daily Food & Bowl</h2>
-            <p class="text-xs text-zinc-500">Kibble fuel top-ups and feeding routine</p>
+            <h2 id="foodViewTitle" class="text-xl font-black text-zinc-900 tracking-tight">Food Bowl</h2>
+            <p class="text-xs text-zinc-500">Log each feeding and who fed them</p>
           </div>
           <button onclick="openAddFoodModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
             <i data-lucide="plus" class="w-4 h-4"></i>
@@ -246,20 +246,11 @@
           </div>
         </div>
 
-        <div class="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-4 flex items-center justify-between">
-          <div class="flex items-center space-x-3">
-            <div class="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-xs">
-              🥣
-            </div>
-            <div>
-              <p class="text-xs font-bold uppercase tracking-wider text-amber-900">Recommended Kibble Top-Up</p>
-              <div class="flex items-baseline space-x-1">
-                <span id="foodTotalExtraEarned" class="text-2xl font-black text-amber-950">+0</span>
-                <span class="text-xs font-bold text-amber-800">grams extra fuel today</span>
-              </div>
-            </div>
+        <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-2">
+          <span class="text-xs font-bold text-zinc-700">Logging As</span>
+          <div id="foodFeederChips" class="flex flex-wrap gap-2">
+            <!-- Populated by JS -->
           </div>
-          <span class="text-xs font-semibold text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-full">Strava Synced</span>
         </div>
 
         <div class="space-y-2">
@@ -305,7 +296,7 @@
 
       <button onclick="openTab('food')" id="navTabFood" class="flex-1 flex flex-col items-center py-1 text-zinc-400 tap-target">
         <div class="w-5 h-5 flex items-center justify-center">
-          <i data-lucide="utensils-crossed" class="w-4 h-4"></i>
+          <i data-lucide="soup" class="w-4 h-4"></i>
         </div>
         <span class="text-[10px] font-semibold mt-1">Food</span>
       </button>
@@ -559,7 +550,6 @@
       <input type="hidden" id="shareCardWalkId" value="" />
 
       <button id="shareCardShareBtn" onclick="shareWalkoutCard()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md">Share Walkout</button>
-      <button id="shareCardDownloadBtn" onclick="downloadWalkoutCard()" class="w-full py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold">Save to Camera Roll</button>
     </div>
   </div>
 
@@ -582,6 +572,13 @@
     }
     const DEVICE_ID = getDeviceId();
 
+    // Remembers which household member is "logging" food on this
+    // device, so ticking a feeding checkbox records who actually fed
+    // the dog without asking every time.
+    function getStoredFeederName() {
+      return localStorage.getItem('dogwalkr_feeder_name') || '';
+    }
+
     const STATE = {
       activeTab: 'dashboard',
       activeDogId: 'dog_joe',
@@ -598,7 +595,8 @@
       walkouts: [],
       walkDogs: [],
       foodItems: [],
-      foodLogs: {},
+      foodLogs: [],
+      currentFeederName: getStoredFeederName(),
       selectedFoodDate: localDateKey(new Date())
     };
 
@@ -654,7 +652,7 @@
     }
 
     async function initApp() {
-      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchHouseholdMembers(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchWalkDogs()]);
+      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchHouseholdMembers(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchFoodLogs(), fetchWalkDogs()]);
       renderAll();
 
       const params = new URLSearchParams(window.location.search);
@@ -772,6 +770,19 @@
         }
       } catch (err) {
         console.error("Food items connection exception:", err);
+      }
+    }
+
+    async function fetchFoodLogs() {
+      try {
+        const { data, error } = await db.from('food_logs').select('*');
+        if (error) {
+          console.warn("Supabase food logs query notice:", error.message);
+        } else if (data) {
+          STATE.foodLogs = data;
+        }
+      } catch (err) {
+        console.error("Food logs connection exception:", err);
       }
     }
 
@@ -1107,12 +1118,38 @@
       }).join('');
     }
 
+    function renderFoodFeederChips() {
+      const chips = document.getElementById('foodFeederChips');
+      if (!chips) return;
+      if (STATE.householdMembers.length === 0) {
+        chips.innerHTML = '<p class="text-[11px] text-zinc-400 italic">Add co-owners in Settings to track who fed each dog.</p>';
+        return;
+      }
+      chips.innerHTML = STATE.householdMembers.map(m => {
+        const active = STATE.currentFeederName === m.name;
+        return `<button onclick="setFeederName('${m.name}')" class="px-3 py-1.5 rounded-full text-xs font-bold border ${active ? 'bg-orange-500 text-white border-orange-500' : 'bg-zinc-50 text-zinc-600 border-zinc-200'}">${m.name}</button>`;
+      }).join('');
+    }
+
+    function setFeederName(name) {
+      STATE.currentFeederName = name;
+      localStorage.setItem('dogwalkr_feeder_name', name);
+      renderFoodFeederChips();
+    }
+
     function renderFood() {
-      const doneToday = STATE.foodLogs[STATE.selectedFoodDate] || [];
+      const activeDog = STATE.dogs.find(d => d.id === STATE.activeDogId);
+      const titleEl = document.getElementById('foodViewTitle');
+      if (titleEl) titleEl.innerText = activeDog ? `${activeDog.name}'s Food Bowl` : 'Food Bowl';
+
+      renderFoodFeederChips();
+
+      const logsToday = STATE.foodLogs.filter(l => l.fed_date === STATE.selectedFoodDate);
       const list = document.getElementById('foodStackList');
       const dogFoodItems = STATE.foodItems.filter(item => item.dog_id === STATE.activeDogId);
       list.innerHTML = dogFoodItems.map(item => {
-        const done = doneToday.includes(item.id);
+        const log = logsToday.find(l => l.food_item_id === item.id);
+        const done = !!log;
         return `
         <div class="bg-white rounded-2xl p-3.5 border border-zinc-200/80 shadow-xs flex items-center justify-between">
           <label class="flex items-center space-x-3 flex-1 cursor-pointer">
@@ -1120,7 +1157,7 @@
             <span class="text-xl">${item.emoji}</span>
             <div class="${done ? 'opacity-40 line-through' : ''}">
               <p class="text-xs font-bold text-zinc-900">${item.name}</p>
-              <p class="text-[11px] text-zinc-500">${item.portion}</p>
+              <p class="text-[11px] text-zinc-500">${item.portion}${done && log.fed_by ? ` • Fed by ${log.fed_by}` : ''}</p>
             </div>
           </label>
           <div class="flex items-center">
@@ -1130,10 +1167,6 @@
         </div>
       `;
       }).join('');
-
-      const dayWalks = getDogWalkouts(STATE.activeDogId).filter(w => w.created_at && localDateKey(new Date(w.created_at)) === STATE.selectedFoodDate);
-      const extraKibble = dayWalks.reduce((sum, w) => sum + Math.round((Number(w.humanDistance || w.distance) || 0) * 25), 0);
-      document.getElementById('foodTotalExtraEarned').innerText = `+${extraKibble}`;
 
       const todayKey = localDateKey(new Date());
       const dateLabel = STATE.selectedFoodDate === todayKey
@@ -1159,12 +1192,24 @@
       selectFoodDate(localDateKey(date));
     }
 
-    function toggleFoodDone(itemId) {
-      const key = STATE.selectedFoodDate;
-      if (!STATE.foodLogs[key]) STATE.foodLogs[key] = [];
-      const idx = STATE.foodLogs[key].indexOf(itemId);
-      if (idx >= 0) STATE.foodLogs[key].splice(idx, 1);
-      else STATE.foodLogs[key].push(itemId);
+    async function toggleFoodDone(itemId) {
+      const fedDate = STATE.selectedFoodDate;
+      const existing = STATE.foodLogs.find(l => l.food_item_id === itemId && l.fed_date === fedDate);
+
+      if (existing) {
+        const { error } = await db.from('food_logs').delete().eq('id', existing.id);
+        if (error) console.warn("Supabase food log delete notice:", error.message);
+        STATE.foodLogs = STATE.foodLogs.filter(l => l.id !== existing.id);
+      } else {
+        const fedBy = STATE.currentFeederName || null;
+        const { data, error } = await db.from('food_logs').insert([{ food_item_id: itemId, fed_date: fedDate, fed_by: fedBy }]).select();
+        if (error || !data) {
+          console.warn("Supabase food log insert notice:", error?.message);
+          STATE.foodLogs.push({ id: 'log_' + Date.now(), food_item_id: itemId, fed_date: fedDate, fed_by: fedBy });
+        } else {
+          STATE.foodLogs.push(data[0]);
+        }
+      }
       renderFood();
     }
 
@@ -1611,10 +1656,6 @@
       if (!w) return;
       document.getElementById('shareCardWalkId').value = walkId;
       shareCardMode = w.photo_url ? 'photo' : 'sticker';
-      // "Save to Camera Roll" always stays visible as the fallback path —
-      // navigator.share existing doesn't guarantee it succeeds (user can
-      // cancel, a target app can reject the file, etc.), so the download
-      // button is the guaranteed way to get the PNG out of the browser.
       openModal('modalShareCard');
       await renderShareCard();
     }
@@ -1664,15 +1705,6 @@
         }
       }
       downloadBlob(blob, filename);
-    }
-
-    async function downloadWalkoutCard() {
-      const walkId = document.getElementById('shareCardWalkId').value;
-      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
-      if (!w) return;
-      const blob = await getShareCardBlob();
-      if (!blob) { alert('Could not generate the image.'); return; }
-      downloadBlob(blob, getShareCardFilename(w));
     }
 
     async function saveFoodItem() {
