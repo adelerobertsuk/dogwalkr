@@ -651,6 +651,82 @@
       return keywords.some(k => text.includes(k));
     }
 
+    function formatTimeAgo(dateStr, ref) {
+      if (!dateStr) return '';
+      const diffMs = ref - new Date(dateStr);
+      const hours = diffMs / 3600000;
+      if (hours < 1) return 'Just now';
+      if (hours < 24) return `${Math.round(hours)}h ago`;
+      return `${Math.round(hours / 24)}d ago`;
+    }
+
+    // Daily Dog Coach: a rolling-7-day recovery/activity read, not a
+    // vet-grade formula. Two signals decide the state:
+    //   1. Was the MOST RECENT walkout unusually long for this dog
+    //      specifically (relative to its own average session this
+    //      week, not one fixed number for every size of dog), and how
+    //      recently did it happen? A single huge outing (e.g. a
+    //      half-marathon walk) should force at least a day of real
+    //      rest before "ready" comes back, however light the rest of
+    //      the week was.
+    //   2. Failing that, how loaded has the WHOLE rolling week been —
+    //      total minutes moved in the last 7 days (isWithinLast7Days),
+    //      not a calendar-week bucket — against a rough baseline of
+    //      ~300 active minutes/week (~40-45 min/day).
+    function computeCoachRecommendation(dog, dogWalkouts, now) {
+      const weeklyWalks = dogWalkouts.filter(w => isWithinLast7Days(w.created_at, now));
+      const weeklyMinutes = weeklyWalks.reduce((sum, w) => sum + (Number(w.durationMins) || 0), 0);
+      const latest = dogWalkouts[0];
+
+      if (!latest) {
+        return {
+          pill: `🐾 No Data Yet`,
+          headline: `${dog.name} hasn't logged a walkout yet`,
+          body: `Log or sync a walkout to start tracking ${dog.name}'s weekly activity and recovery.`,
+        };
+      }
+
+      const latestMins = Number(latest.durationMins) || 0;
+      const hoursSinceLatest = (now - new Date(latest.created_at)) / 3600000;
+      const avgSessionMins = weeklyWalks.length > 0 ? weeklyMinutes / weeklyWalks.length : latestMins;
+      const isHighLoadSession = latestMins >= 90 || latestMins >= avgSessionMins * 1.8;
+      const weeklyLoadRatio = weeklyMinutes / 300;
+
+      if (isHighLoadSession && hoursSinceLatest < 24) {
+        return {
+          pill: '🔴 Rest Day',
+          headline: `${dog.name} needs a rest day`,
+          body: `That last outing (${latestMins} mins) was well above ${dog.name}'s usual session this week — give paws and joints a full day off before the next walkout.`,
+        };
+      }
+      if (isHighLoadSession && hoursSinceLatest < 48) {
+        return {
+          pill: '🟡 Recovery',
+          headline: `${dog.name} is still recovering`,
+          body: `Still within 48 hours of that big effort — keep today to a short, gentle stroll rather than a full walkout.`,
+        };
+      }
+      if (weeklyLoadRatio >= 1.4) {
+        return {
+          pill: '🟡 Recovery',
+          headline: `${dog.name} has had a heavy week`,
+          body: `${Math.round(weeklyMinutes)} active minutes in the last 7 days is a lot — favor rest and light movement until the weekly load eases off.`,
+        };
+      }
+      if (weeklyLoadRatio >= 0.6) {
+        return {
+          pill: '🟢 Active Routine',
+          headline: `${dog.name} is in a steady active routine`,
+          body: `Pacing this week has been reasonable — a normal walkout is fine today.`,
+        };
+      }
+      return {
+        pill: '✅ Ready',
+        headline: `${dog.name} is recovered and ready for a workout!`,
+        body: `Low strain over the last 7 days — ${dog.name} is ready for a full walkout today.`,
+      };
+    }
+
     async function initApp() {
       await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchHouseholdMembers(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchFoodLogs(), fetchWalkDogs()]);
       renderAll();
@@ -988,8 +1064,10 @@
       const now = new Date();
       const dogWalkouts = getDogWalkouts(dog.id);
 
-      document.getElementById('dashCoachHeadline').innerText = `${dog.name} is recovered and ready for walkouts!`;
-      document.getElementById('dashCoachBody').innerText = `Based on recent pacing and joint recovery, a 30–45 minute walk on soft grass is optimal today. Stride ratio calibrated at ${multiplier.toFixed(2)}×.`;
+      const coach = computeCoachRecommendation(dog, dogWalkouts, now);
+      document.getElementById('dashCoachStagePill').innerText = coach.pill;
+      document.getElementById('dashCoachHeadline').innerText = coach.headline;
+      document.getElementById('dashCoachBody').innerText = `${coach.body} Stride ratio calibrated at ${multiplier.toFixed(2)}×.`;
 
       const weeklyWalks = dogWalkouts.filter(w => isWithinLast7Days(w.created_at, now));
       let totalHumanKm = 0;
@@ -1007,8 +1085,8 @@
 
       const dist = Number(latest.humanDistance || latest.distance) || 0;
       const walkDogKm = (dist * multiplier).toFixed(2);
-      const extraGrams = Math.round(dist * 25);
       const stoolMeta = stoolScoreMeta(latest.stoolScore);
+      document.getElementById('latestWalkTimeAgo').innerText = formatTimeAgo(latest.created_at, now);
 
       container.innerHTML = `
         <div class="space-y-3">
@@ -1025,8 +1103,8 @@
               <p class="text-base font-black text-zinc-900">${walkDogKm} km</p>
             </div>
             <div>
-              <span class="text-[10px] font-bold uppercase text-amber-600">Recommended Fuel</span>
-              <p class="text-base font-black text-amber-700">+${extraGrams}g Kibble</p>
+              <span class="text-[10px] font-bold uppercase text-zinc-400">Duration</span>
+              <p class="text-base font-black text-zinc-900">${latest.durationMins || 0} mins</p>
             </div>
           </div>
           <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-100">
@@ -1047,7 +1125,6 @@
 
       list.innerHTML = dogWalkouts.map(w => {
         const dist = Number(w.humanDistance || w.distance) || 0;
-        const extraG = Math.round(dist * 25);
         const stoolMeta = stoolScoreMeta(w.stoolScore);
         return `
           <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-3 cursor-pointer" onclick="showWalkDetailModal('${w.id}')">
@@ -1071,7 +1148,6 @@
             <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-100 text-zinc-500">
               <span>Distance: <strong>${dist} km</strong></span>
               <span class="font-bold text-zinc-700">${stoolMeta.emoji} ${stoolMeta.label}</span>
-              <span class="text-amber-700 font-bold">+${extraG}g Fuel Top-up</span>
             </div>
           </div>
         `;
