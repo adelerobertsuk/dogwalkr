@@ -391,6 +391,18 @@
           <label class="text-xs font-bold text-zinc-700 uppercase">Walkout Title</label>
           <input type="text" id="logWalkTitle" placeholder="e.g. Afternoon Park Loop" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
         </div>
+        <div class="p-3 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-zinc-700 uppercase">Pack Mode</label>
+            <button type="button" id="packModeToggle" onclick="togglePackMode()" class="relative w-11 h-6 rounded-full bg-zinc-300 transition-colors" aria-pressed="false">
+              <span id="packModeToggleKnob" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"></span>
+            </button>
+          </div>
+          <p class="text-[11px] text-zinc-500">Assign this walkout to more than one dog at once — e.g. a group walk with both #Bonnie and #Jess.</p>
+          <div id="packModeDogChips" class="flex flex-wrap gap-2 hidden">
+            <!-- Populated by JS -->
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs font-bold text-zinc-700 uppercase">Distance (km)</label>
@@ -541,6 +553,10 @@
       <div class="grid grid-cols-2 gap-2">
         <button id="shareModePhotoBtn" onclick="setShareCardMode('photo')" class="py-2.5 rounded-xl text-xs font-bold border">Photo Overlay</button>
         <button id="shareModeStickerBtn" onclick="setShareCardMode('sticker')" class="py-2.5 rounded-xl text-xs font-bold border">Transparent Sticker</button>
+      </div>
+
+      <div id="shareCardDogPicker" class="flex flex-wrap gap-2 hidden">
+        <!-- Populated by JS: "Whole Pack" chip + one chip per assigned dog -->
       </div>
 
       <div class="rounded-2xl overflow-hidden flex items-center justify-center relative checkerboard-bg" style="aspect-ratio: 9 / 16;">
@@ -887,6 +903,41 @@
       const preview = document.getElementById('walkPhotoPreview');
       preview.src = '';
       preview.classList.add('hidden');
+      packModeActive = false;
+      packModeSelectedDogIds = [];
+      renderPackModeUI();
+    }
+
+    function togglePackMode() {
+      packModeActive = !packModeActive;
+      if (!packModeActive) packModeSelectedDogIds = [];
+      renderPackModeUI();
+    }
+
+    function togglePackModeDog(dogId) {
+      const idx = packModeSelectedDogIds.indexOf(dogId);
+      if (idx >= 0) packModeSelectedDogIds.splice(idx, 1);
+      else packModeSelectedDogIds.push(dogId);
+      renderPackModeUI();
+    }
+
+    function renderPackModeUI() {
+      const toggle = document.getElementById('packModeToggle');
+      if (!toggle) return;
+      const knob = document.getElementById('packModeToggleKnob');
+      const chips = document.getElementById('packModeDogChips');
+      toggle.setAttribute('aria-pressed', String(packModeActive));
+      toggle.className = `relative w-11 h-6 rounded-full transition-colors ${packModeActive ? 'bg-orange-500' : 'bg-zinc-300'}`;
+      knob.className = `absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${packModeActive ? 'translate-x-5' : ''}`;
+      chips.classList.toggle('hidden', !packModeActive);
+      if (!packModeActive) return;
+      chips.innerHTML = STATE.dogs.map(d => {
+        const active = packModeSelectedDogIds.includes(d.id);
+        return `<button type="button" onclick="togglePackModeDog('${d.id}')" class="px-3 py-1.5 rounded-full text-xs font-bold border flex items-center space-x-1.5 ${active ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-zinc-600 border-zinc-200'}">
+          <img src="${d.avatar}" class="w-4 h-4 rounded-full object-cover" />
+          <span>${d.name}</span>
+        </button>`;
+      }).join('');
     }
 
     function showWalkDetailModal(walkId) {
@@ -935,6 +986,10 @@
         preview.src = w.photo_url;
         preview.classList.remove('hidden');
       }
+      const assignedIds = getAssignedDogIdsForWalk(w.id);
+      packModeActive = assignedIds.length > 1;
+      packModeSelectedDogIds = packModeActive ? assignedIds : [];
+      renderPackModeUI();
       openModal('modalLogWalk');
     }
 
@@ -961,6 +1016,20 @@
       return data.publicUrl;
     }
 
+    async function assignWalkToDogs(walkId, dogIds) {
+      const { error: deleteError } = await db.from('walk_dogs').delete().eq('walk_id', walkId);
+      if (deleteError) console.warn("walk_dogs clear notice:", deleteError.message);
+      STATE.walkDogs = STATE.walkDogs.filter(wd => String(wd.walk_id) !== String(walkId));
+
+      if (dogIds.length === 0) return;
+      const { error: insertError } = await db.from('walk_dogs').insert(dogIds.map(dogId => ({ walk_id: walkId, dog_id: dogId })));
+      if (insertError) {
+        console.warn("walk_dogs insert notice:", insertError.message);
+      } else {
+        dogIds.forEach(dogId => STATE.walkDogs.push({ walk_id: walkId, dog_id: dogId }));
+      }
+    }
+
     async function saveWalkout() {
       const editId = document.getElementById('editWalkId').value;
       const title = document.getElementById('logWalkTitle').value.trim() || 'Afternoon Park Walk';
@@ -972,15 +1041,34 @@
       const photoFile = document.getElementById('inputWalkPhoto').files[0];
       const uploadedPhoto = photoFile ? await uploadWalkPhoto(photoFile) : null;
 
+      if (packModeActive && packModeSelectedDogIds.length === 0) {
+        alert('Pack Mode is on — select at least one dog, or turn Pack Mode off.');
+        return;
+      }
+      // With Pack Mode off, an EDIT keeps whatever dog(s) this walk was
+      // already assigned to (so editing a walk while a different dog
+      // happens to be active elsewhere in the app can't silently
+      // reassign it) — only a brand-new walkout defaults to the active dog.
+      let dogIds;
+      if (packModeActive) {
+        dogIds = packModeSelectedDogIds;
+      } else if (editId) {
+        const existingAssigned = getAssignedDogIdsForWalk(editId);
+        dogIds = existingAssigned.length > 0 ? [existingAssigned[0]] : [STATE.activeDogId];
+      } else {
+        dogIds = [STATE.activeDogId];
+      }
+
       if (editId) {
         const existing = STATE.walkouts.find(w => String(w.id) === String(editId));
         const photo_url = uploadedPhoto || (existing ? existing.photo_url : null) || null;
-        const updateData = { title, humanDistance, durationMins, stoolScore, notes, photo_url };
+        const updateData = { title, humanDistance, durationMins, stoolScore, notes, photo_url, dog_id: dogIds[0] };
         const { data, error } = await db.from('walks').update(updateData).eq('id', editId).select();
         if (error || !data || !data.length) {
           console.warn("Walk update notice:", error?.message || 'update matched 0 rows — check RLS policy');
         }
         if (existing) Object.assign(existing, updateData);
+        await assignWalkToDogs(editId, dogIds);
       } else {
         const newWalk = {
           title,
@@ -989,7 +1077,7 @@
           stoolScore,
           notes,
           photo_url: uploadedPhoto,
-          dog_id: STATE.activeDogId,
+          dog_id: dogIds[0],
           created_at: new Date().toISOString()
         };
         const { data, error } = await db.from('walks').insert([newWalk]).select();
@@ -997,12 +1085,7 @@
           STATE.walkouts.unshift({ id: 'walk_' + Date.now(), ...newWalk });
         } else if (data) {
           STATE.walkouts.unshift(data[0]);
-          const { error: linkError } = await db.from('walk_dogs').insert([{ walk_id: data[0].id, dog_id: STATE.activeDogId }]);
-          if (linkError) {
-            console.warn("walk_dogs insert notice:", linkError.message);
-          } else {
-            STATE.walkDogs.push({ walk_id: data[0].id, dog_id: STATE.activeDogId });
-          }
+          await assignWalkToDogs(data[0].id, dogIds);
         }
       }
 
@@ -1449,7 +1532,26 @@
     // ==========================================================
 
     let shareCardMode = 'sticker';
+    // 'pack' shows every dog assigned to the walk together; a dog id
+    // shows just that one dog's solo card instead.
+    let shareCardSelectedDogId = 'pack';
     const AVG_HUMAN_STRIDE_M = 0.75;
+
+    // Pack Mode: lets a manually-logged/edited walkout be attributed to
+    // more than one household dog at once (mirrors how strava-sync
+    // already attributes a multi-hashtag Strava activity to several
+    // dogs via the walk_dogs join table). Off by default so the normal
+    // single-active-dog flow is completely unchanged.
+    let packModeActive = false;
+    let packModeSelectedDogIds = [];
+
+    function getAssignedDogIdsForWalk(walkId) {
+      const ids = new Set();
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      if (w && w.dog_id) ids.add(w.dog_id);
+      STATE.walkDogs.filter(wd => String(wd.walk_id) === String(walkId)).forEach(wd => ids.add(wd.dog_id));
+      return [...ids];
+    }
 
     function computePawsTaken(humanDistanceKm, strideRatio) {
       const humanSteps = (humanDistanceKm * 1000) / AVG_HUMAN_STRIDE_M;
@@ -1494,6 +1596,37 @@
       ctx.clip();
       drawCoverImage(ctx, img, cx - radius, cy - radius, radius * 2, radius * 2);
       ctx.restore();
+    }
+
+    // Pack Mode share card badge: draws every assigned dog's avatar as
+    // an overlapping row of circles (last dog drawn sits on top), so a
+    // walk shared by multiple dogs shows the whole pack together
+    // instead of just one. avatarRowWidth tells the caller how wide
+    // the row ended up, so name text can start right after it.
+    const AVATAR_ROW_OVERLAP = 0.35;
+
+    function avatarRowWidth(count, radius) {
+      if (count <= 0) return 0;
+      const step = radius * 2 * (1 - AVATAR_ROW_OVERLAP);
+      return radius * 2 + (count - 1) * step;
+    }
+
+    async function drawDogAvatarRow(ctx, dogs, firstCx, cy, radius) {
+      const step = radius * 2 * (1 - AVATAR_ROW_OVERLAP);
+      for (let i = 0; i < dogs.length; i++) {
+        const cx = firstCx + i * step;
+        try {
+          const avatar = await loadImageCORS(dogs[i].avatar);
+          drawCircleClippedImage(ctx, avatar, cx, cy, radius);
+        } catch (err) {
+          console.warn('Share card avatar load failed:', err);
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
 
     let _brandIconPromise = null;
@@ -1576,18 +1709,35 @@
     function getShareCardData(walkId) {
       const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
       if (!w) return null;
-      const dog = STATE.dogs.find(d => d.id === STATE.activeDogId) || STATE.dogs[0];
-      const multiplier = calculateStrideRatio(dog.weight);
+
+      const assignedIds = getAssignedDogIdsForWalk(w.id);
+      let assignedDogs = STATE.dogs.filter(d => assignedIds.includes(d.id));
+      if (assignedDogs.length === 0) {
+        // Unassigned walk (e.g. a Strava import with no matching hashtag) —
+        // fall back to whichever dog is active in the picker so the card
+        // still has someone to feature.
+        const fallback = STATE.dogs.find(d => d.id === STATE.activeDogId) || STATE.dogs[0];
+        if (fallback) assignedDogs = [fallback];
+      }
+
+      const displayDogs = (shareCardSelectedDogId === 'pack' || assignedDogs.length <= 1)
+        ? assignedDogs
+        : assignedDogs.filter(d => d.id === shareCardSelectedDogId);
+      const dogsForStats = displayDogs.length > 0 ? displayDogs : assignedDogs;
+
       const humanDist = Number(w.humanDistance || w.distance) || 0;
-      const dogDist = humanDist * multiplier;
-      const pawsTaken = computePawsTaken(humanDist, multiplier);
+      const avgMultiplier = dogsForStats.length > 0
+        ? dogsForStats.reduce((sum, d) => sum + calculateStrideRatio(d.weight), 0) / dogsForStats.length
+        : 1;
+      const dogDist = humanDist * avgMultiplier;
+      const pawsTaken = computePawsTaken(humanDist, avgMultiplier);
       const dateStr = new Date(w.created_at || Date.now())
         .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      return { w, dog, dogDist, pawsTaken, dateStr };
+      return { w, assignedDogs, displayDogs: dogsForStats, dogDist, pawsTaken, dateStr };
     }
 
     async function renderPhotoCard(ctx, W, H, data) {
-      const { w, dog, dogDist, pawsTaken, dateStr } = data;
+      const { w, displayDogs, dogDist, pawsTaken, dateStr } = data;
       const [photo, icon] = await Promise.all([loadImageCORS(w.photo_url), getBrandIcon()]);
       drawCoverImage(ctx, photo, 0, 0, W, H);
 
@@ -1605,26 +1755,21 @@
 
       drawBrandBadge(ctx, 64, 110, '#ffffff', icon);
 
-      // Dog avatar + name
+      // Dog avatar(s) + name(s) — a Pack Mode walk draws every assigned
+      // dog's avatar in an overlapping row with all their names together.
       const avatarY = H - 660;
-      try {
-        const avatar = await loadImageCORS(dog.avatar);
-        drawCircleClippedImage(ctx, avatar, 64 + 60, avatarY, 60);
-        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(64 + 60, avatarY, 60, 0, Math.PI * 2);
-        ctx.stroke();
-      } catch (err) {
-        console.warn('Share card avatar load failed:', err);
-      }
+      const avatarRadius = 60;
+      await drawDogAvatarRow(ctx, displayDogs, 64 + avatarRadius, avatarY, avatarRadius);
+      const textX = 64 + avatarRowWidth(displayDogs.length, avatarRadius) + 20;
+      const namesLine = displayDogs.map(d => d.name).join(' & ') || 'Walkout';
+
       ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = '#ffffff';
       ctx.font = '800 60px -apple-system, sans-serif';
-      ctx.fillText(dog.name, 64 + 140, avatarY + 14);
+      ctx.fillText(namesLine, textX, avatarY + 14);
       ctx.font = '500 30px -apple-system, sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.fillText(dog.breed || '', 64 + 140, avatarY + 52);
+      ctx.fillText(displayDogs.length === 1 ? (displayDogs[0].breed || '') : 'Pack Walkout', textX, avatarY + 52);
 
       // Stat grid
       const statsY = H - 480;
@@ -1660,17 +1805,22 @@
     // row of label/value stats), so it drops onto an IG Stories video/photo
     // as a native sticker.
     async function renderStickerCard(ctx, W, H, data) {
-      const { w, dog, dogDist, pawsTaken } = data;
+      const { w, displayDogs, dogDist, pawsTaken } = data;
       const icon = await getBrandIcon();
       const cx = W / 2;
 
-      drawBrandLockupCentered(ctx, cx, 840, icon, 76, 54);
+      drawBrandLockupCentered(ctx, cx, 660, icon, 76, 54);
 
+      const avatarRadius = 70;
+      const rowWidth = avatarRowWidth(displayDogs.length, avatarRadius);
+      await drawDogAvatarRow(ctx, displayDogs, cx - rowWidth / 2 + avatarRadius, 820, avatarRadius);
+
+      const namesLine = displayDogs.map(d => d.name).join(' & ') || 'Walkout';
       ctx.textBaseline = 'alphabetic';
       ctx.textAlign = 'center';
       ctx.font = '800 72px -apple-system, sans-serif';
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(`${dog.name}'s Walkout`, cx, 1000);
+      ctx.fillText(`${namesLine}'s Walkout`, cx, 980);
       ctx.textAlign = 'left';
 
       drawStatsRowCentered(ctx, cx, 1120, [
@@ -1727,11 +1877,43 @@
       await renderShareCard();
     }
 
+    // Only shown when a walk is assigned to more than one dog (Pack
+    // Mode walks, or a multi-hashtag Strava sync) — lets the sharer
+    // pick "Whole Pack" (everyone together) or one dog's solo card.
+    function renderShareCardDogPicker(walkId) {
+      const picker = document.getElementById('shareCardDogPicker');
+      if (!picker) return;
+      const assignedIds = getAssignedDogIdsForWalk(walkId);
+      const assignedDogs = STATE.dogs.filter(d => assignedIds.includes(d.id));
+      if (assignedDogs.length <= 1) {
+        picker.classList.add('hidden');
+        picker.innerHTML = '';
+        return;
+      }
+      picker.classList.remove('hidden');
+      const activeCls = 'px-3 py-1.5 rounded-full text-xs font-bold border bg-orange-500 text-white border-orange-500';
+      const inactiveCls = 'px-3 py-1.5 rounded-full text-xs font-bold border bg-white text-zinc-600 border-zinc-200';
+      const chips = [`<button onclick="setShareCardDogSelection('pack')" class="${shareCardSelectedDogId === 'pack' ? activeCls : inactiveCls}">🐾 Whole Pack</button>`];
+      assignedDogs.forEach(d => {
+        chips.push(`<button onclick="setShareCardDogSelection('${d.id}')" class="${shareCardSelectedDogId === d.id ? activeCls : inactiveCls}">${d.name}</button>`);
+      });
+      picker.innerHTML = chips.join('');
+    }
+
+    async function setShareCardDogSelection(selection) {
+      shareCardSelectedDogId = selection;
+      const walkId = document.getElementById('shareCardWalkId').value;
+      renderShareCardDogPicker(walkId);
+      await renderShareCard();
+    }
+
     async function openShareCardModal(walkId) {
       const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
       if (!w) return;
       document.getElementById('shareCardWalkId').value = walkId;
       shareCardMode = w.photo_url ? 'photo' : 'sticker';
+      shareCardSelectedDogId = 'pack';
+      renderShareCardDogPicker(walkId);
       openModal('modalShareCard');
       await renderShareCard();
     }
