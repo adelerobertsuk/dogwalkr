@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Dogwalkr 🐾 | The Smart Canine Companion for Strava</title>
   
-  <meta name="description" content="Turn your everyday Strava walks into calibrated canine telemetry. Calculate dog stride multipliers, growth plate safety, and earned dinner bowl fuel." />
+  <meta name="description" content="Turn your everyday Strava walks into calibrated canine telemetry. Auto-sync multi-dog walks, get rolling 7-day recovery coaching, and keep a shared household food log." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#FFFFFF" />
   <link rel="icon" type="image/svg+xml" href="dogwalkr-icon.svg" />
@@ -59,7 +59,7 @@
 
     <!-- Subheadline -->
     <p class="text-base sm:text-lg text-zinc-400 max-w-2xl leading-relaxed">
-      Record your walks on your Apple Watch or Strava as normal. Dogwalkr transforms raw human steps into calibrated canine distance, puppy growth-plate protection, and extra dinner bowl fuel.
+      Record your walks on your Apple Watch or Strava as normal. Dogwalkr auto-syncs and attributes them to your dogs, coaches recovery over a real rolling week, and keeps a shared household food log.
     </p>
 
     <!-- CTA & Fast Launch Box -->
@@ -82,38 +82,58 @@
     </div>
 
     <!-- FEATURE PILL GRID -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full pt-8 text-left">
-      
-      <!-- Card 1: Stride Math -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full pt-8 text-left">
+
+      <!-- Card 1: Strava Auto-Sync -->
       <div class="p-5 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-2">
         <div class="w-10 h-10 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
-          <i data-lucide="footprints" class="w-5 h-5"></i>
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i>
         </div>
-        <h3 class="text-base font-bold text-white">Canine Stride Multipliers</h3>
+        <h3 class="text-base font-bold text-white">Strava Auto-Sync</h3>
         <p class="text-xs text-zinc-400 leading-relaxed">
-          Short legs take more steps. Auto-calibrates effort ($1.44\times$ to $2.10\times$) so you see true dog distance instead of human mileage.
+          Connects to Strava and pulls in your walks automatically, using true elapsed time so your dog gets credit for the whole outing — not just the moving time.
         </p>
       </div>
 
-      <!-- Card 2: Growth Plate & Runna Coaching -->
+      <!-- Card 2: Pack Mode -->
+      <div class="p-5 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-2">
+        <div class="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+          <i data-lucide="users" class="w-5 h-5"></i>
+        </div>
+        <h3 class="text-base font-bold text-white">Pack Mode</h3>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          Multi-dog household? Tag a walk with more than one dog — like #Bonnie and #Jess — and it counts for the whole pack at once.
+        </p>
+      </div>
+
+      <!-- Card 3: Daily Dog Coach -->
       <div class="p-5 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-2">
         <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
           <i data-lucide="activity" class="w-5 h-5"></i>
         </div>
-        <h3 class="text-base font-bold text-white">Puppy Growth Plate Coach</h3>
+        <h3 class="text-base font-bold text-white">Daily Dog Coach</h3>
         <p class="text-xs text-zinc-400 leading-relaxed">
-          Protects developing joints with intelligent 5-minute rules, surface warnings, and dynamic daily readiness debriefs.
+          Reads your dog's real rolling 7-day activity, not just today, to recommend Rest, Recovery, Active, or Ready — so a huge outing isn't waved through as "fine" the next morning.
         </p>
       </div>
 
-      <!-- Card 3: Food Bowl & Strava Stories -->
+      <!-- Card 4: Cloud Food Logs -->
       <div class="p-5 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-2">
         <div class="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-          <i data-lucide="utensils" class="w-5 h-5"></i>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z" />
+            <path d="M7 21h10" />
+            <g fill="currentColor" stroke="none" transform="translate(12,16.3) scale(0.4) translate(-13,-11.75)">
+              <circle cx="11" cy="4" r="2" />
+              <circle cx="18" cy="8" r="2" />
+              <circle cx="20" cy="16" r="2" />
+              <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
+            </g>
+          </svg>
         </div>
-        <h3 class="text-base font-bold text-white">Dinner Fuel & 9:16 Stories</h3>
+        <h3 class="text-base font-bold text-white">Cloud Food Logs</h3>
         <p class="text-xs text-zinc-400 leading-relaxed">
-          Calculates exact extra kibble grams earned and exports Strava-inspired 9:16 story cards straight to Instagram.
+          A shared feeding log for the whole household — log what was fed, how much, and who fed it, synced instantly between every phone.
         </p>
       </div>
 
