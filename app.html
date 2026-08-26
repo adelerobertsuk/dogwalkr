@@ -190,7 +190,7 @@
         
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-black text-zinc-900 tracking-tight">Household Pack</h2>
+            <h2 id="packHouseholdName" class="text-xl font-black text-zinc-900 tracking-tight">Household Pack</h2>
             <p id="packHouseholdSubtitle" class="text-xs text-zinc-500">Adele Roberts & Kate Holderness</p>
           </div>
           <button onclick="openAddDogModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
@@ -489,9 +489,22 @@
         <h3 class="text-lg font-bold text-zinc-900">Settings & Household ⚙️</h3>
         <button onclick="closeModal('modalSettings')" class="p-2 text-zinc-400 hover:text-zinc-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-2">
-        <label class="text-xs font-bold text-zinc-900 uppercase">Household Owner Names</label>
-        <input type="text" id="inputHouseholdNames" value="Adele Roberts & Kate Holderness" class="w-full p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" onchange="saveHouseholdNames(this.value)" />
+      <div class="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3">
+        <div>
+          <label class="text-xs font-bold text-zinc-900 uppercase">Household Name</label>
+          <input type="text" id="inputHouseholdName" placeholder="e.g. The Roberts-Holderness Household" class="w-full mt-1 p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" onchange="saveHouseholdName(this.value)" />
+        </div>
+        <div>
+          <label class="text-xs font-bold text-zinc-900 uppercase">Linked Co-Owners</label>
+          <div id="householdMembersList" class="space-y-1.5 mt-1">
+            <!-- Populated by JS -->
+          </div>
+          <div class="flex items-center space-x-2 mt-2">
+            <input type="text" id="inputNewMemberName" placeholder="Add co-owner name" class="flex-1 p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" onkeydown="if(event.key==='Enter'){event.preventDefault(); addHouseholdMember();}" />
+            <button onclick="addHouseholdMember()" class="px-3.5 py-3 bg-orange-500 text-white rounded-xl text-xs font-bold">Add</button>
+          </div>
+          <p class="text-[11px] text-zinc-500 mt-1.5">Everyone linked here shares the same dogs, food logs, and walk history — there's no separate login, so anyone with this app's link already sees it all.</p>
+        </div>
       </div>
       <div class="p-4 rounded-2xl border border-orange-200 bg-orange-50 space-y-3">
         <div class="flex items-center justify-between">
@@ -573,7 +586,9 @@
       activeTab: 'dashboard',
       activeDogId: 'dog_joe',
       passportDogId: null,
+      householdName: '',
       householdNames: 'Adele Roberts & Kate Holderness',
+      householdMembers: [],
       stravaConnected: false,
       stravaAthleteName: null,
       dogs: [
@@ -639,7 +654,7 @@
     }
 
     async function initApp() {
-      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchWalkDogs()]);
+      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchHouseholdMembers(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchWalkDogs()]);
       renderAll();
 
       const params = new URLSearchParams(window.location.search);
@@ -710,11 +725,26 @@
         const { data, error } = await db.from('household_settings').select('*').limit(1).maybeSingle();
         if (error) {
           console.warn("Supabase household query notice:", error.message);
-        } else if (data && data.names) {
-          STATE.householdNames = data.names;
+        } else if (data) {
+          if (data.names) STATE.householdNames = data.names;
+          if (data.household_name) STATE.householdName = data.household_name;
         }
       } catch (err) {
         console.error("Household connection exception:", err);
+      }
+    }
+
+    async function fetchHouseholdMembers() {
+      try {
+        const { data, error } = await db.from('household_members').select('*').order('created_at', { ascending: true });
+        if (error) {
+          console.warn("Supabase household members query notice:", error.message);
+        } else if (data) {
+          STATE.householdMembers = data;
+          if (data.length > 0) STATE.householdNames = data.map(m => m.name).join(' & ');
+        }
+      } catch (err) {
+        console.error("Household members connection exception:", err);
       }
     }
 
@@ -1038,10 +1068,24 @@
     }
 
     function renderPack() {
+      const heading = document.getElementById('packHouseholdName');
+      if (heading) heading.innerText = STATE.householdName || 'Household Pack';
       const subtitle = document.getElementById('packHouseholdSubtitle');
       if (subtitle) subtitle.innerText = STATE.householdNames;
-      const householdInput = document.getElementById('inputHouseholdNames');
-      if (householdInput && document.activeElement !== householdInput) householdInput.value = STATE.householdNames;
+
+      const nameInput = document.getElementById('inputHouseholdName');
+      if (nameInput && document.activeElement !== nameInput) nameInput.value = STATE.householdName || '';
+
+      const membersList = document.getElementById('householdMembersList');
+      if (membersList) {
+        membersList.innerHTML = STATE.householdMembers.map(m => `
+          <div class="flex items-center justify-between bg-white border border-zinc-200 rounded-xl px-3 py-2">
+            <span class="text-xs font-semibold text-zinc-800">${m.name}</span>
+            <button onclick="deleteHouseholdMember('${m.id}')" class="p-1 text-zinc-400 hover:text-red-500"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+          </div>
+        `).join('') || '<p class="text-[11px] text-zinc-400 italic">No co-owners linked yet.</p>';
+        if (window.lucide) lucide.createIcons();
+      }
 
       const list = document.getElementById('packCardsList');
       list.innerHTML = STATE.dogs.map(p => {
@@ -1751,7 +1795,10 @@
           console.warn("Strava sync notice:", error.message);
           alert('Strava sync failed — check the console for details.');
         } else {
+          console.log('[strava-sync] result:', data);
+          if (Array.isArray(data.debug)) console.table(data.debug);
           await fetchSupabaseWalks();
+          await fetchWalkDogs();
           renderAll();
           alert(`Strava sync complete: ${data.imported} new walk(s) imported, ${data.skipped} skipped.`);
         }
@@ -1769,6 +1816,53 @@
       if (subtitle) subtitle.innerText = val;
       const { error } = await db.from('household_settings').upsert({ id: 1, names: val });
       if (error) console.warn("Supabase household save notice:", error.message);
+    }
+
+    async function saveHouseholdName(val) {
+      STATE.householdName = val;
+      const heading = document.getElementById('packHouseholdName');
+      if (heading) heading.innerText = val || 'Household Pack';
+      const { error } = await db.from('household_settings').upsert({ id: 1, household_name: val });
+      if (error) console.warn("Supabase household name save notice:", error.message);
+    }
+
+    // Recomputes the legacy free-text roster string ("Adele & Kate")
+    // from the structured member list and persists it to
+    // household_settings.names, so the Pack tab subtitle and dog
+    // passport card (both driven by STATE.householdNames) stay in
+    // sync without needing their own separate storage.
+    async function syncHouseholdNamesFromMembers() {
+      if (STATE.householdMembers.length === 0) return;
+      STATE.householdNames = STATE.householdMembers.map(m => m.name).join(' & ');
+      const { error } = await db.from('household_settings').upsert({ id: 1, names: STATE.householdNames });
+      if (error) console.warn("Supabase household save notice:", error.message);
+    }
+
+    async function addHouseholdMember() {
+      const input = document.getElementById('inputNewMemberName');
+      if (!input) return;
+      const name = input.value.trim();
+      if (!name) return;
+
+      const { data, error } = await db.from('household_members').insert([{ name }]).select();
+      if (error || !data) {
+        console.warn("Supabase household member insert notice:", error?.message);
+        STATE.householdMembers.push({ id: 'member_' + Date.now(), name });
+      } else {
+        STATE.householdMembers.push(data[0]);
+      }
+
+      input.value = '';
+      await syncHouseholdNamesFromMembers();
+      renderAll();
+    }
+
+    async function deleteHouseholdMember(memberId) {
+      const { error } = await db.from('household_members').delete().eq('id', memberId);
+      if (error) console.warn("Supabase household member delete notice:", error.message);
+      STATE.householdMembers = STATE.householdMembers.filter(m => m.id !== memberId);
+      await syncHouseholdNamesFromMembers();
+      renderAll();
     }
 
     window.addEventListener('DOMContentLoaded', initApp);

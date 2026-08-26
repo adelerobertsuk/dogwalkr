@@ -34,6 +34,22 @@
 // dog gets credited) is hashtag-strict, since that's where a wrong
 // guess actually corrupts a dog's stats.
 //
+// 2026-08-26 fix: Strava's list endpoint (GET /athlete/activities,
+// used below to pull recent activities) returns SUMMARY activity
+// objects, which omit the `description` field entirely — only the
+// single-activity detail endpoint (GET /activities/{id}) includes
+// it. That meant any walk hashtagged in the Strava description
+// (rather than the title) was silently invisible to this function:
+// isDogActivity() and extractHashtags() only ever saw the title, so
+// a hashtag-only description could never match. Fixed by fetching
+// the full activity detail (one extra Strava API call) for any new,
+// not-yet-imported activity whose title alone doesn't already
+// resolve a dog match — see fetchActivityDescription() below. Also
+// added structured logging (console.log/console.error per activity)
+// and a `debug` array in the response so sync results are
+// verifiable without needing direct access to the Edge Function's
+// server logs.
+//
 // Invoke from the client with:
 //   supabase.functions.invoke('strava-sync', { body: { device_id } })
 //
@@ -56,16 +72,40 @@ const CORS_HEADERS = {
 
 function isDogActivity(text: string, dogNames: string[]): boolean {
   const lower = text.toLowerCase();
-  const keywords = ["dog", "pup", "walk", ...dogNames.map((n) => n.toLowerCase())].filter(Boolean);
+  const keywords = ["dog", "pup", "walk", ...dogNames.map((n) => n.trim().toLowerCase())].filter(Boolean);
   return keywords.some((k) => lower.includes(k));
 }
 
 // Extracts hashtag words (the part after #, up to the next
 // non-word character) as lowercase strings, e.g. "Walk with #Audrey
-// and #Daisy!" -> ["audrey", "daisy"].
+// and #Daisy!" -> ["audrey", "daisy"]. \w already excludes
+// whitespace and punctuation, so "#Audrey," / "#Audrey!" / trailing
+// spaces all resolve to the same clean "audrey" token.
 function extractHashtags(text: string): string[] {
   const matches = text.match(/#(\w+)/g) || [];
   return matches.map((h) => h.slice(1).toLowerCase());
+}
+
+// Fetches the full activity detail from Strava to recover the
+// `description` field, which the summary list endpoint omits. Only
+// called for activities where the title alone wasn't conclusive, to
+// keep the extra API calls (Strava rate-limits per app) bounded to
+// activities that actually need it.
+async function fetchActivityDescription(activityId: number, accessToken: string): Promise<string> {
+  try {
+    const res = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      console.error(`[strava-sync] Activity ${activityId}: detail fetch failed (${res.status}):`, await res.text());
+      return "";
+    }
+    const detail = await res.json();
+    return detail.description || "";
+  } catch (err) {
+    console.error(`[strava-sync] Activity ${activityId}: detail fetch exception:`, (err as Error).message);
+    return "";
+  }
 }
 
 async function getValidAccessToken(deviceId: string): Promise<string | null> {
@@ -130,41 +170,70 @@ Deno.serve(async (req) => {
     const { data: dogs } = await supabase.from("dogs").select("id, name");
     const dogList = dogs || [];
     const dogNames = dogList.map((d) => d.name).filter(Boolean);
+    console.log(`[strava-sync] device=${deviceId} known dogs:`, dogNames);
 
     const activitiesRes = await fetch("https://www.strava.com/api/v3/athlete/activities?per_page=30", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!activitiesRes.ok) {
+      const detail = await activitiesRes.text();
+      console.error("[strava-sync] Strava activities fetch failed:", activitiesRes.status, detail);
       return new Response(
-        JSON.stringify({ error: "Strava activities fetch failed", detail: await activitiesRes.text() }),
+        JSON.stringify({ error: "Strava activities fetch failed", detail }),
         { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
     const activities = await activitiesRes.json();
+    console.log(`[strava-sync] Fetched ${activities.length} recent activities from Strava.`);
 
     let imported = 0;
     let skipped = 0;
     const importedTitles: string[] = [];
+    const debug: Record<string, unknown>[] = [];
 
     for (const activity of activities) {
-      const text = `${activity.name || ""} ${activity.description || ""}`;
-      if (!isDogActivity(text, dogNames)) {
-        skipped++;
-        continue;
-      }
+      const logPrefix = `[strava-sync] Activity ${activity.id} "${activity.name}"`;
 
+      // De-dupe FIRST, before spending an extra Strava API call on
+      // fetching description detail for an activity we'd skip anyway.
       const { data: existing } = await supabase
         .from("walks")
         .select("id")
         .eq("strava_activity_id", activity.id)
         .maybeSingle();
       if (existing) {
+        console.log(`${logPrefix}: already imported (walk id ${existing.id}) — skipping.`);
         skipped++;
+        debug.push({ id: activity.id, name: activity.name, result: "skipped", reason: "already_imported" });
+        continue;
+      }
+
+      // The Strava list endpoint omits `description` on summary
+      // activities. If the title alone doesn't already resolve a dog
+      // hashtag or a generic keyword, fetch the full activity detail
+      // so a description-only hashtag isn't missed.
+      let description = activity.description || "";
+      const titleOnlyText = activity.name || "";
+      const titleHashtags = extractHashtags(titleOnlyText);
+      const titleHasDogMatch = dogList.some((d) => d.name && titleHashtags.includes(d.name.trim().toLowerCase()));
+      if (!description && !titleHasDogMatch) {
+        console.log(`${logPrefix}: title alone inconclusive, fetching full activity detail for description...`);
+        description = await fetchActivityDescription(activity.id, accessToken);
+      }
+
+      const text = `${activity.name || ""} ${description}`;
+      console.log(`${logPrefix}: combined text for matching = "${text}"`);
+
+      if (!isDogActivity(text, dogNames)) {
+        console.log(`${logPrefix}: no dog keyword/name/hashtag found — skipping import.`);
+        skipped++;
+        debug.push({ id: activity.id, name: activity.name, result: "skipped", reason: "not_a_dog_activity" });
         continue;
       }
 
       const hashtags = extractHashtags(text);
-      const matchedDogs = dogList.filter((d) => d.name && hashtags.includes(d.name.toLowerCase()));
+      const matchedDogs = dogList.filter((d) => d.name && hashtags.includes(d.name.trim().toLowerCase()));
+      console.log(`${logPrefix}: hashtags found = [${hashtags.join(", ")}], matched dogs = [${matchedDogs.map((d) => d.name).join(", ") || "none — will import unassigned"}]`);
 
       const { data: inserted, error: insertError } = await supabase
         .from("walks")
@@ -182,8 +251,9 @@ Deno.serve(async (req) => {
         .single();
 
       if (insertError || !inserted) {
-        console.error("Walk insert failed:", insertError?.message);
+        console.error(`${logPrefix}: walk insert failed:`, insertError?.message);
         skipped++;
+        debug.push({ id: activity.id, name: activity.name, result: "skipped", reason: "insert_failed", error: insertError?.message });
         continue;
       }
 
@@ -191,17 +261,21 @@ Deno.serve(async (req) => {
         const { error: linkError } = await supabase
           .from("walk_dogs")
           .insert(matchedDogs.map((d) => ({ walk_id: inserted.id, dog_id: d.id })));
-        if (linkError) console.error("walk_dogs insert failed:", linkError.message);
+        if (linkError) console.error(`${logPrefix}: walk_dogs insert failed:`, linkError.message);
       }
 
+      console.log(`${logPrefix}: imported as walk id ${inserted.id}, attributed to [${matchedDogs.map((d) => d.name).join(", ") || "unassigned"}].`);
       imported++;
       importedTitles.push(activity.name);
+      debug.push({ id: activity.id, name: activity.name, result: "imported", matchedDogs: matchedDogs.map((d) => d.name) });
     }
 
-    return new Response(JSON.stringify({ imported, skipped, importedTitles }), {
+    console.log(`[strava-sync] Done: imported=${imported} skipped=${skipped}`);
+    return new Response(JSON.stringify({ imported, skipped, importedTitles, debug }), {
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("[strava-sync] Unhandled exception:", (err as Error).message);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

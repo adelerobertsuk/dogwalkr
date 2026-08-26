@@ -243,3 +243,42 @@ create policy "Allow anon insert walk_dogs" on public.walk_dogs
 drop policy if exists "Allow anon delete walk_dogs" on public.walk_dogs;
 create policy "Allow anon delete walk_dogs" on public.walk_dogs
   for delete using (true);
+
+-- ==========================================================
+-- Household Pack linking (2026-08-26): household_settings.names
+-- stays as-is (the free-text roster string shown in the Pack tab
+-- subtitle and the dog passport card) — it's now auto-derived from
+-- household_members rather than hand-typed, but the column and its
+-- consumers are untouched. household_name is new: the single
+-- collective name co-owners link together under (e.g. "The
+-- Roberts-Holderness Household"), edited from the new Household
+-- settings view.
+--
+-- household_members gives each co-owner a real row (id + name)
+-- instead of one opaque string, so they can be added/removed
+-- individually in the UI. Note this app has no per-user auth (one
+-- shared anon key for everyone — see the strava_connections comment
+-- above for the full caveat) — dogs, food_items and walks are
+-- ALREADY globally shared with anyone holding the anon key. So
+-- "linked household members share the same dogs/food logs/walk
+-- history" is true by construction; household_members is an
+-- identity/roster list, not an access-control boundary.
+-- ==========================================================
+alter table public.household_settings add column if not exists household_name text;
+
+create table if not exists public.household_members (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.household_members enable row level security;
+
+drop policy if exists "Allow anon read household_members" on public.household_members;
+create policy "Allow anon read household_members" on public.household_members
+  for select using (true);
+drop policy if exists "Allow anon insert household_members" on public.household_members;
+create policy "Allow anon insert household_members" on public.household_members
+  for insert with check (true);
+drop policy if exists "Allow anon delete household_members" on public.household_members;
+create policy "Allow anon delete household_members" on public.household_members
+  for delete using (true);
