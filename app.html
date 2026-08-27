@@ -141,10 +141,14 @@
             <span id="dashCoachStagePill" class="text-xs font-medium text-orange-100">Adult Routine</span>
           </div>
 
-          <h2 id="dashCoachHeadline" class="text-lg font-bold leading-tight mb-1">Joe is recovered and ready for walkouts!</h2>
+          <div class="mb-1.5">
+            <span id="dashCoachStatePill" class="inline-block bg-white/25 text-white text-xs font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm">✅ Ready</span>
+          </div>
+          <h2 id="dashCoachHeadline" class="text-lg font-bold leading-tight mb-1">Your dog's activity coach</h2>
           <p id="dashCoachBody" class="text-sm text-orange-50 leading-relaxed">
-            Based on recent pacing and joint recovery, a 30–45 minute walk on soft grass is optimal today. Stride ratio calibrated at 1.44×.
+            Log or sync a walkout and the coach reads the rolling week to recommend rest, an easy day, or a full walkout.
           </p>
+          <p class="text-[11px] text-orange-100/80 mt-2">General activity guidance, not veterinary advice.</p>
         </div>
 
         <!-- Latest Walkout Card -->
@@ -703,70 +707,181 @@
       return `${Math.round(hours / 24)}d ago`;
     }
 
-    // Daily Dog Coach: a rolling-7-day recovery/activity read, not a
-    // vet-grade formula. Two signals decide the state:
-    //   1. Was the MOST RECENT walkout unusually long for this dog
-    //      specifically (relative to its own average session this
-    //      week, not one fixed number for every size of dog), and how
-    //      recently did it happen? A single huge outing (e.g. a
-    //      half-marathon walk) should force at least a day of real
-    //      rest before "ready" comes back, however light the rest of
-    //      the week was.
-    //   2. Failing that, how loaded has the WHOLE rolling week been —
-    //      total minutes moved in the last 7 days (isWithinLast7Days),
-    //      not a calendar-week bucket — against a rough baseline of
-    //      ~300 active minutes/week (~40-45 min/day).
+    function dogAgeMonths(dob, ref) {
+      if (!dob) return null;
+      const [y, m, d] = dob.split('-').map(Number);
+      if (!y) return null;
+      const birth = new Date(y, m - 1, d);
+      const now = ref || new Date();
+      let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+      if (now.getDate() < birth.getDate()) months -= 1;
+      return Math.max(0, months);
+    }
+
+    function fmtMins(mins) {
+      const m = Math.round(Number(mins) || 0);
+      if (m < 60) return `${m} min`;
+      const h = Math.floor(m / 60), r = m % 60;
+      return r ? `${h}h ${r}m` : `${h}h`;
+    }
+
+    // A per-dog exercise profile the Daily Dog Coach reads from. It's a
+    // general guide (based on common Kennel-Club-style rules of thumb),
+    // not veterinary advice, and it scales with the dog rather than
+    // using one number for every animal:
+    //   - Puppies (< 12 months): the "5 minutes per month of age, up
+    //     to twice a day" guideline. Forced long/high-impact walks can
+    //     damage growing joints, so their "big session" bar is low.
+    //   - Adults: a daily target that scales with size (small ~35 min,
+    //     medium ~50, large ~70).
+    //   - Seniors (~8y+): the adult target eased back ~30%, with a
+    //     bias toward shorter, more frequent, softer-surface walks.
+    function coachProfile(dog, now) {
+      const ageM = dogAgeMonths(dog.dob, now);
+      const weight = Number(dog.weight) || 12;
+      let stage = 'adult';
+      if (ageM !== null && ageM < 12) stage = 'puppy';
+      else if (ageM !== null && ageM >= 96) stage = 'senior';
+
+      let dailyTarget;
+      if (stage === 'puppy') {
+        dailyTarget = Math.round(Math.max(10, Math.min(50, (ageM || 2) * 5 * 2)));
+      } else {
+        dailyTarget = weight < 8 ? 30 : weight < 18 ? 45 : 60;
+        if (stage === 'senior') dailyTarget = Math.round(dailyTarget * 0.7);
+      }
+      const weeklyTarget = dailyTarget * 7;
+      // What counts as an unusually long single walk for this dog when
+      // there's no per-dog history to compare against yet.
+      const bigSession = stage === 'puppy'
+        ? Math.round((ageM || 3) * 5 * 1.5)   // 1.5x the "5 min per month" single-walk guide
+        : stage === 'senior'
+        ? Math.round(dailyTarget * 1.4)
+        : Math.round(dailyTarget * 1.7);
+      // How far over the weekly target starts to count as a heavy week.
+      const heavyWeekRatio = stage === 'puppy' ? 1.3 : 1.5;
+      const label = stage === 'puppy' ? 'Puppy Plan' : stage === 'senior' ? 'Senior Plan' : 'Adult Routine';
+      return { stage, ageM, dailyTarget, weeklyTarget, bigSession, heavyWeekRatio, label };
+    }
+
+    // Rolling-7-day activity read that moves with what the dog has
+    // actually done: a big effort in the last day or two forces real
+    // rest first; a heavy week says ease off; a light week with no
+    // recent walk says the dog is under-exercised and needs one; and a
+    // steady week just confirms the routine. Puppy and senior states
+    // carry the extra caution their life stage needs.
     function computeCoachRecommendation(dog, dogWalkouts, now) {
-      const weeklyWalks = dogWalkouts.filter(w => isWithinLast7Days(w.created_at, now));
-      const weeklyMinutes = weeklyWalks.reduce((sum, w) => sum + (Number(w.durationMins) || 0), 0);
-      const latest = dogWalkouts[0];
+      const p = coachProfile(dog, now);
+      const base = { stage: p.label, dailyTarget: p.dailyTarget };
+
+      const walks = [...dogWalkouts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const latest = walks[0];
 
       if (!latest) {
         return {
-          pill: `🐾 No Data Yet`,
+          ...base,
+          pill: '🐾 No Data Yet',
           headline: `${dog.name} hasn't logged a walkout yet`,
-          body: `Log or sync a walkout to start tracking ${dog.name}'s weekly activity and recovery.`,
+          body: `Log or sync a walkout and the coach will track ${dog.name}'s rolling-week activity and recovery. Target for ${dog.name} right now is roughly ${p.dailyTarget} min a day.`,
         };
       }
 
+      const weeklyWalks = walks.filter(w => isWithinLast7Days(w.created_at, now));
+      const weeklyMinutes = weeklyWalks.reduce((s, w) => s + (Number(w.durationMins) || 0), 0);
+      const weeklyRatio = weeklyMinutes / p.weeklyTarget;
       const latestMins = Number(latest.durationMins) || 0;
-      const hoursSinceLatest = (now - new Date(latest.created_at)) / 3600000;
-      const avgSessionMins = weeklyWalks.length > 0 ? weeklyMinutes / weeklyWalks.length : latestMins;
-      const isHighLoadSession = latestMins >= 90 || latestMins >= avgSessionMins * 1.8;
-      const weeklyLoadRatio = weeklyMinutes / 300;
+      const hoursSince = (now - new Date(latest.created_at)) / 3600000;
+      const daysSince = Math.floor(hoursSince / 24);
+      const walkedToday = hoursSince < 16;
+      // "Big" = longer than this dog's own recent average (when we have
+      // one) or than the life-stage single-walk ceiling.
+      const priorWalks = weeklyWalks.slice(1);
+      const priorAvg = priorWalks.length
+        ? priorWalks.reduce((s, w) => s + (Number(w.durationMins) || 0), 0) / priorWalks.length
+        : 0;
+      const relBigMult = p.stage === 'adult' ? 1.7 : 1.5;
+      // With a couple of prior walks this week we trust the dog's own
+      // pattern and only flag a real jump above it; otherwise fall back
+      // to the life-stage single-walk ceiling.
+      const isBig = priorWalks.length >= 2
+        ? latestMins >= priorAvg * relBigMult
+        : latestMins >= p.bigSession
+          || (priorWalks.length === 1 && latestMins >= priorAvg * relBigMult && latestMins >= p.dailyTarget * 1.3);
 
-      if (isHighLoadSession && hoursSinceLatest < 24) {
+      const pupNote = p.stage === 'puppy'
+        ? ` At ${dog.name}'s age keep it to short, low-impact outings — two ${Math.round(p.dailyTarget / 2)} min walks beat one long one, and go easy on stairs, long runs and jumping.`
+        : p.stage === 'senior'
+        ? ` Keep ${dog.name}'s walks gentle and on soft ground, and turn back early if you see any stiffness.`
+        : '';
+      const dayPlan = p.stage === 'puppy'
+        ? `about ${p.dailyTarget} min of walking today, split into two`
+        : `a full ~${p.dailyTarget} min walkout today`;
+
+      // Puppies don't need a "you overdid it" rest day for one longish
+      // walk — just steer the next few back to the age-appropriate
+      // length while the joints are still growing.
+      if (p.stage === 'puppy' && isBig && hoursSince < 30) {
         return {
+          ...base,
+          pill: '🟡 Keep It Short',
+          headline: `${dog.name}'s last walk ran a bit long`,
+          body: `${fmtMins(latestMins)} is over the roughly ${Math.round((p.ageM || 3) * 5)} min a walk that suits a pup ${dog.name}'s age — keep the next few short and low-impact while the joints are still growing.${pupNote}`,
+        };
+      }
+
+      if (isBig && hoursSince < 20) {
+        return {
+          ...base,
           pill: '🔴 Rest Day',
-          headline: `${dog.name} needs a rest day`,
-          body: `That last outing (${latestMins} mins) was well above ${dog.name}'s usual session this week — give paws and joints a full day off before the next walkout.`,
+          headline: `${dog.name} has earned a rest day`,
+          body: `That last walkout (${fmtMins(latestMins)}) was well above ${dog.name}'s usual — keep today to a rest day or just a short garden potter so paws${p.stage === 'puppy' ? ', joints and growth plates' : ' and joints'} recover.${pupNote}`,
         };
       }
-      if (isHighLoadSession && hoursSinceLatest < 48) {
+      if (isBig && hoursSince < 44) {
         return {
-          pill: '🟡 Recovery',
+          ...base,
+          pill: '🟡 Easy Day',
           headline: `${dog.name} is still recovering`,
-          body: `Still within 48 hours of that big effort — keep today to a short, gentle stroll rather than a full walkout.`,
+          body: `Still inside 48 hours of that ${fmtMins(latestMins)} effort — keep today to a short, gentle walk on soft ground rather than another long one.${pupNote}`,
         };
       }
-      if (weeklyLoadRatio >= 1.4) {
+      if (weeklyRatio >= p.heavyWeekRatio) {
         return {
-          pill: '🟡 Recovery',
+          ...base,
+          pill: '🟡 Ease Off',
           headline: `${dog.name} has had a heavy week`,
-          body: `${Math.round(weeklyMinutes)} active minutes in the last 7 days is a lot — favor rest and light movement until the weekly load eases off.`,
+          body: `${fmtMins(weeklyMinutes)} of walks over the last 7 days is well above ${dog.name}'s ~${fmtMins(p.weeklyTarget)} target — trade a walkout or two for sniffy pottering until the weekly load comes down.${pupNote}`,
         };
       }
-      if (weeklyLoadRatio >= 0.6) {
+      if (daysSince >= 2 && weeklyRatio < 0.55) {
         return {
-          pill: '🟢 Active Routine',
-          headline: `${dog.name} is in a steady active routine`,
-          body: `Pacing this week has been reasonable — a normal walkout is fine today.`,
+          ...base,
+          pill: '🟠 Needs a Walk',
+          headline: `${dog.name} is due a proper walkout`,
+          body: `No real walk in ${daysSince} days and a light week so far — ${dayPlan} would help ${dog.name}'s energy, digestion and sleep.${pupNote}`,
+        };
+      }
+      if (walkedToday) {
+        return {
+          ...base,
+          pill: '🟢 On Track',
+          headline: `${dog.name} has had a walk today`,
+          body: `${fmtMins(latestMins)} logged today${weeklyWalks.length > 1 ? `, ${fmtMins(weeklyMinutes)} across the week` : ''} — right in range, so anything from a short potter to another normal walkout is fine.${pupNote}`,
+        };
+      }
+      if (weeklyRatio >= 0.55) {
+        return {
+          ...base,
+          pill: '🟢 On Track',
+          headline: `${dog.name} is in a steady routine`,
+          body: `This week's pacing (${fmtMins(weeklyMinutes)} over 7 days) sits right in ${dog.name}'s range — ${dayPlan} keeps the rhythm.${pupNote}`,
         };
       }
       return {
+        ...base,
         pill: '✅ Ready',
-        headline: `${dog.name} is recovered and ready for a walkout!`,
-        body: `Low strain over the last 7 days — ${dog.name} is ready for a full walkout today.`,
+        headline: `${dog.name} is rested and ready`,
+        body: `A light, well-rested week and no walk yet today — ${dog.name} is good for ${dayPlan}.${pupNote}`,
       };
     }
 
@@ -1175,9 +1290,10 @@
       const dogWalkouts = getDogWalkouts(dog.id);
 
       const coach = computeCoachRecommendation(dog, dogWalkouts, now);
-      document.getElementById('dashCoachStagePill').innerText = coach.pill;
+      document.getElementById('dashCoachStagePill').innerText = coach.stage;
+      document.getElementById('dashCoachStatePill').innerText = coach.pill;
       document.getElementById('dashCoachHeadline').innerText = coach.headline;
-      document.getElementById('dashCoachBody').innerText = `${coach.body} Stride ratio calibrated at ${multiplier.toFixed(2)}×.`;
+      document.getElementById('dashCoachBody').innerText = coach.body;
 
       const weeklyWalks = dogWalkouts.filter(w => isWithinLast7Days(w.created_at, now));
       let totalHumanKm = 0;
