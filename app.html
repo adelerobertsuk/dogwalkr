@@ -147,10 +147,10 @@
           </p>
         </div>
 
-        <!-- Latest Workout Card -->
+        <!-- Latest Walkout Card -->
         <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm space-y-3">
           <div class="flex items-center justify-between">
-            <h3 class="text-base font-bold text-zinc-900">Latest Workout</h3>
+            <h3 class="text-base font-bold text-zinc-900">Latest Walkout</h3>
             <span id="latestWalkTimeAgo" class="text-xs font-medium text-zinc-500">Strava Synced</span>
           </div>
 
@@ -349,6 +349,13 @@
             <input type="date" id="inputDogDob" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold focus:outline-none focus:border-orange-500" />
           </div>
         </div>
+        <div>
+          <label class="text-xs font-bold text-zinc-700 uppercase">Best &amp; Worst Qualities</label>
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <input type="text" id="inputDogBest" placeholder="✨ Best: loves sprint zooms" class="p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" />
+            <input type="text" id="inputDogWorst" placeholder="🙈 Worst: chews expensive shoes" class="p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs font-semibold focus:outline-none focus:border-orange-500" />
+          </div>
+        </div>
       </div>
       <button onclick="saveDogProfile()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-orange-600 transition">Save Dog Profile 🐾</button>
     </div>
@@ -367,6 +374,16 @@
             <h3 id="passportCardName" class="text-2xl font-black text-white">Joe</h3>
             <p id="passportCardBreed" class="text-xs text-zinc-400">Italian Greyhound • 5.8 kg</p>
             <p id="passportCardAge" class="text-xs text-orange-400 font-bold mt-1">2 Years Old</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-zinc-800/60 rounded-2xl p-3 border border-zinc-700/60">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">✨ Best Quality</p>
+            <p id="passportCardBest" class="text-xs font-semibold text-white mt-1">Loves sprint zooms</p>
+          </div>
+          <div class="bg-zinc-800/60 rounded-2xl p-3 border border-zinc-700/60">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-amber-400">🙈 Worst Quality</p>
+            <p id="passportCardWorst" class="text-xs font-semibold text-white mt-1">Chews expensive shoes</p>
           </div>
         </div>
         <div class="flex items-center space-x-3 pt-1">
@@ -615,8 +632,8 @@
       stravaConnected: false,
       stravaAthleteName: null,
       dogs: [
-        { id: 'dog_joe', name: 'Joe', breed: 'Italian Greyhound', weight: 5.8, dob: '2024-03-09', avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80' },
-        { id: 'dog_bertie', name: 'Bertie', breed: 'Pug', weight: 6.0, dob: '2025-01-15', avatar: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80' }
+        { id: 'dog_joe', name: 'Joe', breed: 'Italian Greyhound', weight: 5.8, dob: '2024-03-09', best_trait: 'Loves sprint zooms', worst_trait: 'Nibbles shoes', avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80' },
+        { id: 'dog_bertie', name: 'Bertie', breed: 'Pug', weight: 6.0, dob: '2025-01-15', best_trait: 'Champion cuddler', worst_trait: 'Snores like a tractor', avatar: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80' }
       ],
       walkouts: [],
       walkDogs: [],
@@ -748,7 +765,7 @@
       }
       return {
         pill: '✅ Ready',
-        headline: `${dog.name} is recovered and ready for a workout!`,
+        headline: `${dog.name} is recovered and ready for a walkout!`,
         body: `Low strain over the last 7 days — ${dog.name} is ready for a full walkout today.`,
       };
     }
@@ -1105,7 +1122,7 @@
     }
 
     async function deleteWalkout(walkId) {
-      if (confirm("Delete this workout record?")) {
+      if (confirm("Delete this walkout record?")) {
         const { error } = await db.from('walks').delete().eq('id', walkId);
         if (error) {
           console.warn("Supabase delete notice:", error.message);
@@ -1172,7 +1189,7 @@
       const latest = dogWalkouts[0];
       const container = document.getElementById('latestWalkoutContent');
       if (!latest) {
-        container.innerHTML = `<p class="text-xs text-zinc-500 py-4 text-center">No workouts recorded yet.</p>`;
+        container.innerHTML = `<p class="text-xs text-zinc-500 py-4 text-center">No walkouts recorded yet.</p>`;
         return;
       }
 
@@ -1212,7 +1229,7 @@
       const list = document.getElementById('walkoutsList');
       const dogWalkouts = getDogWalkouts(STATE.activeDogId);
       if (dogWalkouts.length === 0) {
-        list.innerHTML = `<div class="p-8 text-center text-zinc-400 bg-white rounded-3xl border border-zinc-200"><p class="text-sm font-bold">No workouts found</p></div>`;
+        list.innerHTML = `<div class="p-8 text-center text-zinc-400 bg-white rounded-3xl border border-zinc-200"><p class="text-sm font-bold">No walkouts found</p></div>`;
         return;
       }
 
@@ -1432,6 +1449,8 @@
       document.getElementById('passportCardName').innerText = dog.name;
       document.getElementById('passportCardBreed').innerText = `${dog.breed} • ${dog.weight} kg`;
       document.getElementById('passportCardAge').innerText = calculateAge(dog.dob);
+      document.getElementById('passportCardBest').innerText = dog.best_trait || 'Loves sprint zooms';
+      document.getElementById('passportCardWorst').innerText = dog.worst_trait || 'Chews expensive shoes';
       document.getElementById('passportHouseholdText').innerText = STATE.householdNames;
 
       const qrContainer = document.getElementById('passportQRCode');
@@ -1456,6 +1475,8 @@
       document.getElementById('inputDogBreed').value = '';
       document.getElementById('inputDogWeight').value = '';
       document.getElementById('inputDogDob').value = '';
+      document.getElementById('inputDogBest').value = '';
+      document.getElementById('inputDogWorst').value = '';
       document.getElementById('inputDogPhoto').value = '';
       document.getElementById('dogPhotoPreview').src = DEFAULT_DOG_AVATAR;
       openModal('modalAddDog');
@@ -1470,6 +1491,8 @@
       document.getElementById('inputDogBreed').value = dog.breed || '';
       document.getElementById('inputDogWeight').value = dog.weight || '';
       document.getElementById('inputDogDob').value = dog.dob || '';
+      document.getElementById('inputDogBest').value = dog.best_trait || '';
+      document.getElementById('inputDogWorst').value = dog.worst_trait || '';
       document.getElementById('inputDogPhoto').value = '';
       document.getElementById('dogPhotoPreview').src = dog.avatar || DEFAULT_DOG_AVATAR;
       openModal('modalAddDog');
@@ -1500,12 +1523,14 @@
       const breed = document.getElementById('inputDogBreed').value.trim();
       const weight = parseFloat(document.getElementById('inputDogWeight').value) || 0;
       const dob = document.getElementById('inputDogDob').value;
+      const best_trait = document.getElementById('inputDogBest').value.trim();
+      const worst_trait = document.getElementById('inputDogWorst').value.trim();
       if (!name) return;
 
       const photoFile = document.getElementById('inputDogPhoto').files[0];
       const uploadedAvatar = photoFile ? await uploadDogAvatar(photoFile) : null;
 
-      const dogData = { name, breed, weight_kg: weight, dob };
+      const dogData = { name, breed, weight_kg: weight, dob, best_trait, worst_trait };
       if (uploadedAvatar) dogData.avatar = uploadedAvatar;
 
       if (editId) {

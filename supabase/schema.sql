@@ -79,6 +79,14 @@ create policy "Anon update dog-avatars" on storage.objects
 alter table public.dogs add column if not exists dob date;
 
 -- ==========================================================
+-- dogs.best_trait / dogs.worst_trait: free-text personality
+-- notes shown on the dog passport card and edited from the
+-- Add/Edit Dog modal ("Best & Worst Qualities").
+-- ==========================================================
+alter table public.dogs add column if not exists best_trait text;
+alter table public.dogs add column if not exists worst_trait text;
+
+-- ==========================================================
 -- walks.photo_url: written by saveWalkout() when a photo is
 -- attached to a walk log
 -- ==========================================================
