@@ -81,9 +81,10 @@
 <body class="bg-canvas text-obsidian min-h-screen">
     <div id="root"></div>
 
+    <script src="pack-store.js"></script>
     <script src="suite-nav.js" data-auto-mount="false"></script>
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // --- ICONS ---
         const IconHelp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
@@ -92,83 +93,175 @@
         const IconCheck = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A5D4E" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>;
         const IconExternal = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
 
-        // --- DEFAULT STATE (Milo) ---
-        const DEFAULT_PROFILE = {
-            name: "Milo",
-            breed: "Whippet",
-            ageYrs: 3,
-            ageMos: 2,
-            weight: 18,
+        // --- DEFAULTS ---
+        // Everyday, off-the-shelf feeding. The dog itself (name/breed/age/
+        // weight) comes from the shared pack store; the settings below are
+        // the fuel-specific choices we remember per dog in localStorage.
+        const DEFAULT_SETTINGS = {
             weightUnit: "kg",
             goal: "maintain",
             activity: "moderate",
-            framework: "BARF",
-            exclusions: ["Grains", "Dairy"]
+            foundation: "KIBBLE",
+            exclusions: [],
+            quickLog: ""
         };
 
-        const FRAMEWORKS = [
-            { id: "BARF", label: "Balanced Raw (80/10/10 BARF)" },
-            { id: "COOKED", label: "Gently Cooked Whole-Food" },
-            { id: "NOVEL", label: "Novel Single-Protein (Hypoallergenic)" },
-            { id: "LOW_FAT", label: "Low-Fat Pancreatitis Safe" }
+        // Standard dietary foundations + their rough energy density (kcal/g).
+        const FOUNDATIONS = [
+            { id: "KIBBLE", label: "Dry Kibble / Biscuits", kcalPerGram: 3.5, short: "Kibble" },
+            { id: "WET", label: "Wet / Tinned Food", kcalPerGram: 1.1, short: "Wet food" },
+            { id: "MIXED", label: "Mixed (Kibble + Wet)", kcalPerGram: 2.2, short: "Kibble + wet" },
+            { id: "RAW", label: "Raw / Fresh", kcalPerGram: 1.5, short: "Raw / fresh" }
         ];
 
-        const EXCLUSION_OPTS = ["Chicken", "Beef", "Grains", "Dairy", "Eggs"];
+        // Common everyday allergies / intolerances.
+        const EXCLUSION_OPTS = [
+            "Gluten / Wheat Intolerance",
+            "Chicken",
+            "Beef",
+            "Dairy",
+            "Egg",
+            "Soy"
+        ];
+
+        const PackStore = window.DogwalkrPack || null;
+        const settingsKey = (dogId) => `dogwalkr_fuel_prefs_${dogId || 'default'}`;
+
+        function loadSettings(dogId) {
+            try {
+                const raw = localStorage.getItem(settingsKey(dogId));
+                if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+            } catch (e) { /* fall through to defaults */ }
+            return { ...DEFAULT_SETTINGS };
+        }
+
+        function saveSettings(dogId, settings) {
+            try {
+                localStorage.setItem(settingsKey(dogId), JSON.stringify({
+                    weightUnit: settings.weightUnit,
+                    goal: settings.goal,
+                    activity: settings.activity,
+                    foundation: settings.foundation,
+                    exclusions: settings.exclusions,
+                    quickLog: settings.quickLog
+                }));
+            } catch (e) { /* private mode — session only */ }
+        }
+
+        // dob 'YYYY-MM-DD' <-> {ageYrs, ageMos}
+        function dobToAge(dob) {
+            const m = PackStore ? PackStore.ageMonths(dob) : null;
+            if (m === null || m === undefined) return { ageYrs: 2, ageMos: 0 };
+            return { ageYrs: Math.floor(m / 12), ageMos: m % 12 };
+        }
+        function ageToDob(ageYrs, ageMos) {
+            const now = new Date();
+            const totalM = (parseInt(ageYrs) || 0) * 12 + (parseInt(ageMos) || 0);
+            const d = new Date(now.getFullYear(), now.getMonth() - totalM, 1);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-15`;
+        }
+
+        function buildProfile(dog, settings) {
+            const age = dobToAge(dog.dob);
+            return {
+                dogId: dog.id,
+                name: dog.name || "Dog",
+                breed: dog.breed || "",
+                dob: dog.dob || "",
+                ageYrs: age.ageYrs,
+                ageMos: age.ageMos,
+                weight: dog.weight || 0,
+                weightUnit: settings.weightUnit,
+                goal: settings.goal,
+                activity: settings.activity,
+                foundation: settings.foundation,
+                exclusions: Array.isArray(settings.exclusions) ? settings.exclusions : [],
+                quickLog: settings.quickLog || ""
+            };
+        }
 
         // --- HELPER LOGIC ---
         const calculateNutrition = (p) => {
-            // RER = 70 * (Weight in kg)^0.75
             let weightKg = p.weightUnit === 'lbs' ? p.weight * 0.453592 : p.weight;
+            weightKg = Math.max(0.5, Number(weightKg) || 0.5);
             const rer = 70 * Math.pow(weightKg, 0.75);
 
-            // Activity Multiplier
             let activityFactor = 1.6; // moderate
             if (p.activity === 'low') activityFactor = 1.2;
             if (p.activity === 'high') activityFactor = 2.0;
 
-            // Goal Multiplier
             let goalFactor = 1.0;
             if (p.goal === 'lose') goalFactor = 0.8;
             if (p.goal === 'build') goalFactor = 1.15;
 
-            const der = rer * activityFactor * goalFactor;
-            
-            // Grams estimation (approx 1.5 kcal per gram of fresh/raw food on average)
-            let kcalPerGram = 1.5; 
-            if (p.framework === 'LOW_FAT') kcalPerGram = 1.1; // lower cal density
-            const totalGrams = der / kcalPerGram;
+            const ageMonths = (Number(p.ageYrs) || 0) * 12 + (Number(p.ageMos) || 0);
+            const isPuppy = ageMonths > 0 && ageMonths < 12;
+            // Growing puppies need more energy for their size.
+            if (isPuppy) goalFactor *= ageMonths < 4 ? 1.6 : ageMonths < 7 ? 1.4 : 1.2;
 
-            // Breakdown based on framework
-            let breakdown = { muscle: 0, bone: 0, liver: 0, organ: 0, plant: 0 };
-            
-            switch (p.framework) {
-                case 'BARF':
-                    breakdown = { muscle: 0.70, bone: 0.10, liver: 0.05, organ: 0.05, plant: 0.10 };
-                    break;
-                case 'COOKED':
-                    breakdown = { muscle: 0.75, bone: 0, liver: 0.05, organ: 0.05, plant: 0.15 }; // Calcium supplemented
-                    break;
-                case 'NOVEL':
-                    breakdown = { muscle: 0.75, bone: 0.10, liver: 0.05, organ: 0.05, plant: 0.05 };
-                    break;
-                case 'LOW_FAT':
-                    breakdown = { muscle: 0.80, bone: 0.05, liver: 0.05, organ: 0, plant: 0.10 };
-                    break;
+            const der = rer * activityFactor * goalFactor;
+            const meals = isPuppy ? 3 : 2;
+
+            const foundation = FOUNDATIONS.find(f => f.id === p.foundation) || FOUNDATIONS[0];
+
+            // Practical everyday portions.
+            let kibbleGrams = 0, wetGrams = 0, rawGrams = 0;
+            let rawBreakdown = null;
+
+            if (foundation.id === 'KIBBLE') {
+                kibbleGrams = der / 3.5;
+            } else if (foundation.id === 'WET') {
+                wetGrams = der / 1.1;
+            } else if (foundation.id === 'MIXED') {
+                // ~60% of calories from kibble, ~40% from wet.
+                kibbleGrams = (der * 0.6) / 3.5;
+                wetGrams = (der * 0.4) / 1.1;
+            } else { // RAW
+                rawGrams = der / 1.5;
+                const r = { muscle: 0.70, bone: 0.10, liver: 0.05, organ: 0.05, plant: 0.10 };
+                rawBreakdown = {
+                    muscle: Math.round(rawGrams * r.muscle),
+                    bone: Math.round(rawGrams * r.bone),
+                    liver: Math.round(rawGrams * r.liver),
+                    organ: Math.round(rawGrams * r.organ),
+                    plant: Math.round(rawGrams * r.plant)
+                };
             }
+
+            const totalGrams = Math.round(kibbleGrams + wetGrams + rawGrams);
 
             return {
                 rer: Math.round(rer),
                 der: Math.round(der),
-                totalGrams: Math.round(totalGrams),
-                grams: {
-                    muscle: Math.round(totalGrams * breakdown.muscle),
-                    bone: Math.round(totalGrams * breakdown.bone),
-                    liver: Math.round(totalGrams * breakdown.liver),
-                    organ: Math.round(totalGrams * breakdown.organ),
-                    plant: Math.round(totalGrams * breakdown.plant),
-                }
+                meals,
+                ageMonths,
+                isPuppy,
+                foundation,
+                kibbleGrams: Math.round(kibbleGrams),
+                wetGrams: Math.round(wetGrams),
+                rawGrams: Math.round(rawGrams),
+                rawBreakdown,
+                totalGrams,
+                perMealGrams: Math.round(totalGrams / meals),
+                // Handy pantry maths.
+                tinsPerDay: wetGrams > 0 ? wetGrams / 400 : 0,       // 400g tins
+                kibbleBagDays: kibbleGrams > 0 ? (2000 / kibbleGrams) : 0 // per 2kg bag
             };
         };
+
+        // Very light natural-language parse of the Quick Log line, e.g.
+        // "150g kibble, 5ml cod liver oil, 1 dental chew".
+        function parseQuickLog(text) {
+            return (text || '')
+                .split(/[,\n;]+/)
+                .map(s => s.trim())
+                .filter(Boolean)
+                .map(item => {
+                    const m = item.match(/^(\d+(?:\.\d+)?)\s*(g|kg|ml|l|tin|tins|pouch|pouches|scoop|scoops|chew|chews|piece|pieces|x)?\s*(.*)$/i);
+                    if (m && m[3]) return { amount: m[1] + (m[2] ? ' ' + m[2] : ''), label: m[3] };
+                    return { amount: '', label: item };
+                });
+        }
 
 
         // --- COMPONENTS ---
@@ -193,9 +286,9 @@
                                 </p>
                             </section>
                             <section>
-                                <h3 className="text-sm font-medium mb-2 text-obsidian">Calcium & Bone Safety</h3>
+                                <h3 className="text-sm font-medium mb-2 text-obsidian">Complete &amp; Balanced</h3>
                                 <p className="text-sm text-sandstone leading-relaxed">
-                                    Never feed cooked bones. If you choose the gently cooked option, skip raw bone and add a calcium supplement instead, about 800mg per 1,000 kcal.
+                                    Any kibble or wet food labelled "complete" already has the right vitamins and minerals — no supplements needed. Keep treats and toppers under about 10% of daily calories so the balance holds. If you feed raw or home-cooked, never use cooked bones and check the recipe is properly balanced.
                                 </p>
                             </section>
                             <section>
@@ -217,13 +310,92 @@
         };
 
         const App = () => {
-            const [profile, setProfile] = useState(DEFAULT_PROFILE);
+            const initialDogs = PackStore ? PackStore.getDogs() : [{ id: 'default', name: 'Your Dog', breed: '', weight: 12, dob: '' }];
+            const initialActiveId = PackStore ? PackStore.getActiveDogId() : 'default';
+            const initialDog = initialDogs.find(d => d.id === initialActiveId) || initialDogs[0];
+
+            const [dogs, setDogs] = useState(initialDogs);
+            const [activeDogId, setActiveDogId] = useState(initialDog.id);
+            const [profile, setProfile] = useState(() => buildProfile(initialDog, loadSettings(initialDog.id)));
             const [isSynthesized, setIsSynthesized] = useState(true);
             const [drawerOpen, setDrawerOpen] = useState(false);
             const [copiedItem, setCopiedItem] = useState(null);
-            
-            // Checkbox state for grocery list
             const [checkedItems, setCheckedItems] = useState(new Set());
+
+            // Guards a feedback loop between "we wrote to the store" and
+            // "the store told us it changed".
+            const writingToStore = useRef(false);
+
+            // Persist every profile change: fuel-specific settings to
+            // localStorage, shared fields (name/breed/weight/age) back to the
+            // pack store so the other tools see the edit and it never reverts
+            // when you switch tabs.
+            useEffect(() => {
+                if (!profile.dogId) return;
+                saveSettings(profile.dogId, profile);
+                if (!PackStore) return;
+
+                const storeDog = PackStore.getDogs().find(d => d.id === profile.dogId);
+                if (!storeDog) return;
+                const newWeight = profile.weightUnit === 'lbs'
+                    ? Math.round(Number(profile.weight) * 0.453592 * 10) / 10
+                    : Number(profile.weight) || 0;
+                const profileMonths = (Number(profile.ageYrs) || 0) * 12 + (Number(profile.ageMos) || 0);
+                const storeMonths = PackStore.ageMonths(storeDog.dob);
+
+                const patch = { id: profile.dogId };
+                let changed = false;
+                if ((storeDog.name || '') !== (profile.name || '')) { patch.name = profile.name; changed = true; }
+                if ((storeDog.breed || '') !== (profile.breed || '')) { patch.breed = profile.breed; changed = true; }
+                if (Math.abs((Number(storeDog.weight) || 0) - newWeight) > 0.05) { patch.weight = newWeight; changed = true; }
+                // Only rewrite dob when the age actually moved by a month or more.
+                if (storeMonths === null || Math.abs(storeMonths - profileMonths) >= 1) {
+                    patch.dob = ageToDob(profile.ageYrs, profile.ageMos);
+                    changed = true;
+                }
+                if (!changed) return;
+
+                writingToStore.current = true;
+                try { PackStore.upsertDog(patch); }
+                finally { writingToStore.current = false; }
+            }, [profile]);
+
+            // Adopt roster / active-dog changes made in the other tools.
+            useEffect(() => {
+                if (!PackStore) return;
+                return PackStore.subscribe(({ dogs: nextDogs, activeDogId: nextActive }) => {
+                    if (writingToStore.current) { setDogs(nextDogs); return; }
+                    setDogs(nextDogs);
+                    if (nextActive && nextActive !== activeDogId) {
+                        const d = nextDogs.find(x => x.id === nextActive);
+                        if (d) {
+                            setActiveDogId(nextActive);
+                            setProfile(buildProfile(d, loadSettings(nextActive)));
+                        }
+                    } else {
+                        // Same active dog, but its shared fields may have changed elsewhere.
+                        const d = nextDogs.find(x => x.id === activeDogId);
+                        if (d) {
+                            setProfile(p => ({
+                                ...p,
+                                name: d.name, breed: d.breed,
+                                ...(dobToAge(d.dob))
+                            }));
+                        }
+                    }
+                });
+            }, [activeDogId]);
+
+            const switchDog = (id) => {
+                const d = dogs.find(x => x.id === id);
+                if (!d) return;
+                setActiveDogId(id);
+                setProfile(buildProfile(d, loadSettings(id)));
+                if (PackStore) {
+                    writingToStore.current = true;
+                    try { PackStore.setActiveDogId(id); } finally { writingToStore.current = false; }
+                }
+            };
 
             const toggleCheck = (item) => {
                 const next = new Set(checkedItems);
@@ -265,6 +437,22 @@
                         <SuiteNav active="fuel" onHelp={() => setDrawerOpen(true)} />
                         <div className="max-w-[900px] mx-auto px-6 py-12">
                         <div className="bg-surface rounded-card p-8 border border-hairline shadow-sm space-y-12">
+                            {dogs.length > 1 && (
+                                <section>
+                                    <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-3 block">Planning meals for</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {dogs.map(d => (
+                                            <button
+                                                key={d.id}
+                                                onClick={() => switchDog(d.id)}
+                                                className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-colors ${d.id === activeDogId ? 'bg-pitch text-white border-pitch' : 'bg-canvas text-sandstone border-hairline hover:border-sandstone'}`}
+                                            >
+                                                {d.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
                             {/* Step 1 */}
                             <section>
                                 <h2 className="text-sm font-semibold tracking-widest uppercase text-obsidian mb-6 border-b border-hairline pb-2">Step 1: Dog Details</h2>
@@ -320,29 +508,31 @@
 
                             {/* Step 3 */}
                             <section>
-                                <h2 className="text-sm font-semibold tracking-widest uppercase text-obsidian mb-6 border-b border-hairline pb-2">Step 3: Diet Style</h2>
+                                <h2 className="text-sm font-semibold tracking-widest uppercase text-obsidian mb-6 border-b border-hairline pb-2">Step 3: What Do They Eat?</h2>
                                 <div className="space-y-6">
-                                    <div className="flex flex-col max-w-md">
-                                        <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-2">Dietary Foundation</label>
-                                        <select 
-                                            className="w-full bg-canvas border border-hairline rounded-soft p-3 text-sm text-obsidian outline-none focus:border-obsidian transition-colors appearance-none"
-                                            value={profile.framework}
-                                            onChange={(e) => setProfile({...profile, framework: e.target.value})}
-                                        >
-                                            {FRAMEWORKS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-                                        </select>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-3">Dietary Foundation</label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {FOUNDATIONS.map(f => (
+                                                <div key={f.id}
+                                                    onClick={() => setProfile({...profile, foundation: f.id})}
+                                                    className={`p-4 rounded-soft border cursor-pointer transition-colors ${profile.foundation === f.id ? 'border-obsidian bg-canvas' : 'border-hairline hover:border-sandstone'}`}>
+                                                    <div className="text-sm font-medium">{f.label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     <div className="flex flex-col">
-                                        <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-3">Known Sensitivities (Exclude)</label>
+                                        <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-3">Known Sensitivities & Allergies (Exclude)</label>
                                         <div className="flex flex-wrap gap-2">
                                             {EXCLUSION_OPTS.map(ex => {
                                                 const isActive = profile.exclusions.includes(ex);
                                                 return (
-                                                    <button 
+                                                    <button
                                                         key={ex}
                                                         onClick={() => {
-                                                            const newEx = isActive 
+                                                            const newEx = isActive
                                                                 ? profile.exclusions.filter(e => e !== ex)
                                                                 : [...profile.exclusions, ex];
                                                             setProfile({...profile, exclusions: newEx});
@@ -358,7 +548,21 @@
                                 </div>
                             </section>
 
-                            <button 
+                            {/* Step 4: Quick Log */}
+                            <section>
+                                <h2 className="text-sm font-semibold tracking-widest uppercase text-obsidian mb-6 border-b border-hairline pb-2">Step 4: Quick Log <span className="text-sandstone font-normal normal-case tracking-normal">(optional)</span></h2>
+                                <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-2 block">Today's bowl, in your own words</label>
+                                <textarea
+                                    rows={2}
+                                    value={profile.quickLog}
+                                    onChange={(e) => setProfile({...profile, quickLog: e.target.value})}
+                                    placeholder="e.g. 150g kibble, 5ml cod liver oil, 1 dental chew"
+                                    className="w-full bg-canvas border border-hairline rounded-soft p-3 text-sm text-obsidian outline-none focus:border-obsidian transition-colors placeholder:text-sandstone/50"
+                                />
+                                <p className="text-xs text-sandstone mt-2">Type meals, toppers and supplements separated by commas. We'll list them back on the plan.</p>
+                            </section>
+
+                            <button
                                 onClick={() => setIsSynthesized(true)}
                                 className="w-full py-4 bg-pitch text-white rounded-soft text-sm font-medium hover:bg-obsidian transition-colors shadow-md"
                             >
@@ -375,24 +579,85 @@
             // VIEW 2: DASHBOARD (Synthesized)
             // ----------------------------------------------------
             
-            // Text generators based on selections
-            const meatSource = profile.exclusions.includes("Beef") ? (profile.exclusions.includes("Chicken") ? "Turkey / Lamb" : "Chicken") : "Beef / Turkey";
-            const organSource = profile.exclusions.includes("Beef") ? "Lamb Liver & Spleen" : "Beef Liver & Kidney";
-            const plantSource = profile.exclusions.includes("Grains") ? "Steamed Zucchini, Kale & Pumpkin" : "Brown Rice, Spinach & Carrots";
+            // Everyday protein / carb suggestions that respect the allergy toggles.
+            const noChicken = profile.exclusions.includes("Chicken");
+            const noBeef = profile.exclusions.includes("Beef");
+            const noGrain = profile.exclusions.includes("Gluten / Wheat Intolerance");
+            const proteinPick = noChicken && noBeef ? "turkey, lamb or white fish"
+                : noChicken ? "beef, turkey or lamb"
+                : noBeef ? "chicken, turkey or fish"
+                : "chicken, beef or turkey";
+            const carbPick = noGrain ? "sweet potato, peas or pumpkin" : "brown rice, oats or wholewheat pasta";
+            const foundationLabel = nutrition.foundation.label;
+            const quickLogItems = parseQuickLog(profile.quickLog);
 
-            const shoppingListText = `DogWalkr Fuel - 7 Day Shopping List for ${profile.name}
-Meat (${meatSource}): ${(nutrition.grams.muscle * 7 / 1000).toFixed(2)} kg
-Raw Bone: ${(nutrition.grams.bone * 7 / 1000).toFixed(2)} kg
-Liver (${organSource.split(' ')[0]}): ${(nutrition.grams.liver * 7 / 1000).toFixed(2)} kg
-Other Organ: ${(nutrition.grams.organ * 7 / 1000).toFixed(2)} kg
-Plant/Fiber (${plantSource}): ${(nutrition.grams.plant * 7 / 1000).toFixed(2)} kg`;
+            // Foundation-aware "what's in the bowl" rows.
+            const bowlRows = (() => {
+                const f = nutrition.foundation.id;
+                if (f === 'KIBBLE') return [
+                    { amt: `${nutrition.kibbleGrams} g`, label: `Complete dry kibble${noGrain ? ' (grain-free)' : ''}` }
+                ];
+                if (f === 'WET') return [
+                    { amt: `${nutrition.wetGrams} g`, label: `Complete wet food (~${nutrition.tinsPerDay.toFixed(1)} × 400g tins)` }
+                ];
+                if (f === 'MIXED') return [
+                    { amt: `${nutrition.kibbleGrams} g`, label: `Dry kibble${noGrain ? ' (grain-free)' : ''}` },
+                    { amt: `${nutrition.wetGrams} g`, label: `Wet food (~${(nutrition.wetGrams / 400).toFixed(1)} × 400g tin)` }
+                ];
+                return [
+                    { amt: `${nutrition.rawBreakdown.muscle} g`, label: `Muscle meat (${proteinPick})` },
+                    { amt: `${nutrition.rawBreakdown.bone} g`, label: 'Raw meaty bone' },
+                    { amt: `${nutrition.rawBreakdown.liver} g`, label: 'Liver' },
+                    { amt: `${nutrition.rawBreakdown.organ} g`, label: 'Other organ' },
+                    { amt: `${nutrition.rawBreakdown.plant} g`, label: `Veg & fibre (${carbPick})` }
+                ];
+            })();
+
+            // Pantry / shopping list rows, per foundation.
+            const pantryRows = (() => {
+                const f = nutrition.foundation.id;
+                if (f === 'KIBBLE') return [
+                    { cat: 'Dry kibble', item: `Complete adult${noGrain ? ' grain-free' : ''} kibble`, amt: `${(nutrition.kibbleGrams * 7 / 1000).toFixed(2)} kg / wk` },
+                    { cat: 'Topper (optional)', item: 'Splash of warm water or bone broth', amt: 'to taste' },
+                    { cat: 'Treats', item: 'Dental chew + training treats', amt: '≤ 10% of calories' }
+                ];
+                if (f === 'WET') return [
+                    { cat: 'Wet food', item: 'Complete wet food, 400g tins', amt: `${Math.ceil(nutrition.tinsPerDay * 7)} tins / wk` },
+                    { cat: 'Treats', item: 'Dental chew + training treats', amt: '≤ 10% of calories' }
+                ];
+                if (f === 'MIXED') return [
+                    { cat: 'Dry kibble', item: `Complete adult${noGrain ? ' grain-free' : ''} kibble`, amt: `${(nutrition.kibbleGrams * 7 / 1000).toFixed(2)} kg / wk` },
+                    { cat: 'Wet food', item: 'Complete wet food, 400g tins', amt: `${Math.ceil((nutrition.wetGrams / 400) * 7)} tins / wk` },
+                    { cat: 'Treats', item: 'Dental chew + training treats', amt: '≤ 10% of calories' }
+                ];
+                return [
+                    { cat: 'Muscle meat', item: proteinPick, amt: `${(nutrition.rawBreakdown.muscle * 7 / 1000).toFixed(2)} kg / wk` },
+                    { cat: 'Raw meaty bone', item: 'Poultry necks / wings', amt: `${(nutrition.rawBreakdown.bone * 7 / 1000).toFixed(2)} kg / wk` },
+                    { cat: 'Liver', item: `${noBeef ? 'Lamb' : 'Beef'} liver`, amt: `${(nutrition.rawBreakdown.liver * 7 / 1000).toFixed(2)} kg / wk` },
+                    { cat: 'Other organ', item: 'Kidney or spleen', amt: `${(nutrition.rawBreakdown.organ * 7 / 1000).toFixed(2)} kg / wk` },
+                    { cat: 'Veg & fibre', item: carbPick, amt: `${(nutrition.rawBreakdown.plant * 7 / 1000).toFixed(2)} kg / wk` }
+                ];
+            })();
+
+            const shoppingListText = `DogWalkr Fuel — weekly list for ${profile.name}\nFoundation: ${foundationLabel}\nDaily calories: ${nutrition.der} kcal over ${nutrition.meals} meals\n` +
+                pantryRows.map(r => `- ${r.cat}: ${r.item} — ${r.amt}`).join('\n');
 
             return (
                 <div>
                     <SuiteNav active="fuel" onHelp={() => setDrawerOpen(true)} />
                     <div className="max-w-[900px] mx-auto px-6 py-12">
-                    <div className="flex justify-end mb-8 no-print">
-                        <button onClick={() => setIsSynthesized(false)} className="text-xs font-medium text-sandstone hover:text-obsidian transition-colors border border-hairline px-3 py-1.5 rounded-soft">
+                    <div className="flex justify-between items-center mb-8 no-print gap-3">
+                        {dogs.length > 1 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {dogs.map(d => (
+                                    <button key={d.id} onClick={() => switchDog(d.id)}
+                                        className={`px-3 py-1.5 rounded-soft text-xs font-medium border transition-colors ${d.id === activeDogId ? 'bg-pitch text-white border-pitch' : 'bg-canvas text-sandstone border-hairline hover:border-sandstone'}`}>
+                                        {d.name}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : <span />}
+                        <button onClick={() => setIsSynthesized(false)} className="text-xs font-medium text-sandstone hover:text-obsidian transition-colors border border-hairline px-3 py-1.5 rounded-soft shrink-0">
                             Edit Profile
                         </button>
                     </div>
@@ -404,7 +669,7 @@ Plant/Fiber (${plantSource}): ${(nutrition.grams.plant * 7 / 1000).toFixed(2)} k
                     </div>
 
                     <div className="space-y-6">
-                        
+
                         {/* 1. DAILY BOWL & PORTION GUIDE */}
                         <div className="bg-surface rounded-card border border-hairline p-6 flex flex-col md:flex-row gap-8 justify-between shadow-sm print-border-none print:px-0">
                             <div className="flex flex-col justify-center min-w-[200px]">
@@ -414,52 +679,56 @@ Plant/Fiber (${plantSource}): ${(nutrition.grams.plant * 7 / 1000).toFixed(2)} k
                                     <span className="text-xs text-sandstone">kcal / day</span>
                                 </div>
                                 <div className="text-xs text-sandstone mb-4">
-                                    Daily calories <span className="text-hairline mx-2">|</span> {nutrition.rer} resting baseline
+                                    {nutrition.meals} meals a day <span className="text-hairline mx-2">|</span> {nutrition.rer} resting baseline
                                 </div>
                                 <div className="inline-flex px-2 py-1 bg-canvas border border-hairline rounded text-[10px] text-obsidian font-medium w-max">
-                                    {FRAMEWORKS.find(f => f.id === profile.framework).label}
+                                    {foundationLabel}
                                 </div>
+                                {nutrition.isPuppy && (
+                                    <p className="text-[11px] text-ochre mt-3 leading-relaxed">Growing puppy — extra calories built in. Re-check portions every couple of weeks as {profile.name} grows.</p>
+                                )}
                             </div>
-                            
+
                             <div className="w-px bg-hairline hidden md:block"></div>
 
                             <div className="flex-1">
-                                <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-4">Daily Gram Breakdown ({nutrition.totalGrams}g Total)</h2>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-2">
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.muscle}g</span>
-                                        <span className="text-[10px] text-sandstone uppercase tracking-wide">Muscle Meat</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.bone}g</span>
-                                        <span className="text-[10px] text-sandstone uppercase tracking-wide">Raw Bone</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.liver}g</span>
-                                        <span className="text-[10px] text-sandstone uppercase tracking-wide">Liver</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.organ}g</span>
-                                        <span className="text-[10px] text-sandstone uppercase tracking-wide">Other Organ</span>
-                                    </div>
-                                    <div className="flex flex-col col-span-2 sm:col-span-1">
-                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.plant}g</span>
-                                        <span className="text-[10px] text-sage uppercase tracking-wide font-semibold">Plant / Fiber</span>
-                                    </div>
+                                <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-4">What's In The Bowl ({nutrition.totalGrams}g/day · {nutrition.perMealGrams}g per meal)</h2>
+                                <div className="space-y-2.5">
+                                    {bowlRows.map((row, i) => (
+                                        <div key={i} className="flex items-baseline justify-between border-b border-hairline pb-2 last:border-0">
+                                            <span className="text-xs text-obsidian">{row.label}</span>
+                                            <span className="text-sm font-medium text-obsidian ml-3 shrink-0">{row.amt}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
 
+                        {/* QUICK LOG SUMMARY */}
+                        {quickLogItems.length > 0 && (
+                            <div className="bg-surface rounded-card border border-hairline p-6 shadow-sm print-border-none print:px-0">
+                                <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-4">Quick Log — Today's Bowl</h2>
+                                <div className="flex flex-wrap gap-2">
+                                    {quickLogItems.map((it, i) => (
+                                        <span key={i} className="inline-flex items-baseline gap-1.5 px-3 py-1.5 bg-canvas border border-hairline rounded-full text-xs">
+                                            {it.amount && <span className="font-semibold text-obsidian">{it.amount}</span>}
+                                            <span className="text-sandstone">{it.label}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            
+
                             {/* Left Col: Schedule & Transition */}
                             <div className="lg:col-span-2 space-y-6">
-                                
+
                                 {/* 2. MEAL SCHEDULE */}
                                 <div className="bg-surface rounded-card border border-hairline p-6 shadow-sm print-border-none print:px-0">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone">Weekly Meal Schedule</h2>
-                                        <button 
+                                        <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone">Daily Meal Rhythm</h2>
+                                        <button
                                             onClick={() => handleCopy("Schedule Copied", 'schedule')}
                                             className="no-print text-sandstone hover:text-obsidian transition-colors p-1"
                                             title="Copy schedule"
@@ -467,34 +736,26 @@ Plant/Fiber (${plantSource}): ${(nutrition.grams.plant * 7 / 1000).toFixed(2)} k
                                             {copiedItem === 'schedule' ? <IconCheck /> : <IconCopy />}
                                         </button>
                                     </div>
-                                    
-                                    <div className="space-y-4">
-                                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, idx) => {
-                                            // Slight variation logic just for visual realism
-                                            const isFastingDay = idx === 6 && profile.framework === 'BARF' && profile.activity !== 'high'; // Fasting/light day on Sunday
-                                            
+
+                                    <div className="space-y-3">
+                                        {Array.from({ length: nutrition.meals }).map((_, i) => {
+                                            const slot = nutrition.meals === 3
+                                                ? ['Morning', 'Midday', 'Evening'][i]
+                                                : ['Morning', 'Evening'][i];
                                             return (
-                                                <div key={day} className="flex flex-col sm:flex-row sm:items-center py-3 border-b border-hairline last:border-0 last:pb-0">
-                                                    <div className="w-24 text-xs font-medium text-obsidian mb-2 sm:mb-0">{day}</div>
-                                                    
-                                                    {isFastingDay ? (
-                                                        <div className="flex-1 text-xs text-sandstone italic">Lighter day: bone broth and half the usual veggies & fiber.</div>
-                                                    ) : (
-                                                        <div className="flex-1 flex gap-4">
-                                                            <div className="flex-1 bg-canvas rounded px-3 py-2 border border-hairline">
-                                                                <div className="text-[10px] uppercase text-sandstone mb-1 tracking-wider">AM ({(nutrition.totalGrams/2).toFixed(0)}g)</div>
-                                                                <div className="text-xs text-obsidian">{meatSource} blend + {organSource}</div>
-                                                            </div>
-                                                            <div className="flex-1 bg-canvas rounded px-3 py-2 border border-hairline">
-                                                                <div className="text-[10px] uppercase text-sandstone mb-1 tracking-wider">PM ({(nutrition.totalGrams/2).toFixed(0)}g)</div>
-                                                                <div className="text-xs text-obsidian">{meatSource} + Bone + {plantSource}</div>
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                <div key={i} className="flex items-center gap-4 bg-canvas rounded px-4 py-3 border border-hairline">
+                                                    <div className="text-[10px] uppercase text-sandstone tracking-wider w-20 shrink-0">{slot}</div>
+                                                    <div className="text-xs text-obsidian flex-1">
+                                                        {nutrition.perMealGrams}g {nutrition.foundation.short}
+                                                        {quickLogItems.length > 0 && i === 0 ? ' + toppers as logged' : ''}
+                                                    </div>
                                                 </div>
-                                            )
+                                            );
                                         })}
                                     </div>
+                                    <p className="text-[11px] text-sandstone mt-4 leading-relaxed">
+                                        Everyday portions for {foundationLabel.toLowerCase()}. Weigh the bowl rather than using a cup for accuracy, and adjust by ±10% based on body condition over 2–3 weeks.
+                                    </p>
                                 </div>
 
                                 {/* 4. TRANSITION GUIDE */}
@@ -529,8 +790,8 @@ Plant/Fiber (${plantSource}): ${(nutrition.grams.plant * 7 / 1000).toFixed(2)} k
                                 {/* 3. SHOPPING LIST */}
                                 <div className="bg-surface rounded-card border border-hairline p-6 shadow-sm print-border-none print:px-0">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone">7-Day Butcher & Pantry List</h2>
-                                        <button 
+                                        <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone">Weekly Shopping List</h2>
+                                        <button
                                             onClick={() => handleCopy(shoppingListText, 'shop')}
                                             className="no-print text-sandstone hover:text-obsidian transition-colors p-1"
                                             title="Copy list"
@@ -540,13 +801,7 @@ Plant/Fiber (${plantSource}): ${(nutrition.grams.plant * 7 / 1000).toFixed(2)} k
                                     </div>
 
                                     <div className="space-y-4">
-                                        {[
-                                            { cat: "Muscle Meat", item: meatSource, amt: (nutrition.grams.muscle * 7 / 1000).toFixed(2) + " kg" },
-                                            { cat: "Raw Bone", item: nutrition.grams.bone > 0 ? "Poultry Necks/Backs" : "Supplement (Calcium)", amt: nutrition.grams.bone > 0 ? (nutrition.grams.bone * 7 / 1000).toFixed(2) + " kg" : "See notes" },
-                                            { cat: "Liver", item: organSource.split(' ')[0] + " Liver", amt: (nutrition.grams.liver * 7 / 1000).toFixed(2) + " kg" },
-                                            { cat: "Other Organ", item: organSource.split(' & ')[1] || "Spleen/Kidney", amt: (nutrition.grams.organ * 7 / 1000).toFixed(2) + " kg" },
-                                            { cat: "Veggies & Fiber", item: plantSource, amt: (nutrition.grams.plant * 7 / 1000).toFixed(2) + " kg" },
-                                        ].map((row, i) => (
+                                        {pantryRows.map((row, i) => (
                                             <div key={i} className="flex items-start gap-3 group">
                                                 <button 
                                                     onClick={() => toggleCheck(i)} 

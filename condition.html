@@ -61,61 +61,46 @@
 <body class="min-h-screen">
   <div id="root"></div>
 
+  <script src="pack-store.js"></script>
   <script src="suite-nav.js" data-auto-mount="false"></script>
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
+
+    const PackStore = window.DogwalkrPack || null;
+    const ATHLETE_KEY = 'dogwalkr_condition_athlete_mode';
 
     // --- PRESET DATA & ENGINE ---
-    const PRESETS = [
-      {
-        id: 'milo_whippet',
-        label: 'Milo — 18kg Whippet (Aerobic Base)',
-        name: 'Milo',
-        breed: 'Whippet',
-        ageYears: 3,
-        ageMonths: 2,
-        weightKg: 18,
-        fitnessBaseline: 'moderate_walker',
-        goal: 'aerobic_base',
-        baselineKm: 15
-      },
-      {
-        id: 'luna_golden',
-        label: 'Luna — 28kg Golden Retriever (Senior / Joint-Friendly)',
-        name: 'Luna',
-        breed: 'Golden Retriever',
-        ageYears: 8,
-        ageMonths: 6,
-        weightKg: 28,
-        fitnessBaseline: 'puppy_rehab',
-        goal: 'joint_friendly',
-        baselineKm: 10
-      },
-      {
-        id: 'kodiak_malinois',
-        label: 'Kodiak — 26kg Belgian Malinois (Canicross Peak)',
-        name: 'Kodiak',
-        breed: 'Belgian Malinois',
-        ageYears: 3,
-        ageMonths: 0,
-        weightKg: 26,
-        fitnessBaseline: 'athlete',
-        goal: 'canicross_peak',
-        baselineKm: 24
-      },
-      {
-        id: 'barnaby_frenchie',
-        label: 'Barnaby — 12kg French Bulldog (Heat-Sensitive / Rehab)',
-        name: 'Barnaby',
-        breed: 'French Bulldog',
-        ageYears: 2,
-        ageMonths: 4,
-        weightKg: 12,
-        fitnessBaseline: 'puppy_rehab',
-        goal: 'joint_friendly',
-        baselineKm: 7
-      }
-    ];
+    // Presets are the shared household pack (pack-store.js) so this tool
+    // always shows the same dogs as the Activity Tracker and Fuel tools.
+    const DEFAULT_GOAL = 'everyday_stroll';
+
+    function suggestedBaselineKm(weightKg) {
+      const w = Number(weightKg) || 12;
+      return w < 8 ? 8 : w < 18 ? 14 : 20;
+    }
+
+    function dogToPreset(d) {
+      const m = PackStore ? PackStore.ageMonths(d.dob) : null;
+      const isPup = m !== null && m < 12;
+      return {
+        id: d.id,
+        label: `${d.name} — ${d.weight || '?'}kg ${d.breed || 'dog'}`,
+        name: d.name,
+        breed: d.breed || '',
+        ageYears: m !== null ? Math.floor(m / 12) : 2,
+        ageMonths: m !== null ? m % 12 : 0,
+        weightKg: d.weight || 12,
+        fitnessBaseline: isPup ? 'puppy_rehab' : 'moderate_walker',
+        goal: DEFAULT_GOAL,
+        baselineKm: isPup ? Math.max(3, Math.round(suggestedBaselineKm(d.weight) * 0.5)) : suggestedBaselineKm(d.weight)
+      };
+    }
+
+    function getPresets() {
+      const dogs = PackStore ? PackStore.getDogs() : [];
+      if (!dogs.length) return [dogToPreset({ id: 'default', name: 'Your Dog', breed: '', weight: 14, dob: '' })];
+      return dogs.map(dogToPreset);
+    }
 
     const FAQ_DATA = [
       {
@@ -233,13 +218,13 @@
       };
     }
 
-    function generatePlan(profile, goal, baselineKm) {
+    function generatePlan(profile, goal, baselineKm, athleteMode) {
       const safeBase = Math.max(2, baselineKm);
       const heat = calculateHeatGuardrails(profile.breed, profile.ageYears);
       const terrain = calculateTerrainSplit(goal, profile.fitnessBaseline, profile.weightKg);
 
       let rate = 0.10;
-      if (goal === 'joint_friendly' || profile.fitnessBaseline === 'puppy_rehab') rate = 0.05;
+      if (goal === 'joint_friendly' || goal === 'everyday_stroll' || profile.fitnessBaseline === 'puppy_rehab') rate = 0.05;
       else if (goal === 'canicross_peak') rate = 0.08;
 
       const w1 = Number(safeBase.toFixed(1));
@@ -415,6 +400,27 @@
         }
       ];
 
+      // Casual-first: unless Advanced Conditioning & Athlete Mode is on,
+      // swap the proprioception / ground-pole drill days for easy,
+      // accessible sniff walks so the default plan is just everyday walking.
+      if (!athleteMode) {
+        weeks.forEach(week => {
+          week.days = week.days.map(day => {
+            if (day.type !== 'proprioception') return day;
+            return {
+              ...day,
+              type: 'sniff_walk',
+              title: 'Sniff & Explore Walk',
+              distanceKm: 0,
+              durationMinutes: 20,
+              description: 'A short, relaxed 15–20 minute neighbourhood walk at your dog’s pace. Let them stop and sniff as much as they like — gentle exercise plus great mental enrichment.',
+              exercises: ['Loose lead, no agenda', 'Let them choose the pace and the sniff stops', 'Turn for home when they start to flag'],
+              jointSafetyNote: 'Easy day by design — keep it flat and unhurried.'
+            };
+          });
+        });
+      }
+
       const recoveryProtocol = [
         { phase: 'Cool down walk', duration: '5–8 minutes', instructions: ['Ease into a slow, loose-leash stroll to bring heart rate and breathing back to normal.'] },
         { phase: 'Water & cool-off', duration: '10–15 min after', instructions: ['Offer small sips of cool water (50–100ml). Dampen belly and groin with a cloth if they ran warm.'] },
@@ -436,16 +442,27 @@
 
     // --- MAIN APP COMPONENT ---
     function App() {
+      const initialPresets = getPresets();
+      const initialActiveId = PackStore ? PackStore.getActiveDogId() : initialPresets[0].id;
+      const initialPreset = initialPresets.find(p => p.id === initialActiveId) || initialPresets[0];
+
+      const readAthlete = () => {
+        try { return localStorage.getItem(ATHLETE_KEY) === '1'; } catch (e) { return false; }
+      };
+
+      const [presets, setPresets] = useState(initialPresets);
+      const [activeDogId, setActiveDogId] = useState(initialPreset.id);
+      const [athleteMode, setAthleteModeState] = useState(readAthlete);
       const [profile, setProfile] = useState({
-        name: 'Milo',
-        breed: 'Whippet',
-        ageYears: 3,
-        ageMonths: 2,
-        weightKg: 18,
-        fitnessBaseline: 'moderate_walker'
+        name: initialPreset.name,
+        breed: initialPreset.breed,
+        ageYears: initialPreset.ageYears,
+        ageMonths: initialPreset.ageMonths,
+        weightKg: initialPreset.weightKg,
+        fitnessBaseline: initialPreset.fitnessBaseline
       });
-      const [goal, setGoal] = useState('aerobic_base');
-      const [baselineKm, setBaselineKm] = useState(15);
+      const [goal, setGoal] = useState(initialPreset.goal);
+      const [baselineKm, setBaselineKm] = useState(initialPreset.baselineKm);
       const [isMetric, setIsMetric] = useState(true);
       const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
       const [activeWeekIndex, setActiveWeekIndex] = useState(0);
@@ -455,16 +472,41 @@
       const [faqSearch, setFaqSearch] = useState('');
       const [expandedFaqId, setExpandedFaqId] = useState('growth-plates');
 
-      const [plan, setPlan] = useState(() => generatePlan(profile, goal, baselineKm));
+      const [plan, setPlan] = useState(() => generatePlan(profile, goal, baselineKm, readAthlete()));
+
+      const writingToStore = useRef(false);
+
+      const setAthleteMode = (on) => {
+        setAthleteModeState(on);
+        try { localStorage.setItem(ATHLETE_KEY, on ? '1' : '0'); } catch (e) {}
+        // A niche goal only makes sense with athlete mode on.
+        const nextGoal = !on && goal === 'canicross_peak' ? DEFAULT_GOAL : goal;
+        if (nextGoal !== goal) setGoal(nextGoal);
+        setPlan(generatePlan(profile, nextGoal, baselineKm, on));
+      };
+
+      // Keep the roster / active dog in sync with the other tools.
+      useEffect(() => {
+        if (!PackStore) return;
+        return PackStore.subscribe(({ activeDogId: nextActive }) => {
+          if (writingToStore.current) return;
+          const next = getPresets();
+          setPresets(next);
+          if (nextActive && nextActive !== activeDogId) {
+            const p = next.find(x => x.id === nextActive);
+            if (p) applyPreset(p, false);
+          }
+        });
+      }, [activeDogId, athleteMode]);
 
       const handleGenerate = () => {
-        const newPlan = generatePlan(profile, goal, baselineKm);
+        const newPlan = generatePlan(profile, goal, baselineKm, athleteMode);
         setPlan(newPlan);
         const target = document.getElementById('conditioning-telemetry-header');
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
-      const handleSelectPreset = (p) => {
+      const applyPreset = (p, syncStore) => {
         const newProf = {
           name: p.name,
           breed: p.breed,
@@ -473,11 +515,18 @@
           weightKg: p.weightKg,
           fitnessBaseline: p.fitnessBaseline
         };
+        setActiveDogId(p.id);
         setProfile(newProf);
         setGoal(p.goal);
         setBaselineKm(p.baselineKm);
-        setPlan(generatePlan(newProf, p.goal, p.baselineKm));
+        setPlan(generatePlan(newProf, p.goal, p.baselineKm, athleteMode));
+        if (syncStore && PackStore) {
+          writingToStore.current = true;
+          try { PackStore.setActiveDogId(p.id); } finally { writingToStore.current = false; }
+        }
       };
+
+      const handleSelectPreset = (p) => applyPreset(p, true);
 
       const toggleDayCompleted = (weekIdx, dayId) => {
         setPlan(prev => {
@@ -580,13 +629,13 @@
                   </div>
                 </div>
 
-                {/* Presets */}
+                {/* Your pack */}
                 <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-[#E8E8E4] text-xs">
                   <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#73736E] mr-1">
-                    Presets:
+                    Your Pack:
                   </span>
-                  {PRESETS.map((p) => {
-                    const isSel = profile.name === p.name && profile.breed === p.breed;
+                  {presets.map((p) => {
+                    const isSel = p.id === activeDogId;
                     return (
                       <button
                         key={p.id}
@@ -597,7 +646,7 @@
                             : 'bg-white text-[#52524E] border-[#E8E8E4] hover:border-[#171717] hover:text-[#171717]'
                         }`}
                       >
-                        {p.name} • {p.breed}
+                        {p.name}{p.breed ? ' • ' + p.breed : ''}
                       </button>
                     );
                   })}
@@ -726,16 +775,35 @@
 
                 {/* Step 2 */}
                 <div className="pt-4 border-t border-[#E8E8E4]">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="w-4 h-4 bg-[#171717] text-white text-[10px] font-mono font-bold flex items-center justify-center">2</span>
-                    <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-[#171717]">What&apos;s the goal?</h3>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-4 h-4 bg-[#171717] text-white text-[10px] font-mono font-bold flex items-center justify-center">2</span>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-[#171717]">What&apos;s the goal?</h3>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#73736E]">Advanced Conditioning &amp; Athlete Mode</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={athleteMode}
+                        onClick={() => setAthleteMode(!athleteMode)}
+                        className={`relative w-9 h-5 border transition-colors ${athleteMode ? 'bg-[#0A0A0A] border-[#0A0A0A]' : 'bg-white border-[#E8E8E4]'}`}
+                      >
+                        <span className={`absolute top-0.5 w-3.5 h-3.5 bg-white border border-[#E8E8E4] transition-all ${athleteMode ? 'left-[18px]' : 'left-0.5'}`} />
+                      </button>
+                    </label>
                   </div>
+                  {!athleteMode && (
+                    <p className="text-[11px] text-[#73736E] mb-3 -mt-1">
+                      Casual mode: everyday neighbourhood walks and sniff time. Turn on Athlete Mode for canicross, agility, ground poles and balance drills.
+                    </p>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {[
-                      { type: 'aerobic_base', title: 'Build Everyday Stamina', badge: 'Most Dogs', desc: 'Steady weekly walks with a gentle +10% build and an easy recovery week.' },
+                      { type: 'everyday_stroll', title: 'Daily Neighbourhood Stroll & Sniff Walk', badge: 'Most Dogs', desc: 'A relaxed ~30 min walk most days with a gentle +5% build and easy recovery week.' },
                       { type: 'joint_friendly', title: 'Joint-Friendly & Low Impact', badge: 'Senior / Recovery', desc: 'Slower +5% increases, mostly soft trails, easy on aging or recovering joints.' },
-                      { type: 'canicross_peak', title: 'Canicross / Agility Peak', badge: 'Sport & Speed', desc: 'Off-road focus with hills and intervals for dogs already in training.' }
+                      ...(athleteMode ? [{ type: 'canicross_peak', title: 'Canicross / Agility Peak', badge: 'Sport & Speed', desc: 'Off-road focus with hills, intervals and ground-pole drills for dogs already in training.' }] : [])
                     ].map((g) => (
                       <div
                         key={g.type}

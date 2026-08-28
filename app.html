@@ -19,6 +19,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Official Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Shared pack store — keeps the active dog roster in sync with Fuel & Conditioning -->
+  <script src="pack-store.js"></script>
 
   <style>
     @supports (-webkit-touch-callout: none) {
@@ -155,6 +157,31 @@
             <span>⚡️ Build 4-Week Plan in Conditioning Lab</span>
             <span class="opacity-80">→</span>
           </a>
+        </div>
+
+        <!-- Puppy exercise reference guides (shown only for puppies) -->
+        <div id="puppyGuideCard" class="hidden bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm space-y-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-lg">📚</span>
+            <h3 class="text-sm font-bold text-zinc-900">Puppy Walking Guides</h3>
+          </div>
+          <p class="text-xs text-zinc-500 leading-relaxed">Trusted, vet-aligned reading on how much exercise a growing puppy actually needs.</p>
+          <div class="space-y-2">
+            <a href="https://www.thekennelclub.org.uk/health-and-dog-care/puppy/puppy-exercise/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 hover:bg-white hover:border-zinc-300 transition">
+              <div>
+                <p class="text-xs font-bold text-zinc-900">The Kennel Club — Puppy Exercise</p>
+                <p class="text-[11px] text-zinc-500">The 5-minute rule explained, plus what to avoid</p>
+              </div>
+              <i data-lucide="external-link" class="w-4 h-4 text-zinc-400"></i>
+            </a>
+            <a href="https://www.purina.co.uk/articles/dogs/puppy/growth/how-much-exercise-does-a-puppy-need" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 hover:bg-white hover:border-zinc-300 transition">
+              <div>
+                <p class="text-xs font-bold text-zinc-900">Purina — How Much Exercise Does a Puppy Need?</p>
+                <p class="text-[11px] text-zinc-500">Exercise by age, and pre-vaccination socialising</p>
+              </div>
+              <i data-lucide="external-link" class="w-4 h-4 text-zinc-400"></i>
+            </a>
+          </div>
         </div>
 
         <!-- Latest Walkout Card -->
@@ -311,16 +338,14 @@
 
       <button onclick="openTab('food')" id="navTabFood" class="flex-1 flex flex-col items-center py-1 text-zinc-400 tap-target">
         <div class="w-5 h-5 flex items-center justify-center">
-          <!-- No Lucide icon is a proper pet bowl, so this is hand-authored to match Lucide's stroke style: a low-profile bowl silhouette with a solid centered paw print. -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-            <path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z" />
-            <path d="M7 21h10" />
-            <g fill="currentColor" stroke="none" transform="translate(12,16.3) scale(0.4) translate(-13,-11.75)">
-              <circle cx="11" cy="4" r="2" />
-              <circle cx="18" cy="8" r="2" />
-              <circle cx="20" cy="16" r="2" />
-              <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
-            </g>
+          <!-- Kibble-bowl glyph: a trapezoid bowl with four kibble pieces
+               peeking over the rim (matches the supplied reference art). -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <circle cx="7.6" cy="7" r="2.1" fill="currentColor" stroke="none" />
+            <circle cx="11" cy="5.5" r="2.2" fill="currentColor" stroke="none" />
+            <circle cx="14.2" cy="6.1" r="2.1" fill="currentColor" stroke="none" />
+            <circle cx="16.7" cy="7.4" r="2" fill="currentColor" stroke="none" />
+            <path d="M4 9h16l-2.5 10H6.5L4 9z" />
           </svg>
         </div>
         <span class="text-[10px] font-semibold mt-1">Food</span>
@@ -482,7 +507,12 @@
         <button onclick="closeModal('modalWalkDetail')" class="p-2 text-zinc-400 hover:text-zinc-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <input type="hidden" id="walkDetailId" value="" />
-      <img id="walkDetailPhoto" src="" class="w-full h-40 object-cover rounded-2xl hidden" />
+      <button type="button" id="walkDetailPhotoBtn" onclick="openPhotoLightbox()" class="hidden w-full relative group rounded-2xl overflow-hidden">
+        <img id="walkDetailPhoto" src="" class="w-full h-40 object-cover" />
+        <span class="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-black/55 text-white text-[10px] font-bold flex items-center gap-1 backdrop-blur-sm group-hover:bg-black/70 transition">
+          <i data-lucide="maximize-2" class="w-3 h-3"></i> Tap to enlarge
+        </span>
+      </button>
       <div>
         <h4 id="walkDetailTitle" class="text-base font-bold text-zinc-900"></h4>
         <p id="walkDetailDate" class="text-xs text-zinc-500"></p>
@@ -506,6 +536,14 @@
       <button onclick="editWalkFromDetail()" class="w-full py-3.5 bg-orange-50 text-orange-700 rounded-2xl text-xs font-bold">Edit Walk</button>
       <button onclick="closeModal('modalWalkDetail')" class="w-full py-3.5 bg-white border border-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold">Close</button>
     </div>
+  </div>
+
+  <!-- Full-screen, uncropped walk-photo lightbox -->
+  <div id="modalPhotoLightbox" class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4" onclick="closePhotoLightbox()">
+    <button type="button" onclick="closePhotoLightbox()" aria-label="Close photo" class="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 tap-target flex items-center justify-center">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+    <img id="lightboxPhoto" src="" alt="Walk photo" class="max-w-full max-h-full w-auto h-auto object-contain rounded-xl" onclick="event.stopPropagation()" />
   </div>
 
   <div id="modalAddFood" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -638,18 +676,26 @@
       return localStorage.getItem('dogwalkr_feeder_name') || '';
     }
 
+    // The dog roster + active dog come from the shared pack store
+    // (pack-store.js) so the Activity Tracker, Fuel & Nutrition and
+    // Conditioning Splits tools all stay in sync. Supabase (below) stays
+    // the source of truth for this page and is mirrored back into the store
+    // once it loads.
+    const PackStore = window.DogwalkrPack || null;
+
     const STATE = {
       activeTab: 'dashboard',
-      activeDogId: 'dog_joe',
+      activeDogId: PackStore ? PackStore.getActiveDogId() : 'dog_joe',
       passportDogId: null,
       householdName: '',
       householdNames: 'Adele Roberts & Kate Holderness',
       householdMembers: [],
       stravaConnected: false,
       stravaAthleteName: null,
-      dogs: [
+      dogs: PackStore ? PackStore.getDogs() : [
+        { id: 'dog_audrey', name: 'Audrey', breed: 'Mixed Breed', weight: 14, dob: '2019-06-01', best_trait: 'Champion napper', worst_trait: 'Barks at the postman', avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80' },
         { id: 'dog_joe', name: 'Joe', breed: 'Italian Greyhound', weight: 5.8, dob: '2024-03-09', best_trait: 'Loves sprint zooms', worst_trait: 'Nibbles shoes', avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80' },
-        { id: 'dog_bertie', name: 'Bertie', breed: 'Pug', weight: 6.0, dob: '2025-01-15', best_trait: 'Champion cuddler', worst_trait: 'Snores like a tractor', avatar: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80' }
+        { id: 'dog_charlie', name: 'Charlie', breed: 'Puppy', weight: 2.5, dob: '2026-07-15', best_trait: 'Tiny zoomies', worst_trait: 'Chews absolutely everything', avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80' }
       ],
       walkouts: [],
       walkDogs: [],
@@ -752,28 +798,42 @@
       const ageM = dogAgeMonths(dog.dob, now);
       const weight = Number(dog.weight) || 12;
       let stage = 'adult';
-      if (ageM !== null && ageM < 12) stage = 'puppy';
+      // Under ~2 months: too young for lead walks — vaccinations aren't
+      // finished and growth plates are very soft. Garden / carried
+      // socialisation only.
+      if (ageM !== null && ageM < 2) stage = 'prewalk';
+      else if (ageM !== null && ageM < 12) stage = 'puppy';
       else if (ageM !== null && ageM >= 96) stage = 'senior';
 
+      // The vet "rule of thumb": ~5 minutes of structured walking per
+      // month of age, up to twice a day (3 mo ≈ 15 min/walk, 30 min/day;
+      // 6 mo ≈ 30 min/walk, 60 min/day).
+      const perWalk = ageM !== null ? Math.round(ageM * 5) : 15;
+
       let dailyTarget;
-      if (stage === 'puppy') {
-        dailyTarget = Math.round(Math.max(10, Math.min(50, (ageM || 2) * 5 * 2)));
+      if (stage === 'prewalk') {
+        dailyTarget = 0;
+      } else if (stage === 'puppy') {
+        dailyTarget = Math.max(10, perWalk * 2);
       } else {
         dailyTarget = weight < 8 ? 30 : weight < 18 ? 45 : 60;
         if (stage === 'senior') dailyTarget = Math.round(dailyTarget * 0.7);
       }
-      const weeklyTarget = dailyTarget * 7;
+      const weeklyTarget = Math.max(1, dailyTarget * 7);
       // What counts as an unusually long single walk for this dog when
       // there's no per-dog history to compare against yet.
       const bigSession = stage === 'puppy'
-        ? Math.round((ageM || 3) * 5 * 1.5)   // 1.5x the "5 min per month" single-walk guide
+        ? Math.round(perWalk * 1.5)           // 1.5x the "5 min per month" single-walk guide
         : stage === 'senior'
         ? Math.round(dailyTarget * 1.4)
         : Math.round(dailyTarget * 1.7);
       // How far over the weekly target starts to count as a heavy week.
       const heavyWeekRatio = stage === 'puppy' ? 1.3 : 1.5;
-      const label = stage === 'puppy' ? 'Puppy Plan' : stage === 'senior' ? 'Senior Plan' : 'Adult Routine';
-      return { stage, ageM, dailyTarget, weeklyTarget, bigSession, heavyWeekRatio, label };
+      const label = stage === 'prewalk' ? 'Puppy · Pre-Walk'
+        : stage === 'puppy' ? 'Puppy Plan'
+        : stage === 'senior' ? 'Senior Plan'
+        : 'Adult Routine';
+      return { stage, ageM, perWalk, dailyTarget, weeklyTarget, bigSession, heavyWeekRatio, label };
     }
 
     // Rolling-7-day activity read that moves with what the dog has
@@ -785,6 +845,18 @@
     function computeCoachRecommendation(dog, dogWalkouts, now) {
       const p = coachProfile(dog, now);
       const base = { stage: p.label, dailyTarget: p.dailyTarget };
+
+      // Very young puppy (under ~2 months) — no lead walks yet regardless
+      // of what has or hasn't been logged.
+      if (p.stage === 'prewalk') {
+        const ageText = !p.ageM ? 'under a month' : `${p.ageM} month${p.ageM === 1 ? '' : 's'}`;
+        return {
+          ...base,
+          pill: '🏡 Garden & Socialising Only',
+          headline: `${dog.name} is too young for pavement walks`,
+          body: `At ${ageText} old, ${dog.name}'s vaccinations aren't complete and the growth plates are very soft. Keep to short bursts of garden play, gentle carried trips out for socialisation, and plenty of rest — no lead walks on hard pavement yet. Structured walks can usually start about a week after the final puppy vaccination, then follow the 5-minutes-per-month rule.`,
+        };
+      }
 
       const walks = [...dogWalkouts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       const latest = walks[0];
@@ -821,7 +893,7 @@
           || (priorWalks.length === 1 && latestMins >= priorAvg * relBigMult && latestMins >= p.dailyTarget * 1.3);
 
       const pupNote = p.stage === 'puppy'
-        ? ` At ${dog.name}'s age keep it to short, low-impact outings — two ${Math.round(p.dailyTarget / 2)} min walks beat one long one, and go easy on stairs, long runs and jumping.`
+        ? ` At ${dog.name}'s age the rule of thumb is about 5 min of structured walking per month of age, up to twice a day — so roughly ${p.perWalk} min a walk, twice daily, beats one long one. Go easy on stairs, long runs and jumping while the joints grow.`
         : p.stage === 'senior'
         ? ` Keep ${dog.name}'s walks gentle and on soft ground, and turn back early if you see any stiffness.`
         : '';
@@ -837,7 +909,7 @@
           ...base,
           pill: '🟡 Keep It Short',
           headline: `${dog.name}'s last walk ran a bit long`,
-          body: `${fmtMins(latestMins)} is over the roughly ${Math.round((p.ageM || 3) * 5)} min a walk that suits a pup ${dog.name}'s age — keep the next few short and low-impact while the joints are still growing.${pupNote}`,
+          body: `${fmtMins(latestMins)} is over the roughly ${p.perWalk} min a walk that suits a pup ${dog.name}'s age (about 5 min per month of age) — keep the next few short and low-impact while the joints are still growing.${pupNote}`,
         };
       }
 
@@ -895,6 +967,38 @@
         headline: `${dog.name} is rested and ready`,
         body: `A light, well-rested week and no walk yet today — ${dog.name} is good for ${dayPlan}.${pupNote}`,
       };
+    }
+
+    // --- Shared pack-store bridge ------------------------------------------
+    // Mirror this page's roster into the shared store (so Fuel & Conditioning
+    // see the same dogs), and adopt roster/active-dog changes those tools make.
+    let _packSyncing = false;
+
+    function syncPackStoreFromState() {
+      if (!PackStore) return;
+      _packSyncing = true;
+      try {
+        PackStore.setDogs(STATE.dogs.map(d => ({
+          id: d.id, name: d.name, breed: d.breed, weight: d.weight, dob: d.dob,
+          best_trait: d.best_trait, worst_trait: d.worst_trait, avatar: d.avatar
+        })));
+        PackStore.setActiveDogId(STATE.activeDogId);
+      } finally {
+        _packSyncing = false;
+      }
+    }
+
+    if (PackStore) {
+      PackStore.subscribe(({ dogs, activeDogId }) => {
+        if (_packSyncing) return;
+        STATE.dogs = dogs.map(d => ({ ...d }));
+        if (activeDogId && STATE.dogs.some(d => d.id === activeDogId)) {
+          STATE.activeDogId = activeDogId;
+        } else if (!STATE.dogs.some(d => d.id === STATE.activeDogId)) {
+          STATE.activeDogId = STATE.dogs[0].id;
+        }
+        renderAll();
+      });
     }
 
     async function initApp() {
@@ -957,7 +1061,11 @@
             weight: d.weight_kg ?? d.weight ?? 0,
             avatar: d.avatar || DEFAULT_DOG_AVATAR
           }));
-          STATE.activeDogId = STATE.dogs[0].id;
+          // Keep the shared active dog if it still exists in the cloud roster.
+          if (!STATE.dogs.some(d => d.id === STATE.activeDogId)) {
+            STATE.activeDogId = STATE.dogs[0].id;
+          }
+          syncPackStoreFromState();
         }
       } catch (err) {
         console.error("Dogs connection exception:", err);
@@ -1102,8 +1210,9 @@
 
       document.getElementById('walkDetailId').value = w.id;
       const photo = document.getElementById('walkDetailPhoto');
-      if (w.photo_url) { photo.src = w.photo_url; photo.classList.remove('hidden'); }
-      else { photo.src = ''; photo.classList.add('hidden'); }
+      const photoBtn = document.getElementById('walkDetailPhotoBtn');
+      if (w.photo_url) { photo.src = w.photo_url; photoBtn.classList.remove('hidden'); }
+      else { photo.src = ''; photoBtn.classList.add('hidden'); }
       document.getElementById('walkDetailTitle').innerText = w.title || 'Walkout';
       document.getElementById('walkDetailDate').innerText = w.created_at
         ? new Date(w.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -1302,6 +1411,8 @@
       const dogWalkouts = getDogWalkouts(dog.id);
 
       const coach = computeCoachRecommendation(dog, dogWalkouts, now);
+      const guideCard = document.getElementById('puppyGuideCard');
+      if (guideCard) guideCard.classList.toggle('hidden', !(coach.stage || '').toLowerCase().includes('puppy'));
       document.getElementById('dashCoachStagePill').innerText = coach.stage;
       document.getElementById('dashCoachStatePill').innerText = coach.pill;
       document.getElementById('dashCoachHeadline').innerText = coach.headline;
@@ -1539,6 +1650,10 @@
 
     function setActiveDog(dogId) {
       STATE.activeDogId = dogId;
+      if (PackStore) {
+        _packSyncing = true;
+        try { PackStore.setActiveDogId(dogId); } finally { _packSyncing = false; }
+      }
       renderAll();
       const dropdown = document.getElementById('dogPickerDropdown');
       if (dropdown) dropdown.classList.add('hidden');
@@ -1682,6 +1797,7 @@
         }
       }
 
+      syncPackStoreFromState();
       closeModal('modalAddDog');
       renderAll();
     }
@@ -2265,6 +2381,22 @@
     function openStatusModal() { openModal('modalStatus'); }
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    // Tap the walk photo in the detail view to see it full-screen and
+    // uncropped (the detail thumbnail is object-cover / cropped).
+    function openPhotoLightbox() {
+      const src = document.getElementById('walkDetailPhoto').src;
+      if (!src) return;
+      document.getElementById('lightboxPhoto').src = src;
+      document.getElementById('modalPhotoLightbox').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+    function closePhotoLightbox() {
+      document.getElementById('modalPhotoLightbox').classList.add('hidden');
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePhotoLightbox();
+    });
 
     async function saveHouseholdNames(val) {
       STATE.householdNames = val;
