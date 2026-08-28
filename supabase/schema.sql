@@ -325,3 +325,84 @@ create policy "Allow anon insert food_logs" on public.food_logs
 drop policy if exists "Allow anon delete food_logs" on public.food_logs;
 create policy "Allow anon delete food_logs" on public.food_logs
   for delete using (true);
+
+-- ==========================================================
+-- SOCIAL PACK FEED (2026-08-28): dog_follows / walk_bones /
+-- walk_comments power dogwalkr_feed.html — a Strava-style feed of
+-- every pack dog's walkouts with "Give a Bone 🦴" reactions, threaded
+-- comments, and dog-to-dog follows.
+--
+-- The three tables were created directly in the dashboard with a
+-- SELECT-only policy, so the feed can READ them but every INSERT/
+-- DELETE fails with "new row violates row-level security policy"
+-- (verified live 2026-08-28). The policy blocks below add the missing
+-- anon insert/delete grants — run this section for reactions,
+-- comments and follows to actually save. Same "no real auth, one
+-- shared anon key" caveat as every other table here.
+--
+-- Column names below match exactly what dogwalkr_feed.html sends.
+-- create-table statements are IF NOT EXISTS and won't touch the live
+-- tables if they already exist with these columns.
+-- ==========================================================
+
+create table if not exists public.dog_follows (
+  id uuid primary key default gen_random_uuid(),
+  follower_dog_id uuid not null references public.dogs(id) on delete cascade,
+  following_dog_id uuid not null references public.dogs(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (follower_dog_id, following_dog_id),
+  check (follower_dog_id <> following_dog_id)
+);
+create index if not exists dog_follows_follower_idx on public.dog_follows (follower_dog_id);
+create index if not exists dog_follows_following_idx on public.dog_follows (following_dog_id);
+alter table public.dog_follows enable row level security;
+
+drop policy if exists "Allow anon read dog_follows" on public.dog_follows;
+create policy "Allow anon read dog_follows" on public.dog_follows
+  for select using (true);
+drop policy if exists "Allow anon insert dog_follows" on public.dog_follows;
+create policy "Allow anon insert dog_follows" on public.dog_follows
+  for insert with check (true);
+drop policy if exists "Allow anon delete dog_follows" on public.dog_follows;
+create policy "Allow anon delete dog_follows" on public.dog_follows
+  for delete using (true);
+
+create table if not exists public.walk_bones (
+  id uuid primary key default gen_random_uuid(),
+  walk_id uuid not null references public.walks(id) on delete cascade,
+  given_by_dog_id uuid not null references public.dogs(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (walk_id, given_by_dog_id)
+);
+create index if not exists walk_bones_walk_idx on public.walk_bones (walk_id);
+alter table public.walk_bones enable row level security;
+
+drop policy if exists "Allow anon read walk_bones" on public.walk_bones;
+create policy "Allow anon read walk_bones" on public.walk_bones
+  for select using (true);
+drop policy if exists "Allow anon insert walk_bones" on public.walk_bones;
+create policy "Allow anon insert walk_bones" on public.walk_bones
+  for insert with check (true);
+drop policy if exists "Allow anon delete walk_bones" on public.walk_bones;
+create policy "Allow anon delete walk_bones" on public.walk_bones
+  for delete using (true);
+
+create table if not exists public.walk_comments (
+  id uuid primary key default gen_random_uuid(),
+  walk_id uuid not null references public.walks(id) on delete cascade,
+  author_dog_id uuid not null references public.dogs(id) on delete cascade,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists walk_comments_walk_idx on public.walk_comments (walk_id, created_at);
+alter table public.walk_comments enable row level security;
+
+drop policy if exists "Allow anon read walk_comments" on public.walk_comments;
+create policy "Allow anon read walk_comments" on public.walk_comments
+  for select using (true);
+drop policy if exists "Allow anon insert walk_comments" on public.walk_comments;
+create policy "Allow anon insert walk_comments" on public.walk_comments
+  for insert with check (true);
+drop policy if exists "Allow anon delete walk_comments" on public.walk_comments;
+create policy "Allow anon delete walk_comments" on public.walk_comments
+  for delete using (true);

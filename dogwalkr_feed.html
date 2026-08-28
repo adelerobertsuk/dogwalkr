@@ -2,279 +2,521 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Dogwalkr — Activity Feed & Telemetry</title>
-  <!-- Tailwind CSS via CDN -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DogWalkr — Pack Feed</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="dogwalkr-icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Inter Font -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="pack-store.js"></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .hide-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .hide-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 20px); }
+    @keyframes bonePop { 0% { transform: scale(1); } 45% { transform: scale(1.35) rotate(-12deg); } 100% { transform: scale(1); } }
+    .bone-pop { animation: bonePop .4s ease; }
   </style>
 </head>
 <body class="bg-[#F7F7F8] text-zinc-900 min-h-screen flex justify-center antialiased">
 
-  <!-- Mobile App Frame Container -->
-  <div class="w-full max-w-md bg-white min-h-screen flex flex-col shadow-xl relative pb-24 border-x border-zinc-200/80">
-    
-    <!-- Top App Bar / Header -->
-    <header class="sticky top-0 bg-white/90 backdrop-blur-md z-30 border-b border-zinc-100 px-4 py-3 flex items-center justify-between">
-      <!-- Dog Avatar with Strava Sync Indicator -->
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <div class="h-10 w-10 rounded-full bg-orange-100 border-2 border-[#FC4C02] flex items-center justify-center text-xl overflow-hidden shadow-sm">
-            🐶
+  <div class="w-full max-w-md bg-white min-h-screen flex flex-col shadow-xl relative pb-28 border-x border-zinc-200/80">
+
+    <!-- Header -->
+    <header class="sticky top-0 bg-white/90 backdrop-blur-md z-30 border-b border-zinc-100 px-4 py-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-full bg-orange-100 border-2 border-[#FC4C02] overflow-hidden shadow-sm flex items-center justify-center">
+            <img id="meAvatar" alt="" class="h-full w-full object-cover" />
           </div>
-          <span class="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[#FC4C02] border-2 border-white flex items-center justify-center">
-            <svg class="h-2 w-2 fill-white" viewBox="0 0 24 24">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </span>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-base font-black tracking-tight text-zinc-900">Pack Feed</h1>
+            </div>
+            <button id="meSwitcher" class="text-[11px] font-semibold text-zinc-400 mt-0.5 flex items-center gap-1">
+              <span>Posting as <span id="meName" class="text-[#FC4C02]">…</span></span>
+              <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+          </div>
         </div>
-        <div>
-          <h1 class="text-base font-black tracking-tight text-zinc-900">Audrey</h1>
-          <p class="text-[11px] font-semibold text-zinc-400 mt-0.5">Whippet Cross • 5.5kg</p>
-        </div>
-        
+        <a href="app.html" class="h-8 px-3 rounded-full bg-zinc-100 flex items-center justify-center text-[11px] font-bold text-zinc-600 hover:bg-zinc-200 transition">Tracker</a>
       </div>
 
-      <!-- Header Actions -->
-      <div class="flex items-center gap-2">
-        <button class="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-200 transition">
-          <svg class="h-4 w-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
-        <button class="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-200 transition">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </button>
+      <!-- Identity dropdown -->
+      <div id="meDropdown" class="hidden mt-2 rounded-xl border border-zinc-200 bg-white shadow-lg overflow-hidden"></div>
+
+      <!-- Filter tabs -->
+      <div class="flex gap-1 mt-3 text-[11px] font-black uppercase tracking-wider">
+        <button data-filter="all" class="feed-filter py-1.5 px-3 rounded-lg bg-[#FC4C02] text-white">All Walks</button>
+        <button data-filter="following" class="feed-filter py-1.5 px-3 rounded-lg bg-zinc-100 text-zinc-500">Following</button>
       </div>
     </header>
 
-    <!-- Top Navigation Tabs (Strava / Qpaws Style) -->
-    <div class="flex border-b border-zinc-200 bg-white px-4 text-xs font-bold text-zinc-400">
-      <button class="py-3 px-2 text-[#FC4C02] border-b-2 border-[#FC4C02] font-black uppercase tracking-wider">
-        Activities
-      </button>
-      <button class="py-3 px-3 hover:text-zinc-700 transition uppercase tracking-wider">
-        Conditioning
-      </button>
-      <button class="py-3 px-3 hover:text-zinc-700 transition uppercase tracking-wider">
-        Fuel Log
-      </button>
+    <!-- Write-blocked banner -->
+    <div id="writeBanner" class="hidden mx-4 mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800 leading-relaxed">
+      Bones, comments &amp; follows can't be saved yet — the <code class="font-mono">walk_bones</code> / <code class="font-mono">walk_comments</code> / <code class="font-mono">dog_follows</code> tables are missing their anon insert policy. Run the Social Pack Feed block in <code class="font-mono">supabase/schema.sql</code>. Reading the feed still works.
     </div>
 
-    <!-- Main Scrollable Feed -->
-    <main class="flex-1 p-4 space-y-4">
-
-      <!-- Weekly Canine Exertion Snapshot Card -->
-      <div class="bg-white rounded-2xl border border-zinc-200/80 p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs font-black uppercase tracking-wider text-zinc-900">Weekly Canine Load</span>
-            <span class="text-[10px] bg-orange-100 text-[#FC4C02] font-bold px-1.5 py-0.5 rounded">Target: 25 km</span>
-          </div>
-          <span class="text-[11px] font-bold text-zinc-400">Past 7 Days</span>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2 text-center py-2 bg-zinc-50 rounded-xl border border-zinc-100 mb-3">
-          <div>
-            <div class="text-[10px] font-bold uppercase text-zinc-400">Canine Distance</div>
-            <div class="text-lg font-black text-zinc-900 mt-0.5">18.4 <span class="text-xs font-semibold text-zinc-500">km</span></div>
-          </div>
-          <div>
-            <div class="text-[10px] font-bold uppercase text-zinc-400">Extra Fuel</div>
-            <div class="text-lg font-black text-[#FC4C02] mt-0.5">+215 <span class="text-xs font-semibold text-zinc-500">g</span></div>
-          </div>
-          <div>
-            <div class="text-[10px] font-bold uppercase text-zinc-400">Active Days</div>
-            <div class="text-lg font-black text-emerald-600 mt-0.5">4 <span class="text-xs font-semibold text-zinc-400">/ 7</span></div>
-          </div>
-        </div>
-
-        <!-- Weekly Mini Progress Bar -->
-        <div class="w-full bg-zinc-100 h-2 rounded-full overflow-hidden">
-          <div class="bg-[#FC4C02] h-full rounded-full w-[74%]"></div>
-        </div>
-      </div>
-
-      <!-- Synced Strava Activity Feed Card -->
-      <div class="bg-white rounded-2xl border border-zinc-200/90 shadow-sm overflow-hidden">
-        
-        <!-- Activity Header with Human Profile & Time -->
-        <div class="p-4 pb-3 flex items-start justify-between">
-          <div class="flex items-center gap-2.5">
-            <div class="h-9 w-9 rounded-full bg-zinc-900 text-white font-black text-xs flex items-center justify-center ring-2 ring-orange-500/20">
-              AR
-            </div>
-            <div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-black text-zinc-900">Adele Roberts</span>
-                <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.2 rounded border border-emerald-200">
-                  Synced
-                </span>
-              </div>
-              <p class="text-[11px] text-zinc-400 font-medium">Yesterday at 16:18 • Barnet / Brent Trail</p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-1 text-[#FC4C02] font-black text-[11px] bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
-            <span>🐾</span>
-            <span>+2.6km Load</span>
-          </div>
-        </div>
-
-        <!-- Activity Title -->
-        <div class="px-4 pb-3">
-          <h3 class="text-base font-black text-zinc-900">8BR Test Flight</h3>
-        </div>
-
-        <!-- Primary Canine vs Human Telemetry Grid -->
-        <div class="grid grid-cols-4 gap-2 px-4 pb-3 text-left">
-          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Canine</span>
-            <span class="text-sm font-black text-zinc-900">9.52 <span class="text-[10px] font-medium text-zinc-500">km</span></span>
-          </div>
-          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Human</span>
-            <span class="text-sm font-black text-zinc-600">5.50 <span class="text-[10px] font-medium text-zinc-500">km</span></span>
-          </div>
-          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Time</span>
-            <span class="text-sm font-black text-zinc-900">60m 00s</span>
-          </div>
-          <div class="bg-orange-50 p-2.5 rounded-xl border border-orange-100/80">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-[#FC4C02] block">Kibble</span>
-            <span class="text-sm font-black text-[#FC4C02]">+76g</span>
-          </div>
-        </div>
-
-        <!-- Map Section with Canine Paw Trail Marker -->
-        <div class="relative w-full h-48 bg-zinc-100 border-y border-zinc-200 overflow-hidden">
-          <!-- Simplified Vector Map Background -->
-          <svg class="w-full h-full object-cover" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="400" height="200" fill="#E8ECE9" />
-            <!-- Park Green Area -->
-            <path d="M 30 20 C 80 10, 160 30, 180 90 C 200 150, 120 180, 50 170 Z" fill="#D4E4D3" />
-            <path d="M 240 10 C 310 10, 380 40, 390 120 C 400 170, 320 190, 270 170 Z" fill="#D4E4D3" />
-            
-            <!-- City Road Grid Lines -->
-            <path d="M0 40 H400 M0 90 H400 M0 140 H400 M80 0 V200 M180 0 V200 M280 0 V200 M350 0 V200" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.8" />
-            
-            <!-- Strava GPS Route Line (Human Base) -->
-            <path d="M 40 140 L 90 135 L 140 160 L 210 90 L 260 80 L 320 120 L 370 110" fill="none" stroke="#FC4C02" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-
-          <!-- Start Pin -->
-          <div class="absolute bottom-12 left-8 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white shadow-md"></div>
-
-          <!-- Canine Paw Emoji Route Indicator -->
-          <div class="absolute top-16 right-16 bg-white rounded-full p-1.5 shadow-lg border border-zinc-200 flex items-center justify-center animate-bounce">
-            <span class="text-base leading-none">🐾</span>
-          </div>
-
-          <!-- Map Badge Overlay -->
-          <div class="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center gap-1.5">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-            Joint Safe • Paw Surface 17°C
-          </div>
-        </div>
-
-        <!-- AI Debrief Excerpt -->
-        <div class="p-4 bg-zinc-50/50 border-b border-zinc-100">
-          <div class="flex items-center gap-1.5 mb-1 text-[11px] font-black uppercase tracking-wider text-zinc-900">
-            <span>✨</span>
-            <span>Canine Debrief</span>
-          </div>
-          <p class="text-xs text-zinc-600 leading-relaxed">
-            "Mum logged 5.5km, but my high-frequency cadence hit 9.52km on the trail. Fuel bowl top-up of +76g recommended before nap time."
-
-          </p>
-        </div>
-
-        <!-- Strava-Style Social / Action Footer -->
-        <div class="px-4 py-3 bg-white flex items-center justify-between text-xs font-bold text-zinc-500">
-          <button class="flex items-center gap-1.5 hover:text-[#FC4C02] transition">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-            </svg>
-            <span>Kudos (8)</span>
-          </button>
-
-          <button class="flex items-center gap-1.5 hover:text-zinc-800 transition">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span>Comments (2)</span>
-          </button>
-
-          <button class="flex items-center gap-1.5 text-[#FC4C02] hover:underline">
-            <span>Passport Log</span>
-            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
-      </div>
-
+    <main id="feedRoot" class="flex-1 p-4 space-y-4">
+      <div id="feedLoading" class="py-20 text-center text-sm font-semibold text-zinc-400">Loading the pack…</div>
     </main>
 
-    <!-- Bottom App Navigation Bar (Qpaws / Strava Style) -->
-    <nav class="fixed bottom-0 max-w-md w-full bg-white/95 backdrop-blur-md border-t border-zinc-200 px-6 py-2 flex items-center justify-between z-40">
+    <!-- Bottom nav -->
+    <nav class="safe-bottom fixed bottom-0 max-w-md w-full bg-white/95 backdrop-blur-md border-t border-zinc-200 px-6 pt-2 flex items-center justify-between z-40">
       <button class="flex flex-col items-center gap-0.5 text-[#FC4C02]">
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         <span class="text-[10px] font-black">Feed</span>
       </button>
-
-      <button class="flex flex-col items-center gap-0.5 text-zinc-400 hover:text-zinc-700">
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-        </svg>
-        <span class="text-[10px] font-bold">Routes</span>
-      </button>
-
-      <!-- Center Dog Avatar / Passport Button -->
-      <button class="flex flex-col items-center -mt-4">
+      <a href="condition.html" class="flex flex-col items-center gap-0.5 text-zinc-400 hover:text-zinc-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+        <span class="text-[10px] font-bold">Conditioning</span>
+      </a>
+      <a href="app.html" class="flex flex-col items-center -mt-4">
         <div class="h-11 w-11 rounded-full bg-[#FC4C02] text-white flex items-center justify-center shadow-lg shadow-orange-500/30 ring-4 ring-white">
           <span class="text-xl">🐾</span>
         </div>
-        <span class="text-[10px] font-bold text-zinc-500 mt-0.5">Passport</span>
-      </button>
-
-      <button class="flex flex-col items-center gap-0.5 text-zinc-400 hover:text-zinc-700">
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        <span class="text-[10px] font-bold text-zinc-500 mt-0.5">Tracker</span>
+      </a>
+      <a href="fuel.html" class="flex flex-col items-center gap-0.5 text-zinc-400 hover:text-zinc-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="7.6" cy="7" r="2.1" fill="currentColor" stroke="none" />
+          <circle cx="11" cy="5.5" r="2.2" fill="currentColor" stroke="none" />
+          <circle cx="14.2" cy="6.1" r="2.1" fill="currentColor" stroke="none" />
+          <circle cx="16.7" cy="7.4" r="2" fill="currentColor" stroke="none" />
+          <path d="M4 9h16l-2.5 10H6.5L4 9z" />
         </svg>
+        <span class="text-[10px] font-bold">Fuel</span>
+      </a>
+      <a href="app.html" class="flex flex-col items-center gap-0.5 text-zinc-400 hover:text-zinc-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         <span class="text-[10px] font-bold">Pack</span>
-      </button>
-
-      <button class="flex flex-col items-center gap-0.5 text-zinc-400 hover:text-zinc-700">
-        <div class="h-5 w-5 rounded-full bg-zinc-200 border border-zinc-300 flex items-center justify-center text-[10px] font-bold text-zinc-600">
-          🐶
-        </div>
-        <span class="text-[10px] font-bold">You</span>
-      </button>
+      </a>
     </nav>
-
   </div>
 
+  <!-- Photo lightbox -->
+  <div id="lightbox" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4">
+    <button id="lightboxClose" aria-label="Close" class="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20">
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <img id="lightboxImg" alt="" class="max-w-full max-h-full object-contain rounded-xl" />
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://rrrjojbxjektdhrkahvh.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycmpvamJ4amVrdGRocmthaHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NzgzOTQsImV4cCI6MjEwMjM1NDM5NH0.sjqbYyIA7NLQ7hQYp3HJQesLVbCr8X6PA94nV6BLqHA';
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const PackStore = window.DogwalkrPack || null;
+    const DEFAULT_AVATAR = (PackStore && PackStore.DEFAULT_AVATAR) || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80';
+
+    const STATE = {
+      dogs: [],
+      meDogId: null,
+      walks: [],
+      walkDogs: [],
+      bones: [],
+      comments: [],
+      follows: [],
+      filter: 'all',
+      openComments: new Set(),
+      writeBlocked: false
+    };
+
+    // ---- helpers -------------------------------------------------------
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const dogById = (id) => STATE.dogs.find(d => d.id === id);
+    const meDog = () => dogById(STATE.meDogId) || STATE.dogs[0];
+
+    function strideRatio(weightKg) {
+      const w = Number(weightKg) || 12;
+      if (w < 8) return 1.44;
+      if (w < 18) return 1.72;
+      return 2.10;
+    }
+    function canineKm(humanKm, dog) {
+      return (Number(humanKm) || 0) * strideRatio(dog ? dog.weight : 12);
+    }
+    function timeAgo(iso) {
+      if (!iso) return '';
+      const diff = Date.now() - new Date(iso).getTime();
+      const m = Math.round(diff / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return `${m}m ago`;
+      const h = Math.round(m / 60);
+      if (h < 24) return `${h}h ago`;
+      const d = Math.round(h / 24);
+      if (d < 7) return `${d}d ago`;
+      return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+    function fmtDuration(mins) {
+      const m = Math.round(Number(mins) || 0);
+      if (m < 60) return `${m}m`;
+      return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+    }
+    function assignedDogIds(walk) {
+      const ids = new Set();
+      if (walk.dog_id) ids.add(walk.dog_id);
+      STATE.walkDogs.filter(wd => wd.walk_id === walk.id).forEach(wd => ids.add(wd.dog_id));
+      return [...ids].filter(id => dogById(id));
+    }
+    function isWriteBlocked(error) {
+      return error && (error.code === '42501' || /row-level security/i.test(error.message || ''));
+    }
+    function flagWriteBlocked() {
+      STATE.writeBlocked = true;
+      document.getElementById('writeBanner').classList.remove('hidden');
+    }
+
+    // ---- data ---------------------------------------------------------
+    async function loadAll() {
+      const [dogsRes, walksRes, walkDogsRes, bonesRes, commentsRes, followsRes] = await Promise.all([
+        db.from('dogs').select('*').order('created_at', { ascending: true }),
+        db.from('walks').select('*').order('created_at', { ascending: false }).limit(60),
+        db.from('walk_dogs').select('walk_id, dog_id'),
+        db.from('walk_bones').select('id, walk_id, given_by_dog_id'),
+        db.from('walk_comments').select('id, walk_id, author_dog_id, content, created_at').order('created_at', { ascending: true }),
+        db.from('dog_follows').select('id, follower_dog_id, following_dog_id')
+      ]);
+
+      if (dogsRes.data && dogsRes.data.length) {
+        STATE.dogs = dogsRes.data.map(d => ({
+          ...d,
+          weight: d.weight_kg ?? d.weight ?? 0,
+          avatar: d.avatar || DEFAULT_AVATAR
+        }));
+      } else if (PackStore) {
+        STATE.dogs = PackStore.getDogs();
+      }
+
+      STATE.walks = walksRes.data || [];
+      STATE.walkDogs = walkDogsRes.data || [];
+      STATE.bones = bonesRes.data || [];
+      STATE.comments = commentsRes.data || [];
+      STATE.follows = followsRes.data || [];
+
+      // Resolve "me" — prefer the shared active dog, but it must exist in
+      // the real roster; otherwise fall back to the first dog.
+      const stored = PackStore ? PackStore.getActiveDogId() : null;
+      STATE.meDogId = (stored && dogById(stored)) ? stored : (STATE.dogs[0] && STATE.dogs[0].id);
+      if (PackStore && STATE.meDogId && STATE.meDogId !== stored) PackStore.setActiveDogId(STATE.meDogId);
+    }
+
+    // ---- actions -----------------------------------------------------
+    async function giveBone(walkId) {
+      const meId = STATE.meDogId;
+      if (!meId) return;
+      const existing = STATE.bones.find(b => b.walk_id === walkId && b.given_by_dog_id === meId);
+
+      if (existing) {
+        STATE.bones = STATE.bones.filter(b => b !== existing);
+        render();
+        const { error } = await db.from('walk_bones').delete().eq('walk_id', walkId).eq('given_by_dog_id', meId);
+        if (error) { STATE.bones.push(existing); if (isWriteBlocked(error)) flagWriteBlocked(); render(); }
+      } else {
+        const optimistic = { id: 'tmp_' + Date.now(), walk_id: walkId, given_by_dog_id: meId };
+        STATE.bones.push(optimistic);
+        render(walkId);
+        const { data, error } = await db.from('walk_bones').insert([{ walk_id: walkId, given_by_dog_id: meId }]).select();
+        if (error) {
+          STATE.bones = STATE.bones.filter(b => b !== optimistic);
+          if (isWriteBlocked(error)) flagWriteBlocked();
+          render();
+        } else if (data && data[0]) {
+          optimistic.id = data[0].id;
+        }
+      }
+    }
+
+    async function addComment(walkId, value) {
+      const meId = STATE.meDogId;
+      const text = (value || '').trim();
+      if (!meId || !text) return;
+      const optimistic = { id: 'tmp_' + Date.now(), walk_id: walkId, author_dog_id: meId, content: text, created_at: new Date().toISOString() };
+      STATE.comments.push(optimistic);
+      STATE.openComments.add(walkId);
+      render();
+      const { data, error } = await db.from('walk_comments').insert([{ walk_id: walkId, author_dog_id: meId, content: text }]).select();
+      if (error) {
+        STATE.comments = STATE.comments.filter(c => c !== optimistic);
+        if (isWriteBlocked(error)) flagWriteBlocked();
+        render();
+      } else if (data && data[0]) {
+        optimistic.id = data[0].id;
+      }
+    }
+
+    async function deleteComment(commentId) {
+      const c = STATE.comments.find(x => x.id === commentId);
+      if (!c || c.author_dog_id !== STATE.meDogId) return;
+      STATE.comments = STATE.comments.filter(x => x !== c);
+      render();
+      const { error } = await db.from('walk_comments').delete().eq('id', commentId);
+      if (error) { STATE.comments.push(c); if (isWriteBlocked(error)) flagWriteBlocked(); render(); }
+    }
+
+    async function toggleFollow(dogId) {
+      const meId = STATE.meDogId;
+      if (!meId || dogId === meId) return;
+      const existing = STATE.follows.find(f => f.follower_dog_id === meId && f.following_dog_id === dogId);
+      if (existing) {
+        STATE.follows = STATE.follows.filter(f => f !== existing);
+        render();
+        const { error } = await db.from('dog_follows').delete().eq('follower_dog_id', meId).eq('following_dog_id', dogId);
+        if (error) { STATE.follows.push(existing); if (isWriteBlocked(error)) flagWriteBlocked(); render(); }
+      } else {
+        const optimistic = { id: 'tmp_' + Date.now(), follower_dog_id: meId, following_dog_id: dogId };
+        STATE.follows.push(optimistic);
+        render();
+        const { data, error } = await db.from('dog_follows').insert([{ follower_dog_id: meId, following_dog_id: dogId }]).select();
+        if (error) {
+          STATE.follows = STATE.follows.filter(f => f !== optimistic);
+          if (isWriteBlocked(error)) flagWriteBlocked();
+          render();
+        } else if (data && data[0]) {
+          optimistic.id = data[0].id;
+        }
+      }
+    }
+
+    function setMeDog(id) {
+      STATE.meDogId = id;
+      if (PackStore) PackStore.setActiveDogId(id);
+      document.getElementById('meDropdown').classList.add('hidden');
+      render();
+    }
+
+    // ---- render ----------------------------------------------------
+    function iFollow(dogId) {
+      return STATE.follows.some(f => f.follower_dog_id === STATE.meDogId && f.following_dog_id === dogId);
+    }
+
+    function renderHeader() {
+      const me = meDog();
+      if (!me) return;
+      document.getElementById('meAvatar').src = me.avatar || DEFAULT_AVATAR;
+      document.getElementById('meName').textContent = me.name;
+
+      const dd = document.getElementById('meDropdown');
+      dd.innerHTML = STATE.dogs.map(d => `
+        <button data-me="${d.id}" class="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-zinc-50 ${d.id === STATE.meDogId ? 'bg-orange-50' : ''}">
+          <img src="${esc(d.avatar || DEFAULT_AVATAR)}" class="h-7 w-7 rounded-full object-cover" alt="" />
+          <span class="text-sm font-bold text-zinc-800 flex-1">${esc(d.name)}</span>
+          ${d.id === STATE.meDogId ? '<span class="text-[#FC4C02] text-xs font-black">Active</span>' : ''}
+        </button>`).join('');
+
+      document.querySelectorAll('.feed-filter').forEach(btn => {
+        const active = btn.dataset.filter === STATE.filter;
+        btn.className = `feed-filter py-1.5 px-3 rounded-lg ${active ? 'bg-[#FC4C02] text-white' : 'bg-zinc-100 text-zinc-500'}`;
+      });
+    }
+
+    function weeklyLoadCard() {
+      const me = meDog();
+      if (!me) return '';
+      const weekAgo = Date.now() - 7 * 864e5;
+      const myWalks = STATE.walks.filter(w => assignedDogIds(w).includes(me.id) && new Date(w.created_at).getTime() >= weekAgo);
+      const canine = myWalks.reduce((s, w) => s + canineKm(w.humanDistance ?? w.distance, me), 0);
+      const mins = myWalks.reduce((s, w) => s + (Number(w.durationMins) || 0), 0);
+      const days = new Set(myWalks.map(w => new Date(w.created_at).toDateString())).size;
+      const target = 25;
+      const pct = Math.max(4, Math.min(100, Math.round((canine / target) * 100)));
+      return `
+        <div class="bg-white rounded-2xl border border-zinc-200/80 p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-black uppercase tracking-wider text-zinc-900">${esc(me.name)}'s Weekly Load</span>
+            <span class="text-[11px] font-bold text-zinc-400">Past 7 days</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center py-2 bg-zinc-50 rounded-xl border border-zinc-100 mb-3">
+            <div><div class="text-[10px] font-bold uppercase text-zinc-400">Canine dist.</div><div class="text-lg font-black text-zinc-900 mt-0.5">${canine.toFixed(1)} <span class="text-xs font-semibold text-zinc-500">km</span></div></div>
+            <div><div class="text-[10px] font-bold uppercase text-zinc-400">Walk time</div><div class="text-lg font-black text-[#FC4C02] mt-0.5">${fmtDuration(mins)}</div></div>
+            <div><div class="text-[10px] font-bold uppercase text-zinc-400">Active days</div><div class="text-lg font-black text-emerald-600 mt-0.5">${days} <span class="text-xs font-semibold text-zinc-400">/ 7</span></div></div>
+          </div>
+          <div class="w-full bg-zinc-100 h-2 rounded-full overflow-hidden"><div class="bg-[#FC4C02] h-full rounded-full" style="width:${pct}%"></div></div>
+        </div>`;
+    }
+
+    function feedCard(walk) {
+      const dogIds = assignedDogIds(walk);
+      const dogs = dogIds.map(dogById).filter(Boolean);
+      const primary = dogs[0] || meDog();
+      if (!primary) return '';
+      const human = Number(walk.humanDistance ?? walk.distance) || 0;
+      const canine = canineKm(human, primary);
+
+      const walkBones = STATE.bones.filter(b => b.walk_id === walk.id);
+      const iBoned = walkBones.some(b => b.given_by_dog_id === STATE.meDogId);
+      const boneNames = walkBones.map(b => dogById(b.given_by_dog_id)).filter(Boolean).map(d => d.name);
+      const walkComments = STATE.comments.filter(c => c.walk_id === walk.id);
+      const commentsOpen = STATE.openComments.has(walk.id);
+
+      const avatarRow = dogs.slice(0, 3).map((d, i) => `
+        <img src="${esc(d.avatar || DEFAULT_AVATAR)}" alt="${esc(d.name)}" class="h-9 w-9 rounded-full object-cover border-2 border-white ${i ? '-ml-3' : ''}" style="z-index:${10 - i}" />`).join('');
+
+      const namesLine = dogs.map(d => esc(d.name)).join(' & ') || 'Walkout';
+      const followTargets = dogs.filter(d => d.id !== STATE.meDogId);
+      const followBtn = followTargets.length === 1 ? `
+        <button data-follow="${followTargets[0].id}" class="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full border ${iFollow(followTargets[0].id) ? 'border-zinc-200 text-zinc-400' : 'border-[#FC4C02] text-[#FC4C02]'}">
+          ${iFollow(followTargets[0].id) ? 'Following' : '+ Follow'}
+        </button>` : '';
+
+      return `
+      <div class="bg-white rounded-2xl border border-zinc-200/90 shadow-sm overflow-hidden">
+        <div class="p-4 pb-3 flex items-start justify-between">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="flex items-center shrink-0">${avatarRow}</div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-zinc-900 truncate">${namesLine}</span>
+                ${followBtn}
+              </div>
+              <p class="text-[11px] text-zinc-400 font-medium">${esc(primary.breed || 'Pack dog')} • ${timeAgo(walk.created_at)}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 text-[#FC4C02] font-black text-[11px] bg-orange-50 px-2 py-1 rounded-lg border border-orange-100 shrink-0">
+            <span>🐾</span><span>+${canine.toFixed(1)}km</span>
+          </div>
+        </div>
+
+        <div class="px-4 pb-3"><h3 class="text-base font-black text-zinc-900">${esc(walk.title || 'Walkout')}</h3></div>
+
+        <div class="grid grid-cols-3 gap-2 px-4 pb-3">
+          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100"><span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Canine</span><span class="text-sm font-black text-zinc-900">${canine.toFixed(2)} <span class="text-[10px] font-medium text-zinc-500">km</span></span></div>
+          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100"><span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Human</span><span class="text-sm font-black text-zinc-600">${human.toFixed(2)} <span class="text-[10px] font-medium text-zinc-500">km</span></span></div>
+          <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100"><span class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Time</span><span class="text-sm font-black text-zinc-900">${fmtDuration(walk.durationMins)}</span></div>
+        </div>
+
+        ${walk.photo_url ? `
+          <button data-lightbox="${esc(walk.photo_url)}" class="block w-full">
+            <img src="${esc(walk.photo_url)}" alt="" class="w-full h-52 object-cover border-y border-zinc-200" />
+          </button>` : ''}
+
+        ${walk.notes ? `<p class="px-4 pt-3 text-xs text-zinc-600 leading-relaxed">"${esc(walk.notes)}"</p>` : ''}
+
+        <div class="px-4 py-3 flex items-center justify-between text-xs font-bold text-zinc-500">
+          <button data-bone="${walk.id}" class="flex items-center gap-1.5 ${iBoned ? 'text-[#FC4C02]' : 'hover:text-[#FC4C02]'} transition">
+            <span class="text-base ${iBoned ? 'bone-pop' : ''}">🦴</span>
+            <span>${walkBones.length === 0 ? 'Give a Bone' : walkBones.length}</span>
+          </button>
+          <button data-comments="${walk.id}" class="flex items-center gap-1.5 hover:text-zinc-800 transition">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <span>${walkComments.length}</span>
+          </button>
+          <a href="app.html" class="flex items-center gap-1 text-[#FC4C02]">Tracker
+            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+
+        ${walkBones.length ? `<div class="px-4 pb-3 -mt-1 text-[11px] text-zinc-400 font-medium">🦴 from ${esc(boneNames.slice(0, 3).join(', '))}${boneNames.length > 3 ? ` +${boneNames.length - 3}` : ''}</div>` : ''}
+
+        ${commentsOpen ? `
+          <div class="px-4 pb-4 pt-1 border-t border-zinc-100 space-y-3">
+            ${walkComments.map(c => {
+              const a = dogById(c.author_dog_id);
+              return `<div class="flex items-start gap-2">
+                <img src="${esc((a && a.avatar) || DEFAULT_AVATAR)}" class="h-6 w-6 rounded-full object-cover mt-0.5" alt="" />
+                <div class="flex-1 bg-zinc-50 rounded-xl px-3 py-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-black text-zinc-800">${esc(a ? a.name : 'Dog')}</span>
+                    <span class="text-[10px] text-zinc-400">${timeAgo(c.created_at)}</span>
+                  </div>
+                  <p class="text-xs text-zinc-600 mt-0.5">${esc(c.content)}</p>
+                </div>
+                ${c.author_dog_id === STATE.meDogId ? `<button data-delcomment="${c.id}" class="text-zinc-300 hover:text-red-500 mt-1"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>` : ''}
+              </div>`;
+            }).join('') || '<p class="text-[11px] text-zinc-400 italic">No comments yet — be the first.</p>'}
+            <form data-commentform="${walk.id}" class="flex items-center gap-2 pt-1">
+              <input name="c" autocomplete="off" placeholder="Add a comment as ${esc(meDog() ? meDog().name : '')}…" class="flex-1 text-xs bg-zinc-50 border border-zinc-200 rounded-full px-3 py-2 focus:outline-none focus:border-[#FC4C02]" />
+              <button type="submit" class="text-xs font-black text-white bg-[#FC4C02] rounded-full px-3.5 py-2">Post</button>
+            </form>
+          </div>` : ''}
+      </div>`;
+    }
+
+    function visibleWalks() {
+      if (STATE.filter === 'all') return STATE.walks;
+      const meId = STATE.meDogId;
+      const followed = new Set(STATE.follows.filter(f => f.follower_dog_id === meId).map(f => f.following_dog_id));
+      return STATE.walks.filter(w => {
+        const ids = assignedDogIds(w);
+        return ids.some(id => id === meId || followed.has(id));
+      });
+    }
+
+    function render(popWalkId) {
+      renderHeader();
+      const root = document.getElementById('feedRoot');
+      const walks = visibleWalks();
+      root.innerHTML = weeklyLoadCard() + (
+        walks.length
+          ? walks.map(feedCard).join('')
+          : `<div class="py-16 text-center text-sm font-semibold text-zinc-400">${STATE.filter === 'following' ? "You're not following anyone with a recent walk yet." : 'No walkouts in the pack yet.'}</div>`
+      );
+      // keep the bone-pop only for the just-toggled card
+      if (!popWalkId) document.querySelectorAll('.bone-pop').forEach(e => e.classList.remove('bone-pop'));
+    }
+
+    // ---- events (delegated) --------------------------------------
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-bone],[data-comments],[data-follow],[data-me],[data-lightbox],[data-delcomment],#meSwitcher');
+      if (!t) return;
+      if (t.id === 'meSwitcher') { document.getElementById('meDropdown').classList.toggle('hidden'); return; }
+      if (t.dataset.me) return setMeDog(t.dataset.me);
+      if (t.dataset.bone) return giveBone(t.dataset.bone);
+      if (t.dataset.follow) return toggleFollow(t.dataset.follow);
+      if (t.dataset.delcomment) return deleteComment(t.dataset.delcomment);
+      if (t.dataset.lightbox) {
+        document.getElementById('lightboxImg').src = t.dataset.lightbox;
+        document.getElementById('lightbox').classList.remove('hidden');
+        return;
+      }
+      if (t.dataset.comments) {
+        const id = t.dataset.comments;
+        STATE.openComments.has(id) ? STATE.openComments.delete(id) : STATE.openComments.add(id);
+        render();
+      }
+    });
+
+    document.addEventListener('submit', (e) => {
+      const form = e.target.closest('[data-commentform]');
+      if (!form) return;
+      e.preventDefault();
+      const input = form.querySelector('input[name="c"]');
+      addComment(form.dataset.commentform, input.value);
+      input.value = '';
+    });
+
+    document.querySelectorAll('.feed-filter').forEach(btn => {
+      btn.addEventListener('click', () => { STATE.filter = btn.dataset.filter; render(); });
+    });
+
+    const lb = document.getElementById('lightbox');
+    document.getElementById('lightboxClose').addEventListener('click', () => lb.classList.add('hidden'));
+    lb.addEventListener('click', (e) => { if (e.target === lb) lb.classList.add('hidden'); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') lb.classList.add('hidden'); });
+
+    if (PackStore) {
+      PackStore.subscribe(({ activeDogId }) => {
+        if (activeDogId && activeDogId !== STATE.meDogId && dogById(activeDogId)) {
+          STATE.meDogId = activeDogId;
+          render();
+        }
+      });
+    }
+
+    (async function init() {
+      try {
+        await loadAll();
+      } catch (err) {
+        console.error('Feed load failed:', err);
+      }
+      document.getElementById('feedLoading')?.remove();
+      render();
+    })();
+  </script>
 </body>
 </html>
