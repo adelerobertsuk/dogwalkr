@@ -21,6 +21,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Shared pack store — keeps the active dog roster in sync with Fuel & Conditioning -->
   <script src="pack-store.js"></script>
+  <!-- Shared "Help & Strava Tips" bottom sheet -->
+  <script src="strava-tips.js"></script>
 
   <style>
     @supports (-webkit-touch-callout: none) {
@@ -84,6 +86,9 @@
         <button onclick="openStatusModal()" class="px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-xs font-semibold text-zinc-700 flex items-center space-x-1 hover:bg-zinc-200 transition">
           <span id="headerStatusEmoji">🟢</span>
           <span id="headerStatusText">Ready</span>
+        </button>
+        <button data-strava-tips aria-label="Help & Strava tips" class="p-2 rounded-full text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition tap-target flex items-center justify-center">
+          <i data-lucide="help-circle" class="w-5 h-5"></i>
         </button>
         <button onclick="openSettingsModal()" aria-label="Settings & Strava" class="p-2 rounded-full text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition tap-target flex items-center justify-center">
           <i data-lucide="settings" class="w-5 h-5"></i>
@@ -707,6 +712,7 @@
       ],
       walkouts: [],
       walkDogs: [],
+      walkBones: [],
       foodItems: [],
       foodLogs: [],
       currentFeederName: getStoredFeederName(),
@@ -1010,7 +1016,7 @@
     }
 
     async function initApp() {
-      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchHouseholdMembers(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchFoodLogs(), fetchWalkDogs()]);
+      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchHouseholdMembers(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchFoodLogs(), fetchWalkDogs(), fetchWalkBones()]);
       renderAll();
 
       const params = new URLSearchParams(window.location.search);
@@ -1159,6 +1165,25 @@
       } catch (err) {
         console.error("walk_dogs connection exception:", err);
       }
+    }
+
+    // Bone counts per walk (the social "Give a Bone 🦴" reactions from
+    // dogwalkr_feed.html) — read-only here, used to badge the story card.
+    async function fetchWalkBones() {
+      try {
+        const { data, error } = await db.from('walk_bones').select('walk_id');
+        if (error) {
+          console.warn("Supabase walk_bones query notice:", error.message);
+        } else if (data) {
+          STATE.walkBones = data;
+        }
+      } catch (err) {
+        console.error("walk_bones connection exception:", err);
+      }
+    }
+
+    function bonesCountForWalk(walkId) {
+      return STATE.walkBones.filter(b => String(b.walk_id) === String(walkId)).length;
     }
 
     function resetWalkForm() {
@@ -2023,7 +2048,43 @@
       const pawsTaken = computePawsTaken(humanDist, avgMultiplier);
       const dateStr = new Date(w.created_at || Date.now())
         .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      return { w, assignedDogs, displayDogs: dogsForStats, dogDist, pawsTaken, dateStr };
+      const bonesCount = bonesCountForWalk(w.id);
+      return { w, assignedDogs, displayDogs: dogsForStats, dogDist, pawsTaken, dateStr, bonesCount };
+    }
+
+    // Pill-shaped "🦴 N Bones" badge, top-right. White pill + dark text +
+    // soft shadow so it reads crisply on a photo (over the top gradient)
+    // and on the transparent sticker alike.
+    function drawBonesBadge(ctx, W, count) {
+      if (!count || count < 1) return;
+      const label = `🦴 ${count} ${count === 1 ? 'Bone' : 'Bones'}`;
+      const padX = 34, h = 76, right = W - 64, y = 64;
+      ctx.save();
+      ctx.font = '800 34px -apple-system, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      const textW = ctx.measureText(label).width;
+      const wpill = textW + padX * 2;
+      const x = right - wpill;
+      const r = h / 2;
+
+      ctx.shadowColor = 'rgba(0,0,0,0.28)';
+      ctx.shadowBlur = 24;
+      ctx.shadowOffsetY = 6;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + wpill, y, x + wpill, y + h, r);
+      ctx.arcTo(x + wpill, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + wpill, y, r);
+      ctx.closePath();
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = '#171717';
+      ctx.fillText(label, x + padX, y + h / 2 + 2);
+      ctx.restore();
     }
 
     async function renderPhotoCard(ctx, W, H, data) {
@@ -2044,6 +2105,7 @@
       ctx.fillRect(0, H - 780, W, 780);
 
       drawBrandBadge(ctx, 64, 110, '#ffffff', icon);
+      drawBonesBadge(ctx, W, data.bonesCount);
 
       // Dog avatar(s) + name(s) — a Pack Mode walk draws every assigned
       // dog's avatar in an overlapping row with all their names together.
@@ -2053,13 +2115,19 @@
       const textX = 64 + avatarRowWidth(displayDogs.length, avatarRadius) + 20;
       const namesLine = displayDogs.map(d => d.name).join(' & ') || 'Walkout';
 
+      // Drop shadow keeps the name legible over any photo behind the gradient.
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 14;
+      ctx.shadowOffsetY = 2;
       ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = '#ffffff';
       ctx.font = '800 60px -apple-system, sans-serif';
       ctx.fillText(namesLine, textX, avatarY + 14);
       ctx.font = '500 30px -apple-system, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
       ctx.fillText(displayDogs.length === 1 ? (displayDogs[0].breed || '') : 'Pack Walkout', textX, avatarY + 52);
+      ctx.restore();
 
       // Stat grid
       const statsY = H - 480;
@@ -2099,6 +2167,13 @@
       const icon = await getBrandIcon();
       const cx = W / 2;
 
+      // The sticker floats on a transparent canvas, so every element gets a
+      // soft drop shadow to stay high-contrast on light photos/video too.
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 3;
+
       drawBrandLockupCentered(ctx, cx, 660, icon, 76, 54);
 
       const avatarRadius = 70;
@@ -2118,6 +2193,9 @@
         ['Time', formatDurationLong(w.durationMins)],
         ['Paws Taken', pawsTaken.toLocaleString('en-GB')],
       ]);
+      ctx.restore();
+
+      drawBonesBadge(ctx, W, data.bonesCount);
     }
 
     async function renderShareCard() {
@@ -2205,6 +2283,7 @@
       shareCardSelectedDogId = 'pack';
       renderShareCardDogPicker(walkId);
       openModal('modalShareCard');
+      fetchWalkBones().then(renderShareCard); // refresh bone count in the background
       await renderShareCard();
     }
 
@@ -2379,6 +2458,7 @@
           if (Array.isArray(data.debug)) console.table(data.debug);
           await fetchSupabaseWalks();
           await fetchWalkDogs();
+          await fetchWalkBones();
           renderAll();
           alert(`Strava sync complete: ${data.imported} new walk(s) imported, ${data.skipped} skipped.`);
         }
