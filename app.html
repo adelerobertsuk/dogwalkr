@@ -6,9 +6,9 @@
   <title>Dogwalkr 🐾 | Smart Canine Companion to Strava</title>
   
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Dogwalkr" />
-  <meta name="theme-color" content="#F2F2F7" />
+  <meta name="theme-color" content="#FBFBFA" />
   <link rel="icon" type="image/png" sizes="512x512" href="dogwalkr-icon.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="dogwalkr-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
@@ -28,11 +28,11 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #000000;
+      background-color: #FBFBFA;
       color: #1C1C1E;
       overscroll-behavior-y: none;
     }
-    .safe-top { padding-top: max(env(safe-area-inset-top), 48px); }
+    .safe-top { padding-top: max(env(safe-area-inset-top), 12px); }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 24px); }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .checkerboard-bg {
@@ -51,14 +51,14 @@
   <link rel="stylesheet" href="suite-nav.css" />
 </head>
 
-<body class="bg-zinc-950 text-zinc-900 flex flex-col min-h-screen selection:bg-orange-500 selection:text-white">
+<body class="bg-[#FBFBFA] text-zinc-900 flex flex-col min-h-screen selection:bg-orange-500 selection:text-white">
 
-  <div class="flex flex-1 justify-center w-full">
+  <div class="flex flex-1 justify-center w-full px-0 sm:px-4 sm:py-4">
   <!-- Mobile Frame Container -->
-  <div id="appContainer" class="w-full max-w-[430px] min-h-screen bg-[#F2F2F7] flex flex-col relative pb-28 shadow-2xl overflow-x-hidden">
+  <div id="appContainer" class="w-full max-w-[430px] min-h-screen sm:min-h-[calc(100vh-2rem)] flex flex-col relative pb-28 bg-[#FBFBFA] border border-transparent sm:border-[#E8E8E4] sm:rounded-[28px] sm:shadow-sm overflow-x-hidden">
 
     <!-- TOP APP BAR -->
-    <header class="safe-top px-5 pb-3 bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-200/80 flex items-center justify-between">
+    <header class="safe-top px-5 pb-3 bg-[#FBFBFA]/95 backdrop-blur-md sticky top-0 z-30 border-b border-[#E8E8E4] flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="relative">
           <button onclick="showDogPassportModal()" aria-label="Open Dog Passport" class="w-11 h-11 rounded-full overflow-hidden border-2 border-orange-500 shadow-sm flex items-center justify-center bg-orange-100">
@@ -286,7 +286,7 @@
     <!-- ========================================================== -->
     <!-- BOTTOM TAB NAVIGATION BAR                                  -->
     <!-- ========================================================== -->
-    <nav class="safe-bottom fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/95 backdrop-blur-xl border-t border-zinc-200/80 px-4 pt-2 z-40 flex items-center justify-between">
+    <nav class="safe-bottom fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/95 backdrop-blur-xl border-t border-[#E8E8E4] px-4 pt-2 z-40 flex items-center justify-between sm:rounded-b-[28px]">
       
       <button onclick="openTab('dashboard')" id="navTabDashboard" class="flex-1 flex flex-col items-center py-1 text-orange-600 tap-target">
         <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
@@ -299,7 +299,7 @@
       </button>
 
       <div class="flex-1 flex justify-center -mt-5">
-        <button onclick="openLogWalkModal()" aria-label="Log Walk" class="w-14 h-14 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 text-white shadow-lg flex items-center justify-center border-4 border-[#F2F2F7] active:scale-95 transition transform">
+        <button onclick="openLogWalkModal()" aria-label="Log Walk" class="w-14 h-14 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 text-white shadow-lg flex items-center justify-center border-4 border-[#FBFBFA] active:scale-95 transition transform">
           <i data-lucide="paw-print" class="w-7 h-7 text-white"></i>
         </button>
       </div>
@@ -378,7 +378,7 @@
   </div>
 
   <div id="modalDogPassport" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="w-full max-w-[430px] bg-[#F2F2F7] rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
+    <div class="w-full max-w-[430px] bg-[#FBFBFA] rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
       <div class="flex items-center justify-between">
         <span class="text-xs font-bold uppercase tracking-wider text-orange-600 bg-orange-100 px-3 py-1 rounded-full">Canine Digital Passport</span>
         <button onclick="closeModal('modalDogPassport')" class="p-2 text-zinc-400 hover:text-zinc-700"><i data-lucide="x" class="w-5 h-5"></i></button>
