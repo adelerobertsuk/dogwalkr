@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekly Fitness & Stamina Builder | DogWalkr</title>
+  <meta name="description" content="A friendly 4-week plan to build safe stamina, protect joints, and keep your dog moving happily." />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & Babel Standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      background-color: #FBFBFA;
+      color: #171717;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection {
+      background-color: #171717;
+      color: #ffffff;
+    }
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="suite-nav.css" />
+</head>
+<body class="min-h-screen">
+  <div id="root"></div>
+
+  <script src="suite-nav.js" data-auto-mount="false"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- PRESET DATA & ENGINE ---
+    const PRESETS = [
+      {
+        id: 'milo_whippet',
+        label: 'Milo — 18kg Whippet (Aerobic Base)',
+        name: 'Milo',
+        breed: 'Whippet',
+        ageYears: 3,
+        ageMonths: 2,
+        weightKg: 18,
+        fitnessBaseline: 'moderate_walker',
+        goal: 'aerobic_base',
+        baselineKm: 15
+      },
+      {
+        id: 'luna_golden',
+        label: 'Luna — 28kg Golden Retriever (Senior / Joint-Friendly)',
+        name: 'Luna',
+        breed: 'Golden Retriever',
+        ageYears: 8,
+        ageMonths: 6,
+        weightKg: 28,
+        fitnessBaseline: 'puppy_rehab',
+        goal: 'joint_friendly',
+        baselineKm: 10
+      },
+      {
+        id: 'kodiak_malinois',
+        label: 'Kodiak — 26kg Belgian Malinois (Canicross Peak)',
+        name: 'Kodiak',
+        breed: 'Belgian Malinois',
+        ageYears: 3,
+        ageMonths: 0,
+        weightKg: 26,
+        fitnessBaseline: 'athlete',
+        goal: 'canicross_peak',
+        baselineKm: 24
+      },
+      {
+        id: 'barnaby_frenchie',
+        label: 'Barnaby — 12kg French Bulldog (Heat-Sensitive / Rehab)',
+        name: 'Barnaby',
+        breed: 'French Bulldog',
+        ageYears: 2,
+        ageMonths: 4,
+        weightKg: 12,
+        fitnessBaseline: 'puppy_rehab',
+        goal: 'joint_friendly',
+        baselineKm: 7
+      }
+    ];
+
+    const FAQ_DATA = [
+      {
+        id: 'growth-plates',
+        category: 'PUPPIES & GROWTH',
+        question: 'Safe walking guidelines for puppies under 18 months',
+        shortAnswer: 'Puppy growth plates stay open until 12–18 months. Use the 5-minute rule per month of age and skip forced, repetitive long walks.',
+        details: [
+          'What to know: Growth plates are soft areas at the ends of long bones. Until they close (12 months for small dogs, 14–18 months for medium/large breeds, up to 24 months for giants), they need extra care.',
+          'The 5-minute rule: Structured walking time should be about 5 minutes per month of age, up to twice daily. A 4-month puppy should do no more than 20 minutes of continuous structured walking.',
+          'Skip for now: High-impact jumping (in/out of the car, agility hurdles), sharp turns during chase games, and repetitive road running beside a bike.',
+          'Great alternatives: Sniffy walks on grass at their own pace, low ground poles to step over, and calm exploration where they choose when to stop.'
+        ]
+      },
+      {
+        id: 'fatigue-signs',
+        category: 'WELLBEING & ENERGY',
+        question: 'Spotting early signs your dog is getting tired',
+        shortAnswer: 'Dogs often push through fatigue to keep up with you. Watch their tongue, stride, and energy level on walks.',
+        details: [
+          'The spoon tongue: When a dog is overheating or tiring, the tongue widens, curls up at the tip, and looks thicker than usual.',
+          'Head and pace: A fresh dog holds their head up. Early fatigue shows as a lowered head, lagging behind, or a less bouncy stride.',
+          'Hesitation: Reluctance to jump in the car, slow sit-to-stand, or lots of stopping that is not real sniffing can mean they need a break.',
+          'Other clues: Glassy eyes and thick, foamy saliva around the mouth are worth taking seriously.'
+        ]
+      },
+      {
+        id: 'pdf-export',
+        category: 'PRINT & SHARE',
+        question: 'How to print or save your plan as a PDF',
+        shortAnswer: 'Tap Print PDF to get a clean, ink-friendly version you can pin by the door or share with your vet.',
+        details: [
+          'In your browser print menu, choose Save as PDF.',
+          'Portrait orientation and default margins work well. Turn on background graphics if you want progress bars and badges.',
+          'Tip: Keep a printed copy by the leash hook to tick off walks and jot quick notes after each outing.'
+        ]
+      },
+      {
+        id: 'ten-percent-rule',
+        category: 'BUILDING SAFE STAMINA',
+        question: 'Why we cap weekly distance increases at +10%',
+        shortAnswer: 'Fitness improves faster than joints and tendons. A gentle weekly cap helps your dog build stamina without overload.',
+        details: [
+          'The eager-dog trap: Your dog may look ready for more long before their connective tissue has caught up. Too much, too soon, raises injury risk.',
+          'The 4-week rhythm: Three weeks of gradual increases (+5% to +10%), then a lighter Week 4 (-15% volume) gives joints and muscles time to recover.',
+          'Hard surfaces: If you are mostly on pavement, consider trimming total distance by about 20% to be kinder to paws and joints.'
+        ]
+      }
+    ];
+
+    function calculateHeatGuardrails(breed, ageYears) {
+      const lower = (breed || '').toLowerCase();
+      if (lower.includes('french') || lower.includes('pug') || lower.includes('bulldog') || lower.includes('boxer') || lower.includes('boston')) {
+        return {
+          maxSafeTempC: 19,
+          maxSafeTempF: 66,
+          riskLevel: 'Strict Ceiling',
+          coatCategory: 'Flat-faced breeds heat up fast',
+          breedNotes: 'Short noses make cooling harder. Keep walks short and cool above 19°C (66°F).',
+          pantingWarningSign: 'Raspy breathing or a wide, spoon-shaped tongue with a blue or brick-red tinge.'
+        };
+      }
+      if (lower.includes('whippet') || lower.includes('greyhound') || lower.includes('saluki') || lower.includes('lurcher') || lower.includes('doberman')) {
+        return {
+          maxSafeTempC: 22,
+          maxSafeTempF: 72,
+          riskLevel: 'Moderate',
+          coatCategory: 'Thin-coated sighthounds',
+          breedNotes: 'Little body fat means they heat up quickly in direct sun.',
+          pantingWarningSign: 'Heavy foaming saliva, fast flank breathing, or slow capillary refill.'
+        };
+      }
+      if (lower.includes('husky') || lower.includes('malamute') || lower.includes('shepherd') || lower.includes('golden') || lower.includes('bernese') || lower.includes('collie') || lower.includes('retriever')) {
+        return {
+          maxSafeTempC: 20,
+          maxSafeTempF: 68,
+          riskLevel: 'Elevated',
+          coatCategory: 'Thick double coat',
+          breedNotes: 'Dense fur traps heat. Humid days are especially tough.',
+          pantingWarningSign: 'Deep fast panting with curled tongue edges, hunting for shade or damp ground.'
+        };
+      }
+      return {
+        maxSafeTempC: 21,
+        maxSafeTempF: 70,
+        riskLevel: ageYears > 7 ? 'Elevated' : 'Moderate',
+        coatCategory: 'Typical coat',
+        breedNotes: 'Standard heat limits apply. Watch humidity and hot pavement.',
+        pantingWarningSign: 'Slower pace, head lower than usual, wide curved tongue.'
+      };
+    }
+
+    function calculateTerrainSplit(goal, fitnessBaseline, weightKg) {
+      if (goal === 'joint_friendly' || fitnessBaseline === 'puppy_rehab' || weightKg > 35) {
+        return {
+          softTrailPercent: 75,
+          hardTarmacPercent: 15,
+          grassPercent: 10,
+          recommendationNotes: 'Easiest on joints: about 75% soft trail or earth, 10% grass, and no more than 15% pavement.'
+        };
+      }
+      if (goal === 'canicross_peak') {
+        return {
+          softTrailPercent: 65,
+          hardTarmacPercent: 15,
+          grassPercent: 20,
+          recommendationNotes: 'Best for speed work: about 65% packed trail, 20% grass or hills, and a strict 15% pavement cap.'
+        };
+      }
+      return {
+        softTrailPercent: 70,
+        hardTarmacPercent: 30,
+        grassPercent: 0,
+        recommendationNotes: 'A balanced mix: about 70% soft trail or bridleway, 30% firm pavement for steady rhythm.'
+      };
+    }
+
+    function generatePlan(profile, goal, baselineKm) {
+      const safeBase = Math.max(2, baselineKm);
+      const heat = calculateHeatGuardrails(profile.breed, profile.ageYears);
+      const terrain = calculateTerrainSplit(goal, profile.fitnessBaseline, profile.weightKg);
+
+      let rate = 0.10;
+      if (goal === 'joint_friendly' || profile.fitnessBaseline === 'puppy_rehab') rate = 0.05;
+      else if (goal === 'canicross_peak') rate = 0.08;
+
+      const w1 = Number(safeBase.toFixed(1));
+      const w2 = Number((w1 * (1 + rate)).toFixed(1));
+      const w3 = Number((w2 * (1 + rate)).toFixed(1));
+      const w4 = Number((w3 * 0.85).toFixed(1)); // deload
+
+      const weekConfigs = [
+        { vol: w1, delta: 0, isDeload: false, title: 'Week 1 — Finding Your Rhythm', focus: 'Settle into a comfortable weekly pace' },
+        { vol: w2, delta: Math.round(rate * 100), isDeload: false, title: `Week 2 — Building Steady Stamina (+${Math.round(rate * 100)}%)`, focus: 'Gently increase distance and confidence' },
+        { vol: w3, delta: Math.round(rate * 100), isDeload: false, title: `Week 3 — Peak Week (+${Math.round(rate * 100)}%)`, focus: 'Your highest safe volume this cycle' },
+        { vol: w4, delta: -15, isDeload: true, title: 'Week 4 — Easy Week (-15%)', focus: 'Let joints and muscles catch up' }
+      ];
+
+      const paceMin = profile.fitnessBaseline === 'athlete' ? 10 : 13;
+
+      const weeks = weekConfigs.map((cfg, idx) => {
+        const weekNum = idx + 1;
+        const totalV = cfg.vol;
+        const monKm = Number((totalV * 0.28).toFixed(1));
+        const wedKm = Number((totalV * 0.24).toFixed(1));
+        const thuKm = Number((totalV * 0.16).toFixed(1));
+        const satKm = Number((totalV - monKm - wedKm - thuKm).toFixed(1));
+
+        return {
+          weekNumber: weekNum,
+          weekTitle: cfg.title,
+          focus: cfg.focus,
+          totalVolumeKm: totalV,
+          deltaPercent: cfg.delta,
+          isDeload: cfg.isDeload,
+          days: [
+            {
+              id: `w${weekNum}-d1`,
+              dayName: 'Monday',
+              shortDay: 'MON',
+              type: 'base_walk',
+              title: `${monKm}km Base Walk`,
+              distanceKm: monKm,
+              durationMinutes: Math.round(monKm * paceMin),
+              description: 'A steady walk on flat or gently rolling ground. Keep a relaxed, continuous pace.',
+              exercises: ['5-min easy warm-up on a loose leash', `${monKm}km steady walk or light trot`, '5-min cool-down sniff at the end'],
+              jointSafetyNote: 'Watch for a smooth, even stride without scissoring legs.',
+              completed: false
+            },
+            {
+              id: `w${weekNum}-d2`,
+              dayName: 'Tuesday',
+              shortDay: 'TUE',
+              type: 'proprioception',
+              title: 'Balance & Body Awareness',
+              distanceKm: 0,
+              durationMinutes: 15,
+              description: 'Short, slow exercises that build coordination and core strength.',
+              exercises: ['Front paws on a low balance pad (3 × 30 sec)', 'Slow stepping over flat ground poles (4–6 poles)', 'Gentle sit-to-stand reps (2 × 5)'],
+              jointSafetyNote: 'No jumping or twisting. Use a non-slip surface.',
+              completed: false
+            },
+            {
+              id: `w${weekNum}-d3`,
+              dayName: 'Wednesday',
+              shortDay: 'WED',
+              type: 'base_walk',
+              title: `${wedKm}km Base Walk`,
+              distanceKm: wedKm,
+              durationMinutes: Math.round(wedKm * paceMin),
+              description: 'A gentle walk with mild hills on soft ground. Good for building rear-end strength without pounding joints.',
+              exercises: ['Walk gentle inclines where available', 'Encourage even push from both back legs', 'Water break halfway'],
+              jointSafetyNote: 'Come down slopes slowly, zig-zagging if needed to protect front wrists.',
+              completed: false
+            },
+            {
+              id: `w${weekNum}-d4`,
+              dayName: 'Thursday',
+              shortDay: 'THU',
+              type: 'rest',
+              title: 'REST / RECOVERY',
+              distanceKm: 0,
+              durationMinutes: 0,
+              description: 'A proper rest day. A calm sniff walk is fine, but skip anything demanding.',
+              exercises: ['Relaxed long-line sniffing', 'No fetch marathons or repetitive chasing'],
+              jointSafetyNote: 'Rest days are when the body repairs and gets stronger.',
+              completed: false
+            },
+            {
+              id: `w${weekNum}-d5`,
+              dayName: 'Friday',
+              shortDay: 'FRI',
+              type: 'proprioception',
+              title: 'Ground Poles & Weight Shifts',
+              distanceKm: 0,
+              durationMinutes: 15,
+              description: 'Low-key drills that sharpen foot placement and hip/shoulder mobility.',
+              exercises: ['Walk over flat poles at wrist height (3 passes)', 'Gentle weight shifts while standing square'],
+              jointSafetyNote: 'Stop if your dog hesitates or drops their head low over the poles.',
+              completed: false
+            },
+            {
+              id: `w${weekNum}-d6`,
+              dayName: 'Saturday',
+              shortDay: 'SAT',
+              type: 'base_walk',
+              title: `${satKm}km Base Walk`,
+              distanceKm: satKm,
+              durationMinutes: Math.round(satKm * paceMin),
+              description: `Your longest walk of the week (${terrain.softTrailPercent}% soft trail recommended).`,
+              exercises: ['5-min easy warm-up', `${satKm}km steady walk`, '3-min shade and water break', '10-min cool-down walk'],
+              jointSafetyNote: `Check paw pads at the halfway point. Stay below ${heat.maxSafeTempC}°C.`,
+              completed: false
+            },
+            {
+              id: `w${weekNum}-d7`,
+              dayName: 'Sunday',
+              shortDay: 'SUN',
+              type: 'rest',
+              title: 'REST / RECOVERY',
+              distanceKm: 0,
+              durationMinutes: 0,
+              description: 'Full rest. Let muscles recover and joints settle.',
+              exercises: ['Mental enrichment: frozen Kong or lick mat', 'Quick post-walk joint & paw check if you had a big week'],
+              jointSafetyNote: 'Good sleep is when most healing happens.',
+              completed: false
+            }
+          ]
+        };
+      });
+
+      const jointChecklist = [
+        {
+          id: 'carpus',
+          jointName: 'Front Wrist & Paw',
+          anatomicalArea: 'Front legs',
+          howToAssess: 'Gently flex and extend the front wrist. Feel for heat, swelling, or tightness along the tendons.',
+          normalReaction: 'Your dog stays relaxed and lets you move the joint freely.',
+          redFlagSign: 'Pulling away, heat, swelling, or stiffness past a right angle.',
+          checked: false
+        },
+        {
+          id: 'stifle',
+          jointName: 'Back Knee',
+          anatomicalArea: 'Rear legs',
+          howToAssess: 'Support the thigh and gently bend the knee toward the belly, then straighten it again.',
+          normalReaction: 'Smooth, quiet movement with no clicking.',
+          redFlagSign: 'Clicking, bunny-hopping on walks, or sudden leg kicks.',
+          checked: false
+        },
+        {
+          id: 'hock',
+          jointName: 'Back Ankle & Heel Tendon',
+          anatomicalArea: 'Rear lower leg',
+          howToAssess: 'Feel the firm cord above the heel. Gently flex the ankle while holding the toes.',
+          normalReaction: 'Even tension, no tender lumps or heat.',
+          redFlagSign: 'Thickened or spongy tendon, reluctance to curl toes, pain on touch.',
+          checked: false
+        },
+        {
+          id: 'spine',
+          jointName: 'Spine & Lower Back',
+          anatomicalArea: 'Core',
+          howToAssess: 'Run two flat fingers gently down each side of the spine. Lightly press the inner thigh groove.',
+          normalReaction: 'Level posture, no flinching or dipping.',
+          redFlagSign: 'Muscle twitching along the back, arched posture, or tucked tail.',
+          checked: false
+        },
+        {
+          id: 'pads',
+          jointName: 'Paw Pads & Toes',
+          anatomicalArea: 'All four paws',
+          howToAssess: 'Check between toes for grit, redness, or peeling pads.',
+          normalReaction: 'Pads feel firm and supple, with no deep cracks or raw spots.',
+          redFlagSign: 'Licking one paw constantly, split pads, or hot red skin between toes.',
+          checked: false
+        }
+      ];
+
+      const recoveryProtocol = [
+        { phase: 'Cool down walk', duration: '5–8 minutes', instructions: ['Ease into a slow, loose-leash stroll to bring heart rate and breathing back to normal.'] },
+        { phase: 'Water & cool-off', duration: '10–15 min after', instructions: ['Offer small sips of cool water (50–100ml). Dampen belly and groin with a cloth if they ran warm.'] },
+        { phase: 'Joint & paw check', duration: '30–60 min after', instructions: ['Once relaxed, run through the 5-point joint and paw check. Feed about 45 minutes after exercise.'] }
+      ];
+
+      return {
+        telemetry: {
+          safeWeeklyCeilingKm: w3,
+          maxIncreaseRatePercent: Math.round(rate * 100),
+          terrainSplit: terrain,
+          heatGuardrails: heat
+        },
+        weeks,
+        recoveryProtocol,
+        jointChecklist
+      };
+    }
+
+    // --- MAIN APP COMPONENT ---
+    function App() {
+      const [profile, setProfile] = useState({
+        name: 'Milo',
+        breed: 'Whippet',
+        ageYears: 3,
+        ageMonths: 2,
+        weightKg: 18,
+        fitnessBaseline: 'moderate_walker'
+      });
+      const [goal, setGoal] = useState('aerobic_base');
+      const [baselineKm, setBaselineKm] = useState(15);
+      const [isMetric, setIsMetric] = useState(true);
+      const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+      const [activeWeekIndex, setActiveWeekIndex] = useState(0);
+      const [viewAllWeeks, setViewAllWeeks] = useState(false);
+      const [expandedDayId, setExpandedDayId] = useState(null);
+      const [copiedToast, setCopiedToast] = useState(false);
+      const [faqSearch, setFaqSearch] = useState('');
+      const [expandedFaqId, setExpandedFaqId] = useState('growth-plates');
+
+      const [plan, setPlan] = useState(() => generatePlan(profile, goal, baselineKm));
+
+      const handleGenerate = () => {
+        const newPlan = generatePlan(profile, goal, baselineKm);
+        setPlan(newPlan);
+        const target = document.getElementById('conditioning-telemetry-header');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
+      const handleSelectPreset = (p) => {
+        const newProf = {
+          name: p.name,
+          breed: p.breed,
+          ageYears: p.ageYears,
+          ageMonths: p.ageMonths,
+          weightKg: p.weightKg,
+          fitnessBaseline: p.fitnessBaseline
+        };
+        setProfile(newProf);
+        setGoal(p.goal);
+        setBaselineKm(p.baselineKm);
+        setPlan(generatePlan(newProf, p.goal, p.baselineKm));
+      };
+
+      const toggleDayCompleted = (weekIdx, dayId) => {
+        setPlan(prev => {
+          const nextWeeks = [...prev.weeks];
+          const targetWeek = { ...nextWeeks[weekIdx] };
+          targetWeek.days = targetWeek.days.map(d => d.id === dayId ? { ...d, completed: !d.completed } : d);
+          nextWeeks[weekIdx] = targetWeek;
+          return { ...prev, weeks: nextWeeks };
+        });
+      };
+
+      const toggleJointCheck = (id) => {
+        setPlan(prev => ({
+          ...prev,
+          jointChecklist: prev.jointChecklist.map(item => item.id === id ? { ...item, checked: !item.checked } : item)
+        }));
+      };
+
+      const resetJointChecks = () => {
+        setPlan(prev => ({
+          ...prev,
+          jointChecklist: prev.jointChecklist.map(item => ({ ...item, checked: false }))
+        }));
+      };
+
+      const formatDist = (km) => {
+        if (!isMetric) return `${(km * 0.621371).toFixed(1)} mi`;
+        return `${km.toFixed(1)} km`;
+      };
+
+      const handleCopySummary = () => {
+        const summary = `WEEKLY FITNESS PLAN: ${profile.name.toUpperCase()} (${profile.breed}, ${profile.weightKg}kg)\n` +
+          `Goal: ${goal.replace('_', ' ').toUpperCase()} | Baseline: ${baselineKm} km/wk\n` +
+          `Safe ceiling: ${plan.telemetry.safeWeeklyCeilingKm} km/wk (+${plan.telemetry.maxIncreaseRatePercent}% max increase)\n` +
+          `Heat limit: below ${plan.telemetry.heatGuardrails.maxSafeTempC}°C (${plan.telemetry.heatGuardrails.riskLevel})\n` +
+          `Terrain: ${plan.telemetry.terrainSplit.softTrailPercent}% soft trail, ${plan.telemetry.terrainSplit.hardTarmacPercent}% pavement\n` +
+          `DogWalkr Weekly Fitness & Stamina Builder`;
+        navigator.clipboard.writeText(summary);
+        setCopiedToast(true);
+        setTimeout(() => setCopiedToast(false), 2500);
+      };
+
+      const initials = `${(profile.name[0] || 'D')}${(profile.breed[0] || 'W')}`.toUpperCase();
+      const deltaKm = plan.telemetry.safeWeeklyCeilingKm - baselineKm;
+      const displayedWeeks = viewAllWeeks ? plan.weeks : [plan.weeks[activeWeekIndex]];
+      const clearedCount = plan.jointChecklist.filter(i => i.checked).length;
+
+      const filteredFaqs = FAQ_DATA.filter(f => {
+        const q = faqSearch.toLowerCase();
+        return f.question.toLowerCase().includes(q) || f.shortAnswer.toLowerCase().includes(q) || f.category.toLowerCase().includes(q);
+      });
+
+      return (
+        <div className="w-full bg-[#FBFBFA] text-[#171717] font-sans pb-16">
+          <SuiteNav active="condition" onHelp={() => setIsDiagnosticsOpen(true)} />
+
+          {/* PAGE HEADER */}
+          <header className="w-full border-b border-[#E8E8E4] bg-[#FBFBFA]/95">
+            <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-5 pb-4">
+              <div className="flex flex-wrap items-center justify-end gap-2 pb-4">
+                <button
+                  onClick={() => setIsMetric(!isMetric)}
+                  className="px-2.5 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-[#171717] bg-white border border-[#E8E8E4] hover:bg-[#F5F5F3] transition-colors"
+                >
+                  {isMetric ? 'Units: KM' : 'Units: MILES'}
+                </button>
+
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-[#171717] bg-white border border-[#E8E8E4] hover:bg-[#F5F5F3] transition-colors"
+                >
+                  <span>Print PDF</span>
+                </button>
+              </div>
+
+              {/* Title & Active Profile */}
+              <div className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] tracking-[0.2em] text-[#73736E] uppercase font-bold mb-1">
+                      Weekly Fitness Builder
+                    </p>
+                    <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#171717]">
+                      Weekly Fitness & Stamina Builder <span className="text-[#73736E] font-normal">v1.0</span>
+                    </h1>
+                  </div>
+
+                  <div className="flex items-center gap-4 bg-white p-2.5 sm:px-4 sm:py-2.5 border border-[#E8E8E4] self-start sm:self-auto">
+                    <div className="text-left sm:text-right">
+                      <p className="text-[9px] tracking-[0.15em] text-[#73736E] uppercase font-bold leading-none mb-1">
+                        Active Profile
+                      </p>
+                      <p className="text-xs font-semibold text-[#171717] tracking-tight">
+                        {profile.name.toUpperCase()} • {profile.weightKg}kg {profile.breed}
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full border border-[#E8E8E4] bg-[#FBFBFA] flex items-center justify-center text-[10px] font-mono font-bold text-[#171717]">
+                      {initials}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Presets */}
+                <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-[#E8E8E4] text-xs">
+                  <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#73736E] mr-1">
+                    Presets:
+                  </span>
+                  {PRESETS.map((p) => {
+                    const isSel = profile.name === p.name && profile.breed === p.breed;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => handleSelectPreset(p)}
+                        className={`px-2.5 py-1 text-[11px] font-medium transition-all border ${
+                          isSel
+                            ? 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
+                            : 'bg-white text-[#52524E] border-[#E8E8E4] hover:border-[#171717] hover:text-[#171717]'
+                        }`}
+                      >
+                        {p.name} • {p.breed}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN CONTAINER */}
+          <main className="max-w-[900px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-8">
+            {/* STEP 1-3 INPUT FLOW */}
+            <section className="no-print bg-white border border-[#E8E8E4] p-5 sm:p-6">
+              <div className="flex items-center justify-between pb-3 mb-5 border-b border-[#E8E8E4]">
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#73736E] mb-0.5">
+                    Tell us about your dog
+                  </p>
+                  <h2 className="text-base font-semibold text-[#171717] tracking-tight">
+                    Build your 4-week plan
+                  </h2>
+                </div>
+                <span className="text-[10px] font-mono font-bold tracking-wider text-[#73736E] bg-[#FBFBFA] px-2.5 py-1 border border-[#E8E8E4]">
+                  3 Steps
+                </span>
+              </div>
+
+              <div className="space-y-6">
+                {/* Step 1 */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="w-4 h-4 bg-[#171717] text-white text-[10px] font-mono font-bold flex items-center justify-center">1</span>
+                    <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-[#171717]">Dog Details</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold tracking-wider text-[#73736E] mb-1">Dog Name</label>
+                      <input
+                        type="text"
+                        value={profile.name}
+                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                        className="w-full px-3 py-2 text-xs bg-[#FBFBFA] border border-[#E8E8E4] text-[#171717] focus:outline-none focus:border-[#171717]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold tracking-wider text-[#73736E] mb-1">Breed / Cross</label>
+                      <input
+                        type="text"
+                        value={profile.breed}
+                        onChange={(e) => setProfile({ ...profile, breed: e.target.value })}
+                        className="w-full px-3 py-2 text-xs bg-[#FBFBFA] border border-[#E8E8E4] text-[#171717] focus:outline-none focus:border-[#171717]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold tracking-wider text-[#73736E] mb-1">Age (Yrs / Mos)</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            value={profile.ageYears}
+                            onChange={(e) => setProfile({ ...profile, ageYears: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2.5 py-2 text-xs bg-[#FBFBFA] border border-[#E8E8E4] text-[#171717]"
+                          />
+                          <span className="absolute right-2 top-2 text-[9px] uppercase text-[#73736E]">yr</span>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="11"
+                            value={profile.ageMonths}
+                            onChange={(e) => setProfile({ ...profile, ageMonths: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2.5 py-2 text-xs bg-[#FBFBFA] border border-[#E8E8E4] text-[#171717]"
+                          />
+                          <span className="absolute right-2 top-2 text-[9px] uppercase text-[#73736E]">mo</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold tracking-wider text-[#73736E] mb-1">Weight (kg)</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="1"
+                          max="90"
+                          value={profile.weightKg}
+                          onChange={(e) => setProfile({ ...profile, weightKg: parseFloat(e.target.value) || 1 })}
+                          className="w-full px-3 py-2 text-xs bg-[#FBFBFA] border border-[#E8E8E4] text-[#171717]"
+                        />
+                        <span className="absolute right-3 top-2 text-[10px] text-[#73736E] font-mono">kg</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Baseline Segment */}
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold tracking-wider text-[#73736E] mb-2">How fit are they right now?</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {[
+                        { val: 'puppy_rehab', label: 'Puppy / Senior / Rehab', desc: 'Young, older, or recovering. Gentle and joint-friendly.' },
+                        { val: 'moderate_walker', label: 'Regular Walker', desc: 'Happy daily walks, typical companion dog.' },
+                        { val: 'athlete', label: 'Sport or Working Dog', desc: 'Already fit from sport, hiking, or work.' }
+                      ].map((item) => (
+                        <div
+                          key={item.val}
+                          onClick={() => setProfile({ ...profile, fitnessBaseline: item.val })}
+                          className={`text-left p-3 border cursor-pointer transition-all ${
+                            profile.fitnessBaseline === item.val
+                              ? 'border-[#0A0A0A] bg-[#FBFBFA]'
+                              : 'border-[#E8E8E4] bg-white hover:border-[#171717]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-bold text-[#171717]">{item.label}</span>
+                            <span className={`w-2 h-2 ${profile.fitnessBaseline === item.val ? 'bg-[#0A0A0A]' : 'bg-[#E8E8E4]'}`} />
+                          </div>
+                          <p className="text-[11px] text-[#73736E]">{item.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="pt-4 border-t border-[#E8E8E4]">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="w-4 h-4 bg-[#171717] text-white text-[10px] font-mono font-bold flex items-center justify-center">2</span>
+                    <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-[#171717]">What&apos;s the goal?</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[
+                      { type: 'aerobic_base', title: 'Build Everyday Stamina', badge: 'Most Dogs', desc: 'Steady weekly walks with a gentle +10% build and an easy recovery week.' },
+                      { type: 'joint_friendly', title: 'Joint-Friendly & Low Impact', badge: 'Senior / Recovery', desc: 'Slower +5% increases, mostly soft trails, easy on aging or recovering joints.' },
+                      { type: 'canicross_peak', title: 'Canicross / Agility Peak', badge: 'Sport & Speed', desc: 'Off-road focus with hills and intervals for dogs already in training.' }
+                    ].map((g) => (
+                      <div
+                        key={g.type}
+                        onClick={() => setGoal(g.type)}
+                        className={`text-left p-4 border cursor-pointer transition-all flex flex-col justify-between ${
+                          goal === g.type
+                            ? 'border-[#0A0A0A] bg-[#FBFBFA]'
+                            : 'border-[#E8E8E4] bg-white hover:border-[#171717]'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-[#171717] bg-[#E8E8E4] px-1.5 py-0.5">
+                              {g.badge}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-bold text-[#171717] mb-1">{g.title}</h4>
+                          <p className="text-[11px] text-[#73736E]">{g.desc}</p>
+                        </div>
+                        <div className="mt-3 pt-2 border-t border-[#E8E8E4] flex items-center justify-between text-[10px]">
+                          <span className="text-[#9E9E98] font-medium">Selected Model</span>
+                          <span className={`font-semibold ${goal === g.type ? 'text-[#0A0A0A]' : 'text-transparent'}`}>
+                            Active ✓
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="pt-4 border-t border-[#E8E8E4]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-4 h-4 bg-[#171717] text-white text-[10px] font-mono font-bold flex items-center justify-center">3</span>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-[#171717]">Current weekly distance</h3>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-[#171717] bg-[#F0F0EC] px-2 py-0.5 border border-[#E8E8E4]">
+                      {baselineKm} km/week
+                    </span>
+                  </div>
+
+                  <div className="bg-[#FBFBFA] border border-[#E8E8E4] p-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <div className="flex-1 w-full">
+                        <input
+                          type="range"
+                          min="2"
+                          max="50"
+                          step="0.5"
+                          value={baselineKm}
+                          onChange={(e) => setBaselineKm(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-[#E8E8E4] appearance-none cursor-pointer accent-[#0A0A0A]"
+                        />
+                        <div className="flex justify-between text-[10px] text-[#9E9E98] mt-1 font-mono">
+                          <span>3 km/wk</span>
+                          <span>15 km/wk</span>
+                          <span>30 km/wk</span>
+                          <span>50 km/wk</span>
+                        </div>
+                      </div>
+                      <div className="w-full sm:w-36 flex items-center space-x-2">
+                        <span className="text-xs text-[#73736E]">Exact:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="60"
+                          value={baselineKm}
+                          onChange={(e) => setBaselineKm(Math.max(1, parseFloat(e.target.value) || 1))}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#E8E8E4] font-mono text-[#171717]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  className="w-full bg-[#0A0A0A] text-white py-3.5 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#262626] transition-colors flex items-center justify-center space-x-2 cursor-pointer"
+                >
+                  <span>Build My 4-Week Plan</span>
+                </button>
+              </div>
+            </section>
+
+            {/* TELEMETRY HEADER */}
+            <section id="conditioning-telemetry-header" className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] tracking-[0.2em] text-[#73736E] uppercase font-bold">
+                  Your Plan at a Glance
+                </p>
+                <span className="text-[10px] text-[#73736E] font-mono uppercase tracking-wider">
+                  +10% weekly safety cap
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Ceiling */}
+                <div className="bg-white p-5 border border-[#E8E8E4] flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] text-[#73736E] uppercase tracking-[0.1em] font-bold mb-1">Safe Weekly Peak</p>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <span className="text-2xl font-medium tracking-tight text-[#171717] font-mono">
+                        {formatDist(plan.telemetry.safeWeeklyCeilingKm)}
+                      </span>
+                      <span className="text-[10px] text-[#171717] font-mono font-bold bg-[#FBFBFA] px-1.5 py-0.5 border border-[#E8E8E4]">
+                        +{formatDist(deltaKm)} ({plan.telemetry.maxIncreaseRatePercent}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-1 bg-[#FBFBFA] border border-[#E8E8E4] my-3">
+                      <div className="h-full bg-[#171717]" style={{ width: '75%' }} />
+                    </div>
+                    <p className="text-[11px] text-[#73736E] leading-relaxed">
+                      We increase distance slowly, capped at <span className="text-[#171717] font-medium">+{plan.telemetry.maxIncreaseRatePercent}%</span> per week, to build safe stamina and keep joints happy.
+                    </p>
+                  </div>
+                  <div className="pt-3 mt-3 border-t border-[#E8E8E4] flex items-center justify-between text-[10px] font-mono text-[#73736E]">
+                    <span>Baseline: {formatDist(baselineKm)}</span>
+                    <span className="text-[#171717] font-bold">Cap: {formatDist(plan.telemetry.safeWeeklyCeilingKm)}</span>
+                  </div>
+                </div>
+
+                {/* Terrain */}
+                <div className="bg-white p-5 border border-[#E8E8E4] flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] text-[#73736E] uppercase tracking-[0.1em] font-bold mb-1">Terrain Split</p>
+                    <div className="flex flex-wrap gap-2 text-[11px] my-2">
+                      <span className="bg-[#FBFBFA] px-2 py-1 border border-[#E8E8E4] font-medium text-[#171717]">
+                        {plan.telemetry.terrainSplit.softTrailPercent}% Soft Trail
+                      </span>
+                      <span className="bg-[#FBFBFA] px-2 py-1 border border-[#E8E8E4] font-medium text-[#171717]">
+                        {plan.telemetry.terrainSplit.hardTarmacPercent}% Tarmac
+                      </span>
+                    </div>
+                    <div className="my-2.5">
+                      <div className="h-1.5 w-full bg-[#E8E8E4] flex">
+                        <div style={{ width: `${plan.telemetry.terrainSplit.softTrailPercent}%` }} className="bg-[#171717] h-full" />
+                        <div style={{ width: `${plan.telemetry.terrainSplit.hardTarmacPercent}%` }} className="bg-[#A8A8A2] h-full" />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-[#73736E] leading-relaxed">
+                      {plan.telemetry.terrainSplit.recommendationNotes}
+                    </p>
+                  </div>
+                  <div className="pt-3 mt-3 border-t border-[#E8E8E4] text-[10px] font-mono text-[#73736E]">
+                    Keeping joints happy: favour soft ground
+                  </div>
+                </div>
+
+                {/* Heat */}
+                <div className="bg-white p-5 border border-[#E8E8E4] flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] text-[#73736E] uppercase tracking-[0.1em] font-bold mb-1">Heat Safety</p>
+                    <div className="flex items-baseline space-x-2 mb-1.5">
+                      <span className="text-2xl font-medium tracking-tight text-[#171717] font-mono">
+                        &lt;{plan.telemetry.heatGuardrails.maxSafeTempC}°C
+                      </span>
+                      <span className="text-[10px] text-[#73736E] font-mono">({plan.telemetry.heatGuardrails.maxSafeTempF}°F)</span>
+                    </div>
+                    <p className="text-[11px] text-[#73736E] leading-relaxed">
+                      <span className="text-[#171717] font-semibold">{plan.telemetry.heatGuardrails.coatCategory}.</span> Skip hard exercise above {plan.telemetry.heatGuardrails.maxSafeTempC}°C. Offer water breaks every 15 minutes.
+                    </p>
+                  </div>
+                  <div className="pt-3 mt-3 border-t border-[#E8E8E4] text-[10px] text-[#73736E] font-mono">
+                    Watch for: {plan.telemetry.heatGuardrails.pantingWarningSign.slice(0, 44)}...
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 4-WEEK PERIODIZED SCHEDULE */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-[#E8E8E4]">
+                <p className="text-[10px] tracking-[0.2em] text-[#73736E] uppercase font-bold">
+                  4-Week Progressive Schedule
+                </p>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setViewAllWeeks(!viewAllWeeks)}
+                    className="px-2.5 py-1 text-[10px] font-bold tracking-[0.1em] uppercase text-[#171717] bg-white border border-[#E8E8E4] hover:bg-[#F5F5F3]"
+                  >
+                    {viewAllWeeks ? 'Single Week' : 'View 4-Week Grid'}
+                  </button>
+                </div>
+              </div>
+
+              {!viewAllWeeks && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {plan.weeks.map((w, idx) => (
+                    <div
+                      key={w.weekNumber}
+                      onClick={() => setActiveWeekIndex(idx)}
+                      className={`p-3 border text-left cursor-pointer transition-all ${
+                        activeWeekIndex === idx ? 'border-[#0A0A0A] bg-white' : 'border-[#E8E8E4] bg-white hover:border-[#171717]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold text-[#171717] mb-1">
+                        <span className="text-[10px] font-mono uppercase tracking-wider">WEEK 0{w.weekNumber}</span>
+                        {w.isDeload ? (
+                          <span className="text-[9px] uppercase font-mono font-bold text-[#171717] bg-[#F0F0EC] px-1 py-0.5">Deload</span>
+                        ) : (
+                          <span className="text-[9px] uppercase font-mono text-[#73736E]">+{w.deltaPercent}%</span>
+                        )}
+                      </div>
+                      <div className="text-sm font-semibold font-mono text-[#171717]">{formatDist(w.totalVolumeKm)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Schedule Cards */}
+              <div className="space-y-4">
+                {displayedWeeks.map((week, wIdxActual) => {
+                  const actualIdx = viewAllWeeks ? wIdxActual : activeWeekIndex;
+                  const completedCount = week.days.filter(d => d.completed).length;
+
+                  return (
+                    <div key={week.weekNumber} className="bg-white border border-[#E8E8E4] p-5">
+                      <div className="flex justify-between items-baseline mb-4 pb-2 border-b border-[#E8E8E4]">
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-bold font-mono tracking-wider text-[#171717]">WEEK 0{week.weekNumber}</span>
+                            {week.isDeload && (
+                              <span className="text-[10px] font-mono uppercase bg-[#F0F0EC] px-1.5 py-0.5 text-[#171717]">Easy week</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[#73736E] mt-0.5">{week.focus}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-mono font-bold text-[#171717]">{formatDist(week.totalVolumeKm)}</span>
+                          <span className="text-[10px] text-[#73736E] block font-mono">{completedCount}/7 Complete</span>
+                        </div>
+                      </div>
+
+                      <div className="divide-y divide-[#E8E8E4]">
+                        {week.days.map((day) => (
+                          <div key={day.id} className="py-2.5 hover:bg-[#FBFBFA]">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <div className="flex items-center space-x-3 flex-1 min-w-0 pr-2">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleDayCompleted(actualIdx, day.id)}
+                                  className={`w-4 h-4 border flex items-center justify-center flex-shrink-0 cursor-pointer ${
+                                    day.completed ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white' : 'border-[#E8E8E4] bg-white hover:border-[#171717]'
+                                  }`}
+                                >
+                                  {day.completed && <span className="text-[10px]">✓</span>}
+                                </button>
+                                <span className="w-8 font-mono text-[10px] font-bold text-[#73736E] uppercase">{day.shortDay}</span>
+                                <span
+                                  onClick={() => setExpandedDayId(expandedDayId === day.id ? null : day.id)}
+                                  className={`cursor-pointer truncate ${day.type === 'rest' ? 'font-bold text-[#73736E]' : day.completed ? 'line-through text-[#73736E]' : 'text-[#171717] font-medium'}`}
+                                >
+                                  {day.title}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2 shrink-0">
+                                <span className="text-[9px] font-mono text-[#73736E] uppercase bg-[#FBFBFA] px-1.5 py-0.5 border border-[#E8E8E4]">
+                                  {day.type.replace('_', ' ').toUpperCase()}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedDayId(expandedDayId === day.id ? null : day.id)}
+                                  className="p-0.5 text-[#73736E] hover:text-[#171717]"
+                                >
+                                  {expandedDayId === day.id ? '▲' : '▼'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {expandedDayId === day.id && (
+                              <div className="mt-2.5 pt-2 border-t border-[#E8E8E4] pl-7 pr-2 space-y-2 text-xs">
+                                <p className="text-[#52524E] leading-relaxed">{day.description}</p>
+                                {day.exercises && (
+                                  <ul className="space-y-1 text-[11px] text-[#171717]">
+                                    {day.exercises.map((ex, i) => (
+                                      <li key={i} className="flex items-start space-x-1.5">
+                                        <span className="text-[#9E9E98] font-mono">•</span>
+                                        <span>{ex}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                                {day.jointSafetyNote && (
+                                  <p className="text-[10px] text-[#73736E] bg-[#FBFBFA] p-2 border border-[#E8E8E4]">
+                                    <span className="font-bold text-[#171717]">Joint tip:</span> {day.jointSafetyNote}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* RECOVERY & JOINT CHECK */}
+            <section className="space-y-6">
+              <div className="bg-white p-5 border border-[#E8E8E4]">
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E8E8E4]">
+                  <p className="text-[10px] tracking-[0.2em] text-[#73736E] uppercase font-bold">After Each Walk</p>
+                  <span className="text-[10px] font-mono text-[#73736E] uppercase">Quick routine</span>
+                </div>
+                <ul className="text-[11px] space-y-2.5 mb-5">
+                  {['Easy cool-down walk (5 min)', 'Joint & paw check', 'Gentle shoulder and hip stretch', 'Fresh water'].map((prot, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <div className="w-4 h-4 border border-[#E8E8E4] flex items-center justify-center bg-[#FBFBFA]">
+                        <span className="w-1.5 h-1.5 bg-[#171717]" />
+                      </div>
+                      <span className="text-[#171717]">{prot}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-[#E8E8E4]">
+                  {plan.recoveryProtocol.map((phase, idx) => (
+                    <div key={idx} className="bg-[#FBFBFA] p-3 border border-[#E8E8E4]">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[9px] font-mono uppercase font-bold text-[#73736E]">STEP {idx + 1}</span>
+                        <span className="text-[10px] font-mono font-bold text-[#171717]">{phase.duration}</span>
+                      </div>
+                      <h4 className="text-xs font-bold text-[#171717] mb-1">{phase.phase}</h4>
+                      <p className="text-[11px] text-[#73736E] leading-relaxed">{phase.instructions[0]}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 5-Point Joint Checklist */}
+              <div className="bg-white p-5 border border-[#E8E8E4]">
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E8E8E4]">
+                  <p className="text-[10px] tracking-[0.2em] text-[#73736E] uppercase font-bold">
+                    Post-Walk Joint & Paw Check
+                  </p>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-[10px] font-mono font-bold text-[#171717]">
+                      {clearedCount}/{plan.jointChecklist.length} checked
+                    </span>
+                    {clearedCount > 0 && (
+                      <button type="button" onClick={resetJointChecks} className="text-[10px] uppercase font-mono text-[#73736E] hover:text-[#171717]">
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  {plan.jointChecklist.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => toggleJointCheck(item.id)}
+                      className={`p-3 border cursor-pointer transition-colors ${
+                        item.checked ? 'border-[#0A0A0A] bg-[#FBFBFA]' : 'border-[#E8E8E4] bg-white hover:border-[#171717]'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`w-4 h-4 border flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          item.checked ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white' : 'border-[#E8E8E4] bg-white'
+                        }`}>
+                          {item.checked && <span className="text-[10px]">✓</span>}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="text-xs font-bold text-[#171717]">{item.jointName}</h4>
+                              <span className="text-[9px] font-mono text-[#73736E] bg-[#FBFBFA] px-1.5 py-0.5 border border-[#E8E8E4]">
+                                {item.anatomicalArea}
+                              </span>
+                            </div>
+                            {item.checked && <span className="text-[9px] font-mono font-bold text-[#171717] bg-[#E8E8E4] px-1.5 py-0.5">Looks good ✓</span>}
+                          </div>
+                          <p className="text-[11px] text-[#73736E] leading-relaxed mb-2">
+                            <span className="font-semibold text-[#171717]">How to check:</span> {item.howToAssess}
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] pt-2 border-t border-[#E8E8E4]">
+                            <div className="p-1.5 bg-[#FBFBFA] border border-[#E8E8E4]">
+                              <span className="font-bold text-[#171717] block">All good:</span>
+                              <span className="text-[#73736E]">{item.normalReaction}</span>
+                            </div>
+                            <div className="p-1.5 bg-[#FBFBFA] border border-[#E8E8E4]">
+                              <span className="font-bold text-[#171717] block">Watch for:</span>
+                              <span className="text-[#73736E]">{item.redFlagSign}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ECOSYSTEM CARD */}
+            <section>
+              <div className="bg-white border border-[#E8E8E4] p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5 max-w-xl">
+                    <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#73736E]">Works great with</p>
+                    <h3 className="text-sm font-bold text-[#171717]">DogWalkr (dogwalkr.co.uk)</h3>
+                    <p className="text-[11px] text-[#73736E] leading-relaxed">
+                      Log real walks as you go, track soft trail vs pavement, and keep your 4-week plan in sync with what you actually did.
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1 text-[10px] font-mono text-[#73736E]">
+                      <span className="bg-[#FBFBFA] px-2 py-1 border border-[#E8E8E4]">Live walk tracking</span>
+                      <span className="bg-[#FBFBFA] px-2 py-1 border border-[#E8E8E4]">Trail vs pavement</span>
+                      <span className="bg-[#FBFBFA] px-2 py-1 border border-[#E8E8E4]">+10% safety cap</span>
+                    </div>
+                  </div>
+                  <a
+                    href="https://dogwalkr.co.uk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-3 border border-[#E8E8E4] px-4 py-2.5 bg-white hover:bg-[#FBFBFA] transition-colors"
+                  >
+                    <div className="text-right">
+                      <p className="text-[9px] text-[#73736E] uppercase leading-none mb-1 font-mono">Track walks live</p>
+                      <p className="text-xs font-bold text-[#171717]">DogWalkr.co.uk</p>
+                    </div>
+                    <div className="w-6 h-6 bg-[#0A0A0A] flex items-center justify-center text-white text-[10px] group-hover:translate-x-0.5 transition-transform">
+                      →
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            {/* FOOTER */}
+            <footer className="w-full bg-white border border-[#E8E8E4] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#73736E] no-print">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                <div onClick={() => setIsDiagnosticsOpen(true)} className="flex items-center gap-2 cursor-pointer hover:text-[#171717]">
+                  <div className="w-5 h-5 rounded-full border border-[#E8E8E4] flex items-center justify-center text-[10px] font-mono">?</div>
+                  <span className="text-[10px] uppercase tracking-wider text-[#73736E]">Help & Safety Tips</span>
+                </div>
+                <div className="text-[10px] text-[#73736E] flex gap-4 uppercase tracking-wider">
+                  <span onClick={() => setIsDiagnosticsOpen(true)} className="cursor-pointer hover:text-[#171717]">Puppy Guidelines</span>
+                  <span onClick={() => setIsDiagnosticsOpen(true)} className="cursor-pointer hover:text-[#171717]">Fatigue Signs</span>
+                  <span onClick={() => window.print()} className="cursor-pointer hover:text-[#171717]">Export PDF</span>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={handleCopySummary}
+                  className="px-3 py-1.5 border border-[#E8E8E4] bg-white text-[#171717] hover:bg-[#F5F5F3] text-[10px] uppercase font-bold tracking-wider"
+                >
+                  {copiedToast ? 'Copied ✓' : 'Copy Summary'}
+                </button>
+              </div>
+            </footer>
+          </main>
+
+          {/* HELP DRAWER */}
+          {isDiagnosticsOpen && (
+            <div className="fixed inset-0 z-50 overflow-hidden">
+              <div className="fixed inset-0 bg-[#171717]/40 backdrop-blur-sm" onClick={() => setIsDiagnosticsOpen(false)} />
+              <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+                <div className="w-screen max-w-md bg-[#FBFBFA] border-l border-[#E8E8E4] flex flex-col justify-between overflow-hidden">
+                  <div className="p-5 border-b border-[#E8E8E4] bg-white">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#73736E]">
+                        Help & Safety Tips
+                      </span>
+                      <button onClick={() => setIsDiagnosticsOpen(false)} className="text-[#73736E] hover:text-[#171717] font-bold text-sm">
+                        ✕
+                      </button>
+                    </div>
+                    <h2 className="text-lg font-bold text-[#171717]">Good to know</h2>
+                    <input
+                      type="text"
+                      value={faqSearch}
+                      onChange={(e) => setFaqSearch(e.target.value)}
+                      placeholder="Search puppies, tiredness, printing..."
+                      className="w-full mt-3 px-3 py-1.5 text-xs bg-[#FBFBFA] border border-[#E8E8E4] text-[#171717] focus:outline-none focus:border-[#171717]"
+                    />
+                  </div>
+
+                  <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                    {filteredFaqs.map((faq) => {
+                      const isExp = expandedFaqId === faq.id;
+                      return (
+                        <div key={faq.id} className="bg-white border border-[#E8E8E4] overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedFaqId(isExp ? null : faq.id)}
+                            className="w-full text-left p-3.5 flex items-start justify-between gap-3 hover:bg-[#FBFBFA]"
+                          >
+                            <div>
+                              <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-[#73736E] bg-[#FBFBFA] px-1.5 py-0.5 border border-[#E8E8E4]">
+                                {faq.category}
+                              </span>
+                              <h3 className="text-xs font-bold text-[#171717] mt-1 leading-snug">{faq.question}</h3>
+                              <p className="text-[11px] text-[#73736E] mt-1 leading-relaxed">{faq.shortAnswer}</p>
+                            </div>
+                            <span className="text-xs text-[#73736E]">{isExp ? '▲' : '▼'}</span>
+                          </button>
+                          {isExp && (
+                            <div className="px-3.5 pb-3.5 pt-2 border-t border-[#E8E8E4] bg-[#FBFBFA] space-y-2 text-xs text-[#52524E]">
+                              {faq.details.map((p, i) => <p key={i} className="text-[11px] leading-relaxed">{p}</p>)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="p-4 border-t border-[#E8E8E4] bg-white flex items-center justify-between text-xs text-[#73736E]">
+                    <span className="text-[10px] font-mono">DogWalkr safety notes</span>
+                    <button
+                      onClick={() => setIsDiagnosticsOpen(false)}
+                      className="px-3 py-1 bg-[#FBFBFA] border border-[#E8E8E4] text-[#171717] font-semibold text-[10px] font-mono uppercase hover:bg-[#E8E8E4]"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

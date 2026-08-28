@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DogWalkr Fuel | Meal & Portion Guide</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Typography System */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+            background-color: #FBFBFA;
+            color: #171717;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Scrollbar for Drawer */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E8E8E4;
+            border-radius: 4px;
+        }
+
+        /* Hide elements during print */
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white; }
+            .print-border-none { border: none !important; box-shadow: none !important; }
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .slide-in { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        canvas: '#FBFBFA',
+                        surface: '#FFFFFF',
+                        hairline: '#E8E8E4',
+                        obsidian: '#171717',
+                        sandstone: '#73736E',
+                        pitch: '#0A0A0A',
+                        sage: '#4A5D4E',
+                        ochre: '#8C7355',
+                    },
+                    borderRadius: {
+                        'soft': '8px',
+                        'card': '10px',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="suite-nav.css" />
+</head>
+<body class="bg-canvas text-obsidian min-h-screen">
+    <div id="root"></div>
+
+    <script src="suite-nav.js" data-auto-mount="false"></script>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- ICONS ---
+        const IconHelp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+        const IconClose = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+        const IconCopy = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
+        const IconCheck = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A5D4E" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>;
+        const IconExternal = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+
+        // --- DEFAULT STATE (Milo) ---
+        const DEFAULT_PROFILE = {
+            name: "Milo",
+            breed: "Whippet",
+            ageYrs: 3,
+            ageMos: 2,
+            weight: 18,
+            weightUnit: "kg",
+            goal: "maintain",
+            activity: "moderate",
+            framework: "BARF",
+            exclusions: ["Grains", "Dairy"]
+        };
+
+        const FRAMEWORKS = [
+            { id: "BARF", label: "Balanced Raw (80/10/10 BARF)" },
+            { id: "COOKED", label: "Gently Cooked Whole-Food" },
+            { id: "NOVEL", label: "Novel Single-Protein (Hypoallergenic)" },
+            { id: "LOW_FAT", label: "Low-Fat Pancreatitis Safe" }
+        ];
+
+        const EXCLUSION_OPTS = ["Chicken", "Beef", "Grains", "Dairy", "Eggs"];
+
+        // --- HELPER LOGIC ---
+        const calculateNutrition = (p) => {
+            // RER = 70 * (Weight in kg)^0.75
+            let weightKg = p.weightUnit === 'lbs' ? p.weight * 0.453592 : p.weight;
+            const rer = 70 * Math.pow(weightKg, 0.75);
+
+            // Activity Multiplier
+            let activityFactor = 1.6; // moderate
+            if (p.activity === 'low') activityFactor = 1.2;
+            if (p.activity === 'high') activityFactor = 2.0;
+
+            // Goal Multiplier
+            let goalFactor = 1.0;
+            if (p.goal === 'lose') goalFactor = 0.8;
+            if (p.goal === 'build') goalFactor = 1.15;
+
+            const der = rer * activityFactor * goalFactor;
+            
+            // Grams estimation (approx 1.5 kcal per gram of fresh/raw food on average)
+            let kcalPerGram = 1.5; 
+            if (p.framework === 'LOW_FAT') kcalPerGram = 1.1; // lower cal density
+            const totalGrams = der / kcalPerGram;
+
+            // Breakdown based on framework
+            let breakdown = { muscle: 0, bone: 0, liver: 0, organ: 0, plant: 0 };
+            
+            switch (p.framework) {
+                case 'BARF':
+                    breakdown = { muscle: 0.70, bone: 0.10, liver: 0.05, organ: 0.05, plant: 0.10 };
+                    break;
+                case 'COOKED':
+                    breakdown = { muscle: 0.75, bone: 0, liver: 0.05, organ: 0.05, plant: 0.15 }; // Calcium supplemented
+                    break;
+                case 'NOVEL':
+                    breakdown = { muscle: 0.75, bone: 0.10, liver: 0.05, organ: 0.05, plant: 0.05 };
+                    break;
+                case 'LOW_FAT':
+                    breakdown = { muscle: 0.80, bone: 0.05, liver: 0.05, organ: 0, plant: 0.10 };
+                    break;
+            }
+
+            return {
+                rer: Math.round(rer),
+                der: Math.round(der),
+                totalGrams: Math.round(totalGrams),
+                grams: {
+                    muscle: Math.round(totalGrams * breakdown.muscle),
+                    bone: Math.round(totalGrams * breakdown.bone),
+                    liver: Math.round(totalGrams * breakdown.liver),
+                    organ: Math.round(totalGrams * breakdown.organ),
+                    plant: Math.round(totalGrams * breakdown.plant),
+                }
+            };
+        };
+
+
+        // --- COMPONENTS ---
+        
+        const Drawer = ({ isOpen, onClose }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex justify-end no-print">
+                    <div className="absolute inset-0 bg-pitch/10 backdrop-blur-[2px]" onClick={onClose}></div>
+                    <div className="relative w-full max-w-md bg-surface h-full shadow-2xl border-l border-hairline slide-in flex flex-col">
+                        <div className="flex items-center justify-between p-6 border-b border-hairline">
+                            <h2 className="text-sm font-semibold tracking-widest uppercase text-obsidian">Help & Tips</h2>
+                            <button onClick={onClose} className="p-2 -mr-2 text-sandstone hover:text-obsidian transition-colors">
+                                <IconClose />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1 space-y-8">
+                            <section>
+                                <h3 className="text-sm font-medium mb-2 text-obsidian">Puppies vs. Seniors</h3>
+                                <p className="text-sm text-sandstone leading-relaxed">
+                                    Puppies need more food while they grow, usually split across 3–4 smaller meals. Older dogs often need a little less, with easy-to-digest lean protein and gentler bone portions to keep digestion comfortable.
+                                </p>
+                            </section>
+                            <section>
+                                <h3 className="text-sm font-medium mb-2 text-obsidian">Calcium & Bone Safety</h3>
+                                <p className="text-sm text-sandstone leading-relaxed">
+                                    Never feed cooked bones. If you choose the gently cooked option, skip raw bone and add a calcium supplement instead, about 800mg per 1,000 kcal.
+                                </p>
+                            </section>
+                            <section>
+                                <h3 className="text-sm font-medium mb-2 text-obsidian">Print / Save as PDF</h3>
+                                <p className="text-sm text-sandstone leading-relaxed">
+                                    This page prints beautifully. Press <kbd className="bg-canvas border border-hairline px-1 rounded text-xs">Cmd + P</kbd> (Mac) or <kbd className="bg-canvas border border-hairline px-1 rounded text-xs">Ctrl + P</kbd> (Win) to save a clean PDF of your dog's meal plan and shopping list.
+                                </p>
+                            </section>
+                            <section>
+                                <h3 className="text-sm font-medium mb-2 text-obsidian">A Friendly Reminder</h3>
+                                <p className="text-sm text-sandstone leading-relaxed">
+                                    These portions use standard resting-energy formulas (<em className="text-xs">70 × weight in kg ^ 0.75</em>). They are a helpful starting point, not a prescription. Chat with your vet before big diet changes, especially if your dog has health conditions.
+                                </p>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [profile, setProfile] = useState(DEFAULT_PROFILE);
+            const [isSynthesized, setIsSynthesized] = useState(true);
+            const [drawerOpen, setDrawerOpen] = useState(false);
+            const [copiedItem, setCopiedItem] = useState(null);
+            
+            // Checkbox state for grocery list
+            const [checkedItems, setCheckedItems] = useState(new Set());
+
+            const toggleCheck = (item) => {
+                const next = new Set(checkedItems);
+                if (next.has(item)) next.delete(item);
+                else next.add(item);
+                setCheckedItems(next);
+            };
+
+            const handleCopy = (text, id) => {
+                navigator.clipboard.writeText(text);
+                setCopiedItem(id);
+                setTimeout(() => setCopiedItem(null), 2000);
+            };
+
+            const nutrition = useMemo(() => calculateNutrition(profile), [profile]);
+
+            const renderInput = (label, type, field, placeholder, unit = null) => (
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-2">{label}</label>
+                    <div className="relative">
+                        <input 
+                            type={type} 
+                            className="w-full bg-transparent border-b border-hairline pb-2 text-sm text-obsidian focus:outline-none focus:border-obsidian transition-colors placeholder:text-sandstone/50"
+                            placeholder={placeholder}
+                            value={profile[field]}
+                            onChange={(e) => setProfile({...profile, [field]: e.target.value})}
+                        />
+                        {unit && <span className="absolute right-0 bottom-2 text-sm text-sandstone">{unit}</span>}
+                    </div>
+                </div>
+            );
+
+            // ----------------------------------------------------
+            // VIEW 1: CONFIGURATION FORM
+            // ----------------------------------------------------
+            if (!isSynthesized) {
+                return (
+                    <div>
+                        <SuiteNav active="fuel" onHelp={() => setDrawerOpen(true)} />
+                        <div className="max-w-[900px] mx-auto px-6 py-12">
+                        <div className="bg-surface rounded-card p-8 border border-hairline shadow-sm space-y-12">
+                            {/* Step 1 */}
+                            <section>
+                                <h2 className="text-sm font-semibold tracking-widest uppercase text-obsidian mb-6 border-b border-hairline pb-2">Step 1: Dog Details</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    {renderInput("Name", "text", "name", "Dog's Name")}
+                                    {renderInput("Breed", "text", "breed", "e.g. Whippet")}
+                                    <div className="flex gap-4">
+                                        {renderInput("Age (Yrs)", "number", "ageYrs", "0")}
+                                        {renderInput("Age (Mos)", "number", "ageMos", "0")}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-2">Weight</label>
+                                        <div className="flex items-end border-b border-hairline pb-2">
+                                            <input type="number" className="bg-transparent w-full text-sm outline-none" value={profile.weight} onChange={(e)=>setProfile({...profile, weight: e.target.value})} />
+                                            <select className="bg-transparent text-sm text-sandstone outline-none ml-2" value={profile.weightUnit} onChange={(e)=>setProfile({...profile, weightUnit: e.target.value})}>
+                                                <option value="kg">kg</option>
+                                                <option value="lbs">lbs</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col col-span-1 md:col-span-2">
+                                        <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-2">Target Goal</label>
+                                        <div className="flex gap-4 mt-1">
+                                            {['lose', 'maintain', 'build'].map(g => (
+                                                <label key={g} className="flex items-center gap-2 cursor-pointer text-sm">
+                                                    <input type="radio" name="goal" checked={profile.goal === g} onChange={() => setProfile({...profile, goal: g})} className="accent-obsidian"/>
+                                                    <span className="capitalize">{g}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Step 2 */}
+                            <section>
+                                <h2 className="text-sm font-semibold tracking-widest uppercase text-obsidian mb-6 border-b border-hairline pb-2">Step 2: How Active Are They?</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {[
+                                        { id: 'low', label: 'Low / Senior', desc: 'Short walks, mostly resting.' },
+                                        { id: 'moderate', label: 'Moderate', desc: '1-2 hours daily walking.' },
+                                        { id: 'high', label: 'High / Working', desc: 'Agility, hiking, working breeds.' }
+                                    ].map(act => (
+                                        <div key={act.id} 
+                                            onClick={() => setProfile({...profile, activity: act.id})}
+                                            className={`p-4 rounded-soft border cursor-pointer transition-colors ${profile.activity === act.id ? 'border-obsidian bg-canvas' : 'border-hairline hover:border-sandstone'}`}>
+                                            <div className="text-sm font-medium mb-1">{act.label}</div>
+                                            <div className="text-xs text-sandstone">{act.desc}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Step 3 */}
+                            <section>
+                                <h2 className="text-sm font-semibold tracking-widest uppercase text-obsidian mb-6 border-b border-hairline pb-2">Step 3: Diet Style</h2>
+                                <div className="space-y-6">
+                                    <div className="flex flex-col max-w-md">
+                                        <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-2">Dietary Foundation</label>
+                                        <select 
+                                            className="w-full bg-canvas border border-hairline rounded-soft p-3 text-sm text-obsidian outline-none focus:border-obsidian transition-colors appearance-none"
+                                            value={profile.framework}
+                                            onChange={(e) => setProfile({...profile, framework: e.target.value})}
+                                        >
+                                            {FRAMEWORKS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-3">Known Sensitivities (Exclude)</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {EXCLUSION_OPTS.map(ex => {
+                                                const isActive = profile.exclusions.includes(ex);
+                                                return (
+                                                    <button 
+                                                        key={ex}
+                                                        onClick={() => {
+                                                            const newEx = isActive 
+                                                                ? profile.exclusions.filter(e => e !== ex)
+                                                                : [...profile.exclusions, ex];
+                                                            setProfile({...profile, exclusions: newEx});
+                                                        }}
+                                                        className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-colors ${isActive ? 'bg-pitch text-white border-pitch' : 'bg-canvas text-sandstone border-hairline hover:border-sandstone'}`}
+                                                    >
+                                                        {ex}
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <button 
+                                onClick={() => setIsSynthesized(true)}
+                                className="w-full py-4 bg-pitch text-white rounded-soft text-sm font-medium hover:bg-obsidian transition-colors shadow-md"
+                            >
+                                Build My Meal Plan
+                            </button>
+                        </div>
+                        <Drawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+                        </div>
+                    </div>
+                );
+            }
+
+            // ----------------------------------------------------
+            // VIEW 2: DASHBOARD (Synthesized)
+            // ----------------------------------------------------
+            
+            // Text generators based on selections
+            const meatSource = profile.exclusions.includes("Beef") ? (profile.exclusions.includes("Chicken") ? "Turkey / Lamb" : "Chicken") : "Beef / Turkey";
+            const organSource = profile.exclusions.includes("Beef") ? "Lamb Liver & Spleen" : "Beef Liver & Kidney";
+            const plantSource = profile.exclusions.includes("Grains") ? "Steamed Zucchini, Kale & Pumpkin" : "Brown Rice, Spinach & Carrots";
+
+            const shoppingListText = `DogWalkr Fuel - 7 Day Shopping List for ${profile.name}
+Meat (${meatSource}): ${(nutrition.grams.muscle * 7 / 1000).toFixed(2)} kg
+Raw Bone: ${(nutrition.grams.bone * 7 / 1000).toFixed(2)} kg
+Liver (${organSource.split(' ')[0]}): ${(nutrition.grams.liver * 7 / 1000).toFixed(2)} kg
+Other Organ: ${(nutrition.grams.organ * 7 / 1000).toFixed(2)} kg
+Plant/Fiber (${plantSource}): ${(nutrition.grams.plant * 7 / 1000).toFixed(2)} kg`;
+
+            return (
+                <div>
+                    <SuiteNav active="fuel" onHelp={() => setDrawerOpen(true)} />
+                    <div className="max-w-[900px] mx-auto px-6 py-12">
+                    <div className="flex justify-end mb-8 no-print">
+                        <button onClick={() => setIsSynthesized(false)} className="text-xs font-medium text-sandstone hover:text-obsidian transition-colors border border-hairline px-3 py-1.5 rounded-soft">
+                            Edit Profile
+                        </button>
+                    </div>
+
+                    {/* Patient Overview Print Header (Hidden on screen) */}
+                    <div className="hidden print:block mb-8 pb-4 border-b border-hairline">
+                        <h1 className="text-xl font-semibold mb-1">DogWalkr Fuel</h1>
+                        <p className="text-sm text-sandstone">Meal plan for {profile.name} ({profile.weight}{profile.weightUnit} {profile.breed})</p>
+                    </div>
+
+                    <div className="space-y-6">
+                        
+                        {/* 1. DAILY BOWL & PORTION GUIDE */}
+                        <div className="bg-surface rounded-card border border-hairline p-6 flex flex-col md:flex-row gap-8 justify-between shadow-sm print-border-none print:px-0">
+                            <div className="flex flex-col justify-center min-w-[200px]">
+                                <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-4">Daily Bowl & Portion Guide</h2>
+                                <div className="flex items-baseline gap-2 mb-1">
+                                    <span className="text-2xl font-light text-obsidian">{nutrition.der}</span>
+                                    <span className="text-xs text-sandstone">kcal / day</span>
+                                </div>
+                                <div className="text-xs text-sandstone mb-4">
+                                    Daily calories <span className="text-hairline mx-2">|</span> {nutrition.rer} resting baseline
+                                </div>
+                                <div className="inline-flex px-2 py-1 bg-canvas border border-hairline rounded text-[10px] text-obsidian font-medium w-max">
+                                    {FRAMEWORKS.find(f => f.id === profile.framework).label}
+                                </div>
+                            </div>
+                            
+                            <div className="w-px bg-hairline hidden md:block"></div>
+
+                            <div className="flex-1">
+                                <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-4">Daily Gram Breakdown ({nutrition.totalGrams}g Total)</h2>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-2">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.muscle}g</span>
+                                        <span className="text-[10px] text-sandstone uppercase tracking-wide">Muscle Meat</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.bone}g</span>
+                                        <span className="text-[10px] text-sandstone uppercase tracking-wide">Raw Bone</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.liver}g</span>
+                                        <span className="text-[10px] text-sandstone uppercase tracking-wide">Liver</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.organ}g</span>
+                                        <span className="text-[10px] text-sandstone uppercase tracking-wide">Other Organ</span>
+                                    </div>
+                                    <div className="flex flex-col col-span-2 sm:col-span-1">
+                                        <span className="text-sm font-medium text-obsidian">{nutrition.grams.plant}g</span>
+                                        <span className="text-[10px] text-sage uppercase tracking-wide font-semibold">Plant / Fiber</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            
+                            {/* Left Col: Schedule & Transition */}
+                            <div className="lg:col-span-2 space-y-6">
+                                
+                                {/* 2. MEAL SCHEDULE */}
+                                <div className="bg-surface rounded-card border border-hairline p-6 shadow-sm print-border-none print:px-0">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone">Weekly Meal Schedule</h2>
+                                        <button 
+                                            onClick={() => handleCopy("Schedule Copied", 'schedule')}
+                                            className="no-print text-sandstone hover:text-obsidian transition-colors p-1"
+                                            title="Copy schedule"
+                                        >
+                                            {copiedItem === 'schedule' ? <IconCheck /> : <IconCopy />}
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, idx) => {
+                                            // Slight variation logic just for visual realism
+                                            const isFastingDay = idx === 6 && profile.framework === 'BARF' && profile.activity !== 'high'; // Fasting/light day on Sunday
+                                            
+                                            return (
+                                                <div key={day} className="flex flex-col sm:flex-row sm:items-center py-3 border-b border-hairline last:border-0 last:pb-0">
+                                                    <div className="w-24 text-xs font-medium text-obsidian mb-2 sm:mb-0">{day}</div>
+                                                    
+                                                    {isFastingDay ? (
+                                                        <div className="flex-1 text-xs text-sandstone italic">Lighter day: bone broth and half the usual veggies & fiber.</div>
+                                                    ) : (
+                                                        <div className="flex-1 flex gap-4">
+                                                            <div className="flex-1 bg-canvas rounded px-3 py-2 border border-hairline">
+                                                                <div className="text-[10px] uppercase text-sandstone mb-1 tracking-wider">AM ({(nutrition.totalGrams/2).toFixed(0)}g)</div>
+                                                                <div className="text-xs text-obsidian">{meatSource} blend + {organSource}</div>
+                                                            </div>
+                                                            <div className="flex-1 bg-canvas rounded px-3 py-2 border border-hairline">
+                                                                <div className="text-[10px] uppercase text-sandstone mb-1 tracking-wider">PM ({(nutrition.totalGrams/2).toFixed(0)}g)</div>
+                                                                <div className="text-xs text-obsidian">{meatSource} + Bone + {plantSource}</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* 4. TRANSITION GUIDE */}
+                                <div className="bg-surface rounded-card border border-hairline p-6 shadow-sm print-border-none print:px-0">
+                                    <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone mb-6">Safe 10-Day Diet Transition Guide</h2>
+                                    <div className="relative">
+                                        <div className="absolute top-2 left-[7px] w-px h-[calc(100%-16px)] bg-hairline"></div>
+                                        <div className="space-y-4">
+                                            {[
+                                                { days: "Days 1-3", mix: "25% New / 75% Old", note: "Introduce slowly. Monitor stool consistency." },
+                                                { days: "Days 4-6", mix: "50% New / 50% Old", note: "Add digestive enzymes if mild gas occurs." },
+                                                { days: "Days 7-9", mix: "75% New / 25% Old", note: "Majority fresh food. Ensure high hydration." },
+                                                { days: "Day 10+", mix: "100% New Diet", note: "Fully on the new plan. Nice work." }
+                                            ].map((phase, i) => (
+                                                <div key={i} className="flex gap-4 relative z-10">
+                                                    <div className="w-[15px] h-[15px] rounded-full bg-canvas border-2 border-sage mt-0.5 flex-shrink-0"></div>
+                                                    <div>
+                                                        <div className="text-xs font-semibold text-obsidian">{phase.days} <span className="text-sandstone font-normal mx-2">|</span> <span className="text-sage">{phase.mix}</span></div>
+                                                        <div className="text-xs text-sandstone mt-1">{phase.note}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* Right Col: Shopping List & Ecosystem */}
+                            <div className="space-y-6">
+                                
+                                {/* 3. SHOPPING LIST */}
+                                <div className="bg-surface rounded-card border border-hairline p-6 shadow-sm print-border-none print:px-0">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-[10px] font-semibold tracking-widest uppercase text-sandstone">7-Day Butcher & Pantry List</h2>
+                                        <button 
+                                            onClick={() => handleCopy(shoppingListText, 'shop')}
+                                            className="no-print text-sandstone hover:text-obsidian transition-colors p-1"
+                                            title="Copy list"
+                                        >
+                                            {copiedItem === 'shop' ? <IconCheck /> : <IconCopy />}
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {[
+                                            { cat: "Muscle Meat", item: meatSource, amt: (nutrition.grams.muscle * 7 / 1000).toFixed(2) + " kg" },
+                                            { cat: "Raw Bone", item: nutrition.grams.bone > 0 ? "Poultry Necks/Backs" : "Supplement (Calcium)", amt: nutrition.grams.bone > 0 ? (nutrition.grams.bone * 7 / 1000).toFixed(2) + " kg" : "See notes" },
+                                            { cat: "Liver", item: organSource.split(' ')[0] + " Liver", amt: (nutrition.grams.liver * 7 / 1000).toFixed(2) + " kg" },
+                                            { cat: "Other Organ", item: organSource.split(' & ')[1] || "Spleen/Kidney", amt: (nutrition.grams.organ * 7 / 1000).toFixed(2) + " kg" },
+                                            { cat: "Veggies & Fiber", item: plantSource, amt: (nutrition.grams.plant * 7 / 1000).toFixed(2) + " kg" },
+                                        ].map((row, i) => (
+                                            <div key={i} className="flex items-start gap-3 group">
+                                                <button 
+                                                    onClick={() => toggleCheck(i)} 
+                                                    className={`w-4 h-4 mt-0.5 rounded border flex items-center justify-center transition-colors no-print ${checkedItems.has(i) ? 'bg-obsidian border-obsidian' : 'bg-transparent border-hairline'}`}
+                                                >
+                                                    {checkedItems.has(i) && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                                                </button>
+                                                <div className={`flex-1 ${checkedItems.has(i) ? 'opacity-40 line-through' : ''}`}>
+                                                    <div className="flex justify-between items-baseline mb-0.5">
+                                                        <span className="text-[10px] uppercase tracking-wide text-sandstone">{row.cat}</span>
+                                                        <span className="text-xs font-semibold text-obsidian">{row.amt}</span>
+                                                    </div>
+                                                    <div className="text-xs text-obsidian">{row.item}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 6. ECOSYSTEM CROSS-LINK */}
+                                <a href="https://dogwalkr.co.uk" target="_blank" rel="noopener noreferrer" className="block bg-ochre/5 hover:bg-ochre/10 rounded-card border border-ochre/20 p-5 transition-colors no-print group">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="text-[10px] font-bold tracking-widest uppercase text-ochre">Ecosystem</div>
+                                        <div className="text-ochre opacity-50 group-hover:opacity-100 transition-opacity">
+                                            <IconExternal />
+                                        </div>
+                                    </div>
+                                    <h3 className="text-sm font-medium text-obsidian mb-1">DogWalkr™ App</h3>
+                                    <p className="text-xs text-sandstone leading-relaxed">
+                                        Track {profile.name}'s daily walks and activity to fine-tune their daily calorie needs over time.
+                                    </p>
+                                    <div className="mt-3 text-[10px] font-medium text-ochre tracking-wide">dogwalkr.co.uk &rarr;</div>
+                                </a>
+
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                    <Drawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

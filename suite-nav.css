@@ -1,0 +1,307 @@
+/* DogWalkr Suite — unified top navigation */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+.suite-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: rgba(251, 251, 250, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #E8E8E4;
+  color: #171717;
+}
+
+.suite-nav__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  height: 3.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.suite-nav--embedded .suite-nav__inner {
+  max-width: none;
+  padding: 0 1rem;
+  height: 3.5rem;
+}
+
+.suite-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+  color: #171717;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.suite-nav__brand:hover {
+  opacity: 0.75;
+}
+
+.suite-nav__logo {
+  width: 2.125rem;
+  height: 2.125rem;
+  object-fit: contain;
+}
+
+.suite-nav__wordmark {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.suite-nav__tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: #FFFFFF;
+  border: 1px solid #E8E8E4;
+  border-radius: 9999px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.suite-nav__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.suite-nav__tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: #73736E;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.suite-nav__tab:hover {
+  color: #171717;
+}
+
+.suite-nav__tab--active {
+  color: #171717;
+  background: #FBFBFA;
+  border-color: #E8E8E4;
+  font-weight: 600;
+}
+
+.suite-nav__help {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  border: 1px solid #E8E8E4;
+  background: #FFFFFF;
+  color: #73736E;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.suite-nav__help:hover {
+  color: #171717;
+  border-color: #D1D1CB;
+  background: #F5F5F3;
+}
+
+/* Dark theme (index / marketing) */
+.suite-nav--dark {
+  background: rgba(10, 10, 10, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+}
+
+.suite-nav--dark .suite-nav__brand {
+  color: #FFFFFF;
+}
+
+.suite-nav--dark .suite-nav__brand:hover {
+  opacity: 0.85;
+}
+
+.suite-nav--dark .suite-nav__tabs {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.suite-nav--dark .suite-nav__tab {
+  color: #A3A3A3;
+}
+
+.suite-nav--dark .suite-nav__tab:hover {
+  color: #FFFFFF;
+}
+
+.suite-nav--dark .suite-nav__tab--active {
+  color: #FFFFFF;
+  background: #1A1A1A;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.suite-nav--dark .suite-nav__help {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #A3A3A3;
+}
+
+.suite-nav--dark .suite-nav__help:hover {
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Index hero: flush under dark nav */
+body.suite-nav-page--dark {
+  margin: 0;
+}
+
+body.suite-nav-page--dark > main {
+  padding-top: 2.5rem;
+}
+
+@media (min-width: 640px) {
+  body.suite-nav-page--dark > main {
+    padding-top: 3.5rem;
+  }
+}
+
+/* Help drawer */
+.suite-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(23, 23, 23, 0.35);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: suite-fade-in 0.2s ease forwards;
+}
+
+.suite-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  width: 100%;
+  max-width: 24rem;
+  background: #FFFFFF;
+  border-left: 1px solid #E8E8E4;
+  display: flex;
+  flex-direction: column;
+  animation: suite-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.suite-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #E8E8E4;
+}
+
+.suite-drawer__title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #171717;
+}
+
+.suite-drawer__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: #73736E;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.suite-drawer__close:hover {
+  color: #171717;
+  background: #F5F5F3;
+}
+
+.suite-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.suite-drawer__section + .suite-drawer__section {
+  margin-top: 1.75rem;
+}
+
+.suite-drawer__section h3 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #171717;
+  margin-bottom: 0.5rem;
+}
+
+.suite-drawer__section p {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #73736E;
+}
+
+@keyframes suite-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes suite-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .suite-nav__wordmark {
+    display: none;
+  }
+
+  .suite-nav__inner {
+    padding: 0 0.875rem;
+    gap: 0.5rem;
+  }
+
+  .suite-nav--embedded .suite-nav__inner {
+    padding: 0 0.75rem;
+  }
+
+  .suite-nav__tab {
+    padding: 0.4375rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}
+
+@media print {
+  .suite-nav,
+  .suite-drawer,
+  .suite-drawer-overlay {
+    display: none !important;
+  }
+}

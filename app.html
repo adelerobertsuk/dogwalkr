@@ -48,10 +48,12 @@
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .tap-target { min-height: 48px; min-width: 48px; }
   </style>
+  <link rel="stylesheet" href="suite-nav.css" />
 </head>
 
-<body class="bg-zinc-950 text-zinc-900 flex justify-center selection:bg-orange-500 selection:text-white">
+<body class="bg-zinc-950 text-zinc-900 flex flex-col min-h-screen selection:bg-orange-500 selection:text-white">
 
+  <div class="flex flex-1 justify-center w-full">
   <!-- Mobile Frame Container -->
   <div id="appContainer" class="w-full max-w-[430px] min-h-screen bg-[#F2F2F7] flex flex-col relative pb-28 shadow-2xl overflow-x-hidden">
 
@@ -149,6 +151,10 @@
             Log or sync a walkout and the coach reads the rolling week to recommend rest, an easy day, or a full walkout.
           </p>
           <p class="text-[11px] text-orange-100/80 mt-2">General activity guidance, not veterinary advice.</p>
+          <a href="condition.html" class="relative z-10 mt-4 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 border border-white/25 text-xs font-semibold text-white hover:bg-white/25 hover:border-white/40 transition-colors">
+            <span>⚡️ Build 4-Week Plan in Conditioning Lab</span>
+            <span class="opacity-80">→</span>
+          </a>
         </div>
 
         <!-- Latest Walkout Card -->
@@ -238,6 +244,11 @@
           </button>
         </div>
 
+        <a href="fuel.html" id="fuelLabCrossLink" class="block rounded-2xl border border-zinc-200/80 bg-zinc-50 px-4 py-3.5 text-xs font-medium text-zinc-700 hover:bg-white hover:border-zinc-300 transition-colors shadow-sm">
+          <span>🥩 Need exact daily portions? Calculate <span id="fuelLabCrossLinkName" class="font-semibold text-zinc-900">your dog&apos;s</span> meal plan in Fuel Lab</span>
+          <span class="text-orange-600 font-semibold ml-0.5">→</span>
+        </a>
+
         <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-3">
           <div class="flex items-center justify-between text-xs font-bold text-zinc-700">
             <span>Feeding History</span>
@@ -317,6 +328,7 @@
 
     </nav>
 
+  </div>
   </div>
 
   <!-- MODALS -->
@@ -1444,6 +1456,9 @@
       const titleEl = document.getElementById('foodViewTitle');
       if (titleEl) titleEl.innerText = activeDog ? `${activeDog.name}'s Food Bowl` : 'Food Bowl';
 
+      const fuelLinkNameEl = document.getElementById('fuelLabCrossLinkName');
+      if (fuelLinkNameEl) fuelLinkNameEl.innerText = activeDog ? `${activeDog.name}'s` : "your dog's";
+
       renderFoodFeederChips();
 
       const logsToday = STATE.foodLogs.filter(l => l.fed_date === STATE.selectedFoodDate);
@@ -2308,5 +2323,6 @@
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
+  <script src="suite-nav.js" data-active="app" data-theme="light" data-drawer="true"></script>
 </body>
 </html>
