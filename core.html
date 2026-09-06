@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F6F3EC" />
+<title>DogWalkr Core</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #F6F3EC;          /* warm bone */
+    --bg-2: #FBFAF6;
+    --card: #FFFFFF;
+    --ink: #2B2A27;         /* calm graphite */
+    --ink-soft: #6F6A61;
+    --ink-faint: #9A948A;
+    --line: #ECE7DB;        /* hairline */
+    --accent: #E8632A;      /* restrained DogWalkr orange */
+    --accent-soft: #FBEBE2;
+    --good: #3E7C5A;
+    --radius: 22px;
+    --shadow: 0 1px 2px rgba(43,42,39,.04), 0 8px 30px rgba(43,42,39,.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    padding: max(env(safe-area-inset-top), 18px) 0 64px;
+  }
+  .wrap { max-width: 460px; margin: 0 auto; padding: 0 18px; }
+
+  /* ---- top bar ---- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 680; letter-spacing: -0.02em; font-size: 17px; }
+  .brand .paw { width: 26px; height: 26px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 14px; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card); display: grid; place-items: center; cursor: pointer; font-size: 16px;
+    color: var(--ink-soft);
+  }
+  .icon-btn:active { transform: scale(.94); }
+
+  .tagline { font-size: 12.5px; color: var(--ink-faint); margin: -14px 0 22px; letter-spacing: .01em; }
+
+  /* ---- dog switcher ---- */
+  .switcher { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+  .switcher::-webkit-scrollbar { display: none; }
+  .switch-chip {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 6px 13px 6px 6px;
+    border-radius: 999px; border: 1px solid var(--line); background: var(--card);
+    cursor: pointer; font-size: 13px; font-weight: 560; color: var(--ink-soft);
+  }
+  .switch-chip img { width: 26px; height: 26px; border-radius: 999px; object-fit: cover; background: var(--accent-soft); }
+  .switch-chip.active { border-color: var(--ink); color: var(--ink); }
+
+  /* ---- hero ---- */
+  .hero { border-radius: var(--radius); overflow: hidden; background: var(--card); box-shadow: var(--shadow); margin-bottom: 18px; }
+  .hero-photo { position: relative; aspect-ratio: 4 / 3; background: var(--accent-soft); }
+  .hero-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hero-photo .name {
+    position: absolute; left: 18px; bottom: 14px; color: #fff; font-size: 27px; font-weight: 720;
+    letter-spacing: -0.02em; text-shadow: 0 2px 18px rgba(0,0,0,.45);
+  }
+  .hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.42), rgba(0,0,0,0) 46%); }
+  .hero-photo .name { z-index: 1; }
+  .hero-body { padding: 16px 18px 18px; }
+  .snapshot { display: flex; gap: 4px; font-size: 13.5px; color: var(--ink-soft); flex-wrap: wrap; }
+  .snapshot b { color: var(--ink); font-weight: 650; }
+  .snapshot .dot { color: var(--ink-faint); }
+  .cume { margin-top: 9px; font-size: 12px; color: var(--ink-faint); letter-spacing: .02em; }
+  .cume b { color: var(--accent); font-weight: 650; }
+
+  /* ---- mini chart ---- */
+  .chart { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .chart h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 650; margin-bottom: 10px; }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 66px; }
+  .bar { flex: 1; background: var(--accent-soft); border-radius: 5px 5px 3px 3px; min-height: 3px; position: relative; }
+  .bar > span { position: absolute; inset: auto 0 100% 0; text-align: center; font-size: 9px; color: var(--ink-faint); padding-bottom: 2px; }
+  .bar.now { background: var(--accent); }
+  .bars-x { display: flex; gap: 6px; margin-top: 5px; }
+  .bars-x span { flex: 1; text-align: center; font-size: 9px; color: var(--ink-faint); }
+
+  /* ---- section heading ---- */
+  .sec-label { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-faint); font-weight: 680; margin: 24px 4px 10px; }
+
+  /* ---- assignment card ---- */
+  .assign-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 12px; border: 1px solid var(--line); }
+  .assign-src { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .assign-title { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+  .assign-meta { font-size: 13.5px; color: var(--ink-soft); margin-top: 3px; }
+  .assign-meta .split { color: var(--ink-faint); font-size: 12px; margin-top: 2px; }
+  .assign-q { font-size: 13px; color: var(--ink-soft); margin: 14px 0 9px; font-weight: 560; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px;
+    border: 1.5px solid var(--line); background: var(--bg-2); cursor: pointer; font-size: 13.5px; font-weight: 560;
+    color: var(--ink-soft); user-select: none; transition: border-color .12s, background .12s, color .12s;
+  }
+  .pill .tick { width: 16px; height: 16px; border-radius: 999px; border: 1.5px solid var(--ink-faint); display: grid; place-items: center; font-size: 10px; color: transparent; }
+  .pill.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+  .pill.on .tick { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn {
+    width: 100%; margin-top: 14px; padding: 14px; border: none; border-radius: 15px; background: var(--accent);
+    color: #fff; font-size: 14.5px; font-weight: 680; cursor: pointer; letter-spacing: .01em;
+  }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn:active:not(:disabled) { transform: scale(.985); }
+  .btn.ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); font-weight: 600; }
+  .btn.sm { padding: 10px; font-size: 13px; margin-top: 0; }
+
+  .empty { text-align: center; color: var(--ink-faint); font-size: 13px; padding: 20px 10px; background: var(--card); border-radius: var(--radius); border: 1px dashed var(--line); }
+
+  /* ---- manual link ---- */
+  .manual-link { display: block; width: 100%; text-align: center; margin: 16px 0 4px; background: none; border: none; color: var(--ink-faint); font-size: 13px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ---- recent ---- */
+  .recent-item { display: flex; align-items: center; gap: 12px; padding: 11px 4px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .recent-item:last-child { border-bottom: none; }
+  .recent-item .r-main { flex: 1; min-width: 0; }
+  .recent-item .r-title { font-weight: 560; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-item .r-sub { color: var(--ink-faint); font-size: 11.5px; }
+  .recent-item .r-x { color: var(--ink-faint); cursor: pointer; font-size: 15px; padding: 4px; }
+
+  /* ---- modal ---- */
+  .scrim { position: fixed; inset: 0; background: rgba(30,28,24,.42); display: none; align-items: flex-end; justify-content: center; z-index: 50; }
+  .scrim.open { display: flex; }
+  .sheet { background: var(--bg-2); width: 100%; max-width: 460px; border-radius: 24px 24px 0 0; padding: 20px 18px calc(24px + env(safe-area-inset-bottom)); max-height: 92vh; overflow-y: auto; }
+  .sheet h3 { font-size: 17px; font-weight: 680; letter-spacing: -0.01em; margin-bottom: 14px; }
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-weight: 650; margin-bottom: 5px; }
+  .field input, .field select {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+    font: inherit; color: var(--ink); font-size: 14px;
+  }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > * { flex: 1; }
+  .sheet-close { float: right; background: none; border: none; font-size: 20px; color: var(--ink-faint); cursor: pointer; margin-top: -4px; }
+
+  /* ---- share card ---- */
+  #shareCanvas { width: 100%; border-radius: 14px; background: #111; display: block; }
+  .share-modes { display: flex; gap: 8px; margin: 12px 0; }
+  .share-modes button { flex: 1; padding: 9px; border-radius: 11px; border: 1px solid var(--line); background: var(--card); font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+  .share-modes button.on { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; font-size: 13px; font-weight: 560; padding: 11px 18px; border-radius: 999px; opacity: 0; transition: .22s; z-index: 80; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .status-line { font-size: 11.5px; color: var(--ink-faint); text-align: center; margin-top: 26px; }
+  .status-line b { color: var(--good); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand"><span class="paw">🐾</span> DogWalkr <span style="font-weight:500;color:var(--ink-faint);font-size:13px;">Core</span></div>
+    <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+  </div>
+  <p class="tagline">Strava records the human. DogWalkr remembers the dog.</p>
+
+  <div class="switcher" id="switcher"></div>
+
+  <div class="hero" id="hero">
+    <div class="hero-photo">
+      <img id="heroImg" alt="" />
+      <div class="name" id="heroName">—</div>
+    </div>
+    <div class="hero-body">
+      <div class="snapshot" id="heroSnapshot"></div>
+      <div class="cume" id="heroCume"></div>
+      <div class="chart">
+        <h4>Last 8 weeks · distance together</h4>
+        <div class="bars" id="chartBars"></div>
+        <div class="bars-x" id="chartX"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="shareBtn" style="margin-top:0;">Share a milestone card 🐾</button>
+
+  <div class="sec-label">Who came along?</div>
+  <div id="assignList"></div>
+
+  <button class="manual-link" id="manualBtn">+ Log Walk Manually</button>
+
+  <div class="sec-label">Recent outings</div>
+  <div class="assign-card" style="padding:6px 14px;">
+    <div id="recentList"></div>
+  </div>
+
+  <div class="status-line" id="statusLine"></div>
+</div>
+
+<!-- Manual log sheet -->
+<div class="scrim" id="manualScrim">
+  <div class="sheet">
+    <button class="sheet-close" data-close="manualScrim">×</button>
+    <h3>Log a walk manually</h3>
+    <div class="field">
+      <label>What was it</label>
+      <input id="mTitle" placeholder="Morning Walk" />
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Distance (km)</label>
+        <input id="mDist" type="number" inputmode="decimal" step="0.01" placeholder="5.2" />
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input id="mDate" type="date" />
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Outing time (elapsed)</label>
+        <div class="row2">
+          <input id="mElapsedH" type="number" inputmode="numeric" min="0" placeholder="1 h" />
+          <input id="mElapsedM" type="number" inputmode="numeric" min="0" max="59" placeholder="03 m" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Moving time <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+        <div class="row2">
+          <input id="mMovingH" type="number" inputmode="numeric" min="0" placeholder="h" />
+          <input id="mMovingM" type="number" inputmode="numeric" min="0" max="59" placeholder="m" />
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Who came along?</label>
+      <div class="pill-row" id="mDogs"></div>
+    </div>
+    <button class="btn" id="mSave">Save walk 🐾</button>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="scrim" id="settingsScrim">
+  <div class="sheet">
+    <button class="sheet-close" data-close="settingsScrim">×</button>
+    <h3>Settings</h3>
+    <div class="field">
+      <label>Your name (for milestone cards)</label>
+      <input id="humanName" placeholder="Adele" />
+    </div>
+    <div class="field">
+      <label>Strava</label>
+      <div id="stravaBox" style="font-size:13px;color:var(--ink-soft);"></div>
+      <div class="row2" style="margin-top:10px;">
+        <button class="btn sm" id="stravaConnect">Connect Strava</button>
+        <button class="btn sm ghost" id="stravaSync">Sync now</button>
+      </div>
+      <button class="btn sm ghost" id="stravaDisconnect" style="margin-top:8px;display:none;">Disconnect</button>
+    </div>
+    <div class="field">
+      <label>Add a dog</label>
+      <div class="row2">
+        <input id="newDogName" placeholder="Name" />
+        <button class="btn sm" id="addDog" style="flex:0 0 90px;">Add</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--ink-faint);margin-top:6px;">
+      DogWalkr Core · lean build. Legacy suite preserved on branch <code>dogwalkr-legacy</code>.
+    </p>
+  </div>
+</div>
+
+<!-- Share card sheet -->
+<div class="scrim" id="shareScrim">
+  <div class="sheet">
+    <button class="sheet-close" data-close="shareScrim">×</button>
+    <h3>Milestone card</h3>
+    <div class="field">
+      <label>Milestone</label>
+      <div class="row2">
+        <select id="shareDog"></select>
+        <select id="shareMetric">
+          <option value="distance">Distance together</option>
+          <option value="outings">Outings together</option>
+          <option value="time">Time outside together</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Line underneath</label>
+      <input id="shareTagline" value="every mile has a shadow" />
+    </div>
+    <div class="share-modes">
+      <button data-mode="warm" class="on">Warm</button>
+      <button data-mode="graphite">Graphite</button>
+      <button data-mode="sticker">Transparent</button>
+    </div>
+    <canvas id="shareCanvas" width="1080" height="1920"></canvas>
+    <button class="btn" id="shareDownload">Save image</button>
+    <button class="btn ghost" id="shareShare" style="margin-top:8px;">Share…</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================================
+   DogWalkr Core — the magic loop:
+   Strava activity arrives  ->  "Who came along?"  ->  tap dog(s)  ->  assign.
+   Each dog's independent lifetime record updates. Never records GPS.
+   ========================================================================== */
+
+const SUPABASE_URL = 'https://rrrjojbxjektdhrkahvh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycmpvamJ4amVrdGRocmthaHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NzgzOTQsImV4cCI6MjEwMjM1NDM5NH0.sjqbYyIA7NLQ7hQYp3HJQesLVbCr8X6PA94nV6BLqHA';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const STRAVA_CLIENT_ID = '274314';
+const STRAVA_AUTH_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/strava-auth`;
+
+function getDeviceId() {
+  let id = localStorage.getItem('dogwalkr_device_id');
+  if (!id) { id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('dogwalkr_device_id', id); }
+  return id;
+}
+const DEVICE_ID = getDeviceId();
+
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80';
+
+const STATE = {
+  dogs: [],
+  activeDogId: localStorage.getItem('dogwalkr_active_dog') || null,
+  unassigned: [],        // activities where assigned=false
+  dogActivities: [],     // recent dog_activities rows (all dogs)
+  selections: {},        // activityId -> Set(dogId)
+  strava: { connected: false, name: null },
+};
+
+/* ---------- helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const el = (t, c) => { const e = document.createElement(t); if (c) e.className = c; return e; };
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function fmtDur(sec) {
+  if (!sec && sec !== 0) return '—';
+  const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+  return h ? `${h}h ${String(m).padStart(2,'0')}m` : `${m}m`;
+}
+function fmtDurLong(sec) {
+  const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+function km(n) { return (Math.round((n || 0) * 10) / 10).toFixed(1); }
+function relDate(iso) {
+  const d = new Date(iso), now = new Date();
+  const days = Math.floor((now - d) / 86400000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return days + ' days ago';
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+/* ---------- data ---------- */
+async function fetchAll() {
+  const [dogsRes, actRes, daRes, connRes] = await Promise.all([
+    db.from('dogs').select('*').order('created_at', { ascending: true }),
+    db.from('activities').select('*').eq('assigned', false).order('started_at', { ascending: false }),
+    db.from('dog_activities').select('*').order('occurred_at', { ascending: false }).limit(400),
+    db.from('strava_connections').select('*').eq('device_id', DEVICE_ID).maybeSingle(),
+  ]);
+
+  STATE.dogs = (dogsRes.data || []).map(d => ({ ...d, avatar: d.avatar || DEFAULT_AVATAR }));
+  if (!STATE.dogs.some(d => d.id === STATE.activeDogId)) STATE.activeDogId = STATE.dogs[0]?.id || null;
+
+  STATE.unassigned = actRes.data || [];
+  STATE.dogActivities = daRes.data || [];
+  if (connRes.data) { STATE.strava.connected = !!connRes.data.connected; STATE.strava.name = connRes.data.athlete_name; }
+  if (actRes.error) console.warn('activities:', actRes.error.message, '— did you run schema-core.sql?');
+}
+
+/* Assign one canonical activity to one or more dogs. Writes an independent
+   dog_activities row per dog (full distance + both durations copied — no
+   splitting), then flips the parent activity to assigned. */
+async function assignActivity(activity, dogIds) {
+  if (!dogIds.length) return;
+  const rows = dogIds.map(dogId => ({
+    activity_id: activity.id,
+    dog_id: dogId,
+    source: activity.source,
+    external_id: activity.external_id,
+    distance_km: activity.distance_km,
+    elapsed_seconds: activity.elapsed_seconds,
+    moving_seconds: activity.moving_seconds ?? activity.elapsed_seconds,
+    occurred_at: activity.started_at,
+  }));
+  const { error: e1 } = await db.from('dog_activities').upsert(rows, { onConflict: 'activity_id,dog_id' });
+  if (e1) { console.error(e1); toast('Could not assign — check console'); return; }
+  const { error: e2 } = await db.from('activities').update({ assigned: true }).eq('id', activity.id);
+  if (e2) console.warn(e2);
+  const names = STATE.dogs.filter(d => dogIds.includes(d.id)).map(d => d.name).join(' & ');
+  toast(`Assigned to ${names} 🐾`);
+  await fetchAll(); renderAll();
+}
+
+async function logManual({ title, distance_km, started_at, elapsed_seconds, moving_seconds, dogIds }) {
+  const { data, error } = await db.from('activities').insert({
+    source: 'manual', external_id: null, title,
+    distance_km, elapsed_seconds, moving_seconds,
+    started_at, device_id: null, assigned: dogIds.length > 0,
+  }).select().single();
+  if (error) { console.error(error); toast('Could not save — check console'); return; }
+  if (dogIds.length) await assignActivity(data, dogIds);
+  else { toast('Saved — assign it below'); await fetchAll(); renderAll(); }
+}
+
+async function removeDogActivity(row) {
+  await db.from('dog_activities').delete().eq('id', row.id);
+  const { count } = await db.from('dog_activities').select('id', { count: 'exact', head: true }).eq('activity_id', row.activity_id);
+  if (!count) await db.from('activities').update({ assigned: false }).eq('id', row.activity_id);
+  toast('Removed');
+  await fetchAll(); renderAll();
+}
+
+async function addDog(name) {
+  const { error } = await db.from('dogs').insert({ name });
+  if (error) { toast('Could not add dog'); return; }
+  await fetchAll(); renderAll();
+}
+
+/* ---------- derived stats ---------- */
+function dogRows(dogId) { return STATE.dogActivities.filter(r => r.dog_id === dogId); }
+function within(rows, days) {
+  const cut = Date.now() - days * 86400000;
+  return rows.filter(r => new Date(r.occurred_at).getTime() >= cut);
+}
+function sum(rows, key) { return rows.reduce((a, r) => a + (Number(r[key]) || 0), 0); }
+
+function weekBuckets(dogId, weeks = 8) {
+  const rows = dogRows(dogId);
+  const now = new Date();
+  const monday = new Date(now); monday.setHours(0,0,0,0);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const buckets = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const start = new Date(monday); start.setDate(start.getDate() - i * 7);
+    const end = new Date(start); end.setDate(end.getDate() + 7);
+    const dist = rows.filter(r => { const t = new Date(r.occurred_at); return t >= start && t < end; })
+                     .reduce((a, r) => a + (Number(r.distance_km) || 0), 0);
+    buckets.push({ start, dist });
+  }
+  return buckets;
+}
+
+/* ---------- render ---------- */
+function renderAll() {
+  renderSwitcher();
+  renderHero();
+  renderAssign();
+  renderRecent();
+  renderStatus();
+  renderSettings();
+}
+
+function renderSwitcher() {
+  const box = $('#switcher'); box.innerHTML = '';
+  STATE.dogs.forEach(d => {
+    const c = el('button', 'switch-chip' + (d.id === STATE.activeDogId ? ' active' : ''));
+    c.innerHTML = `<img src="${d.avatar}" alt=""> ${d.name}`;
+    c.onclick = () => { STATE.activeDogId = d.id; localStorage.setItem('dogwalkr_active_dog', d.id); renderAll(); };
+    box.appendChild(c);
+  });
+  if (!STATE.dogs.length) box.innerHTML = '<span style="font-size:13px;color:var(--ink-faint);">No dogs yet — add one in ⚙</span>';
+}
+
+function renderHero() {
+  const d = STATE.dogs.find(x => x.id === STATE.activeDogId);
+  if (!d) { $('#hero').style.display = 'none'; return; }
+  $('#hero').style.display = '';
+  $('#heroImg').src = d.avatar;
+  $('#heroName').textContent = d.name;
+
+  const rows = dogRows(d.id);
+  const w = within(rows, 7);
+  const yearRows = rows.filter(r => new Date(r.occurred_at).getFullYear() === new Date().getFullYear());
+
+  $('#heroSnapshot').innerHTML =
+    `<span><b>${km(sum(w,'distance_km'))} km</b> this week</span><span class="dot">·</span>` +
+    `<span><b>${w.length}</b> outing${w.length===1?'':'s'}</span><span class="dot">·</span>` +
+    `<span><b>${fmtDurLong(sum(w,'elapsed_seconds'))}</b> outside</span>`;
+  $('#heroCume').innerHTML = `<b>${km(sum(yearRows,'distance_km'))} km together in ${new Date().getFullYear()}</b> · ${rows.length} outings all time`;
+
+  const buckets = weekBuckets(d.id, 8);
+  const max = Math.max(1, ...buckets.map(b => b.dist));
+  const bars = $('#chartBars'); bars.innerHTML = '';
+  const xr = $('#chartX'); xr.innerHTML = '';
+  buckets.forEach((b, i) => {
+    const bar = el('div', 'bar' + (i === buckets.length - 1 ? ' now' : ''));
+    bar.style.height = Math.max(3, Math.round((b.dist / max) * 66)) + 'px';
+    if (b.dist > 0) { const s = el('span'); s.textContent = km(b.dist); bar.appendChild(s); }
+    bars.appendChild(bar);
+    const x = el('span'); x.textContent = (i % 2 === 0 || i === buckets.length-1) ? b.start.toLocaleDateString(undefined,{day:'numeric',month:'short'}) : '';
+    xr.appendChild(x);
+  });
+}
+
+function renderAssign() {
+  const list = $('#assignList'); list.innerHTML = '';
+  if (!STATE.unassigned.length) {
+    list.innerHTML = `<div class="empty">Nothing waiting. New Strava walks land here with a “Who came along?” prompt.</div>`;
+    return;
+  }
+  STATE.unassigned.forEach(a => {
+    if (!STATE.selections[a.id]) {
+      STATE.selections[a.id] = new Set(STATE.activeDogId ? [STATE.activeDogId] : []);
+    }
+    const sel = STATE.selections[a.id];
+    const card = el('div', 'assign-card');
+    const srcLabel = a.source === 'strava' ? 'New from Strava' : 'Added manually';
+    const dt = a.started_at ? ' · ' + relDate(a.started_at) : '';
+    const moving = (a.moving_seconds && a.moving_seconds !== a.elapsed_seconds)
+      ? `<div class="split">Moving ${fmtDur(a.moving_seconds)} · Elapsed ${fmtDur(a.elapsed_seconds)} (the dog’s outing)</div>` : '';
+    card.innerHTML = `
+      <div class="assign-src">🔥 ${srcLabel}${dt}</div>
+      <div class="assign-title">${a.title || 'Walk'}</div>
+      <div class="assign-meta">${km(a.distance_km)} km · ${fmtDur(a.elapsed_seconds)}${moving}</div>
+      <div class="assign-q">Who came along?</div>
+      <div class="pill-row"></div>
+    `;
+    const pr = $('.pill-row', card);
+    STATE.dogs.forEach(d => {
+      const p = el('div', 'pill' + (sel.has(d.id) ? ' on' : ''));
+      p.innerHTML = `<span class="tick">✓</span>${d.name}`;
+      p.onclick = () => { sel.has(d.id) ? sel.delete(d.id) : sel.add(d.id); renderAssign(); };
+      pr.appendChild(p);
+    });
+    const btn = el('button', 'btn');
+    btn.textContent = 'Assign Activity 🐾';
+    btn.disabled = sel.size === 0;
+    btn.onclick = () => { btn.disabled = true; btn.textContent = 'Assigning…'; assignActivity(a, [...sel]); };
+    card.appendChild(btn);
+    list.appendChild(card);
+  });
+}
+
+function renderRecent() {
+  const box = $('#recentList'); box.innerHTML = '';
+  const d = STATE.dogs.find(x => x.id === STATE.activeDogId);
+  const rows = (d ? dogRows(d.id) : STATE.dogActivities).slice(0, 8);
+  if (!rows.length) { box.innerHTML = `<div style="padding:16px 0;text-align:center;color:var(--ink-faint);font-size:12.5px;">No outings logged for ${d ? d.name : 'this pack'} yet.</div>`; return; }
+  rows.forEach(r => {
+    const item = el('div', 'recent-item');
+    const src = r.source === 'strava' ? 'Strava' : 'Manual';
+    item.innerHTML = `
+      <div class="r-main">
+        <div class="r-title">${km(r.distance_km)} km · ${fmtDur(r.elapsed_seconds)}</div>
+        <div class="r-sub">${src} · ${relDate(r.occurred_at)}</div>
+      </div>
+      <span class="r-x" title="Remove">✕</span>`;
+    $('.r-x', item).onclick = () => removeDogActivity(r);
+    box.appendChild(item);
+  });
+}
+
+function renderStatus() {
+  const total = STATE.dogActivities.length;
+  const dist = km(sum(STATE.dogActivities, 'distance_km'));
+  $('#statusLine').innerHTML = STATE.strava.connected
+    ? `<b>Strava connected${STATE.strava.name ? ' · ' + STATE.strava.name : ''}</b> · ${total} dog-outings · ${dist} km logged`
+    : `Strava not connected · ${total} dog-outings · ${dist} km logged`;
+}
+
+/* ---------- manual sheet ---------- */
+function openManual() {
+  $('#mDate').value = new Date().toISOString().slice(0, 10);
+  const box = $('#mDogs'); box.innerHTML = '';
+  const picked = new Set(STATE.activeDogId ? [STATE.activeDogId] : []);
+  box._picked = picked;
+  STATE.dogs.forEach(d => {
+    const p = el('div', 'pill' + (picked.has(d.id) ? ' on' : ''));
+    p.innerHTML = `<span class="tick">✓</span>${d.name}`;
+    p.onclick = () => { picked.has(d.id) ? picked.delete(d.id) : picked.add(d.id); p.classList.toggle('on'); };
+    box.appendChild(p);
+  });
+  openSheet('manualScrim');
+}
+$('#mSave').onclick = async () => {
+  const h = +$('#mElapsedH').value || 0, m = +$('#mElapsedM').value || 0;
+  const mh = $('#mMovingH').value, mm = $('#mMovingM').value;
+  const elapsed = h * 3600 + m * 60;
+  const moving = (mh || mm) ? ((+mh||0) * 3600 + (+mm||0) * 60) : elapsed;
+  const dist = parseFloat($('#mDist').value);
+  if (!dist && !elapsed) { toast('Add a distance or a time'); return; }
+  const dateStr = $('#mDate').value || new Date().toISOString().slice(0,10);
+  $('#mSave').disabled = true;
+  await logManual({
+    title: $('#mTitle').value.trim() || 'Manual walk',
+    distance_km: isNaN(dist) ? null : dist,
+    started_at: new Date(dateStr + 'T12:00:00').toISOString(),
+    elapsed_seconds: elapsed || null,
+    moving_seconds: moving || null,
+    dogIds: [...($('#mDogs')._picked || [])],
+  });
+  $('#mSave').disabled = false;
+  ['mTitle','mDist','mElapsedH','mElapsedM','mMovingH','mMovingM'].forEach(id => $('#'+id).value = '');
+  closeSheet('manualScrim');
+};
+
+/* ---------- settings / strava ---------- */
+function renderSettings() {
+  $('#humanName').value = localStorage.getItem('dogwalkr_human_name') || '';
+  const box = $('#stravaBox');
+  box.textContent = STATE.strava.connected
+    ? `Connected${STATE.strava.name ? ' as ' + STATE.strava.name : ''}. Walks import as unassigned — tap to assign.`
+    : 'Not connected. Connect so walks import automatically.';
+  $('#stravaConnect').style.display = STATE.strava.connected ? 'none' : '';
+  $('#stravaDisconnect').style.display = STATE.strava.connected ? '' : 'none';
+}
+$('#humanName').oninput = e => localStorage.setItem('dogwalkr_human_name', e.target.value.trim());
+$('#addDog').onclick = () => { const n = $('#newDogName').value.trim(); if (n) { addDog(n); $('#newDogName').value=''; } };
+
+$('#stravaConnect').onclick = () => {
+  const state = JSON.stringify({ returnUrl: window.location.href.split('?')[0], deviceId: DEVICE_ID });
+  window.location.href = `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(STRAVA_CLIENT_ID)}`
+    + `&redirect_uri=${encodeURIComponent(STRAVA_AUTH_FUNCTION_URL)}`
+    + `&response_type=code&scope=activity:read_all&approval_prompt=auto&state=${encodeURIComponent(state)}`;
+};
+$('#stravaDisconnect').onclick = async () => {
+  await db.functions.invoke('strava-disconnect', { body: { device_id: DEVICE_ID } });
+  STATE.strava = { connected: false, name: null }; renderAll();
+};
+$('#stravaSync').onclick = async () => {
+  const b = $('#stravaSync'); b.disabled = true; b.textContent = 'Syncing…';
+  try {
+    const { data, error } = await db.functions.invoke('strava-sync-core', { body: { device_id: DEVICE_ID } });
+    if (error) throw error;
+    toast(`${data.imported} new · ${data.skipped} skipped`);
+    await fetchAll(); renderAll();
+  } catch (e) { console.error(e); toast('Sync failed — connect Strava first'); }
+  b.disabled = false; b.textContent = 'Sync now';
+};
+
+/* ---------- share card ---------- */
+let shareMode = 'warm';
+function openShare() {
+  const sel = $('#shareDog'); sel.innerHTML = '';
+  STATE.dogs.forEach(d => { const o = el('option'); o.value = d.id; o.textContent = d.name; sel.appendChild(o); });
+  sel.value = STATE.activeDogId || (STATE.dogs[0] && STATE.dogs[0].id);
+  drawShare(); openSheet('shareScrim');
+}
+['shareDog','shareMetric','shareTagline'].forEach(id => $('#'+id).addEventListener('input', drawShare));
+document.querySelectorAll('.share-modes button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.share-modes button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); shareMode = b.dataset.mode; drawShare();
+});
+
+function drawShare() {
+  const c = $('#shareCanvas'), ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const dog = STATE.dogs.find(d => d.id === $('#shareDog').value) || STATE.dogs[0];
+  if (!dog) return;
+  const rows = dogRows(dog.id);
+  const human = (localStorage.getItem('dogwalkr_human_name') || '').trim();
+  const metric = $('#shareMetric').value;
+  let big, label;
+  if (metric === 'distance') { big = km(sum(rows,'distance_km')) + ' KM'; label = 'TOGETHER'; }
+  else if (metric === 'outings') { big = rows.length + ''; label = 'OUTINGS TOGETHER'; }
+  else { big = fmtDurLong(sum(rows,'elapsed_seconds')).toUpperCase(); label = 'OUTSIDE TOGETHER'; }
+
+  ctx.clearRect(0, 0, W, H);
+  const palettes = {
+    warm:     { bg: '#F6F3EC', ink: '#2B2A27', soft: '#8A857C', accent: '#E8632A' },
+    graphite: { bg: '#211F1C', ink: '#F6F3EC', soft: '#A7A197', accent: '#F0783C' },
+    sticker:  { bg: null,      ink: '#FFFFFF', soft: '#FFFFFF', accent: '#F0783C' },
+  };
+  const p = palettes[shareMode];
+  if (p.bg) { ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H); }
+  if (shareMode === 'sticker') { ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 6; }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = p.accent;
+  ctx.font = '700 46px -apple-system, "SF Pro Text", Helvetica, Arial, sans-serif';
+  ctx.fillText('🐾  D O G W A L K R', W/2, 300);
+
+  ctx.fillStyle = p.ink;
+  ctx.font = '760 92px -apple-system, "SF Pro Display", Helvetica, Arial, sans-serif';
+  const who = human ? `${dog.name} + ${human}` : dog.name;
+  ctx.fillText(who, W/2, 760);
+
+  ctx.fillStyle = p.accent;
+  ctx.font = '800 220px -apple-system, "SF Pro Display", Helvetica, Arial, sans-serif';
+  ctx.fillText(big, W/2, 1040);
+
+  ctx.fillStyle = p.soft;
+  ctx.font = '700 54px -apple-system, "SF Pro Text", Helvetica, Arial, sans-serif';
+  ctx.fillText(label.split('').join(' '), W/2, 1140);
+
+  const tag = $('#shareTagline').value.trim();
+  if (tag) {
+    ctx.fillStyle = p.ink;
+    ctx.font = 'italic 400 46px Georgia, "Times New Roman", serif';
+    ctx.fillText('“' + tag + '”', W/2, 1360);
+  }
+  ctx.shadowColor = 'transparent';
+}
+
+$('#shareDownload').onclick = () => {
+  const c = $('#shareCanvas');
+  c.toBlob(b => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = `dogwalkr-milestone.png`;
+    a.click();
+  }, 'image/png');
+};
+$('#shareShare').onclick = async () => {
+  const c = $('#shareCanvas');
+  c.toBlob(async b => {
+    const file = new File([b], 'dogwalkr-milestone.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'DogWalkr' }); } catch {}
+    } else { toast('Sharing not supported here — use Save image'); }
+  }, 'image/png');
+};
+
+/* ---------- sheets ---------- */
+function openSheet(id) { $('#'+id).classList.add('open'); }
+function closeSheet(id) { $('#'+id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeSheet(b.dataset.close));
+document.querySelectorAll('.scrim').forEach(s => s.addEventListener('click', e => { if (e.target === s) s.classList.remove('open'); }));
+$('#manualBtn').onclick = openManual;
+$('#settingsBtn').onclick = () => openSheet('settingsScrim');
+$('#shareBtn').onclick = openShare;
+
+/* ---------- boot ---------- */
+(async function init() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('strava')) {
+    history.replaceState({}, '', location.pathname);
+    if (params.get('strava') === 'connected') setTimeout(() => $('#stravaSync').click(), 600);
+  }
+  await fetchAll();
+  renderAll();
+})();
+</script>
+</body>
+</html>
