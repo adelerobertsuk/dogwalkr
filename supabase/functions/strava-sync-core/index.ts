@@ -1,11 +1,11 @@
 // strava-sync-core: the DogWalkr CORE sync. Pulls recent Strava activities
 // for ONE DEVICE's connected account and imports outdoor outings into the
-// normalized `activities` table as UNASSIGNED rows. It does NOT attribute
+// normalized `core_activities` table as UNASSIGNED rows. It does NOT attribute
 // dogs — that is the one job of the "Who came along?" card in core.html
 // (Build Rule 1: the magic loop is Strava arrives -> tap dog(s) -> done).
 //
 // Differences from the legacy strava-sync (which writes to `walks`):
-//   * Target table is `activities`, not `walks`.
+//   * Target table is `core_activities`, not `walks`.
 //   * BOTH elapsed_time AND moving_time are stored (Build Rule 3):
 //       elapsed_seconds = activity.elapsed_time  (the dog's true outing)
 //       moving_seconds  = activity.moving_time   (the human's PB number)
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       const idStr = String(activity.id);
 
       const { data: existing } = await supabase
-        .from("activities").select("id")
+        .from("core_activities").select("id")
         .eq("source", "strava").eq("external_id", idStr).maybeSingle();
       if (existing) {
         skipped++;
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const { error: insertError } = await supabase.from("activities").insert({
+      const { error: insertError } = await supabase.from("core_activities").insert({
         source: "strava",
         external_id: idStr,
         title: activity.name,
