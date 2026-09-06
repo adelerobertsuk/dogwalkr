@@ -5,10 +5,22 @@
 -- Run this in the Supabase SQL Editor (Project > SQL Editor > New query)
 -- AFTER the existing schema.sql (it depends on public.dogs already existing).
 --
--- This file is ADDITIVE. It does not touch the legacy suite tables
--- (walks, walk_dogs, food_items, food_logs, dog_follows, walk_bones,
--- walk_comments, conditioning, holiday handover). Those stay intact on the
--- `dogwalkr-legacy` branch / `legacy-full-suite` tag and in the live DB.
+-- ─── 100% NON-DESTRUCTIVE ───────────────────────────────────────────────────
+-- This file contains ZERO drop / truncate / delete / destructive alter
+-- statements. Every statement is one of:
+--   * create extension if not exists
+--   * create table if not exists
+--   * create index if not exists
+--   * create policy — but only inside a guard that first checks the policy
+--     does NOT already exist (so re-runs are safe and nothing is dropped)
+--   * create view — only if a view of that name does not already exist
+-- Running it twice, or running it against a database that already has some
+-- of these objects, is safe and changes nothing it shouldn't. It cannot
+-- affect any legacy table (walks, walk_dogs, food_items, food_logs,
+-- dog_follows, walk_bones, walk_comments, household_*, strava_*). Those are
+-- never named here except public.dogs, which is only ever READ (foreign key)
+-- and, in the separate seed-core-dogs.sql, INSERTed into with a NOT EXISTS
+-- guard — never altered, updated or deleted.
 --
 -- Core reads and writes exactly two new tables:
 --   activities      — the canonical human outing (source-agnostic, never a
@@ -70,19 +82,6 @@ create index if not exists activities_unassigned_idx on public.activities (assig
 
 alter table public.activities enable row level security;
 
-drop policy if exists "Allow anon read activities" on public.activities;
-create policy "Allow anon read activities" on public.activities
-  for select using (true);
-drop policy if exists "Allow anon insert activities" on public.activities;
-create policy "Allow anon insert activities" on public.activities
-  for insert with check (true);
-drop policy if exists "Allow anon update activities" on public.activities;
-create policy "Allow anon update activities" on public.activities
-  for update using (true) with check (true);
-drop policy if exists "Allow anon delete activities" on public.activities;
-create policy "Allow anon delete activities" on public.activities
-  for delete using (true);
-
 -- ==========================================================================
 -- dog_activities: the NORMALIZED DOG RECORD. One row per (activity, dog).
 --
@@ -103,7 +102,8 @@ create policy "Allow anon delete activities" on public.activities
 --
 -- Deleting an activity cascades and removes every dog's row for it.
 -- Unassigning a single dog is just a delete of that one row (and, if it was
--- the last one, flipping activities.assigned back to false).
+-- the last one, flipping activities.assigned back to false) — done from the
+-- app, not here.
 -- ==========================================================================
 create table if not exists public.dog_activities (
   id uuid primary key default gen_random_uuid(),
@@ -126,61 +126,90 @@ create index if not exists dog_activities_activity_id_idx
 
 alter table public.dog_activities enable row level security;
 
-drop policy if exists "Allow anon read dog_activities" on public.dog_activities;
-create policy "Allow anon read dog_activities" on public.dog_activities
-  for select using (true);
-drop policy if exists "Allow anon insert dog_activities" on public.dog_activities;
-create policy "Allow anon insert dog_activities" on public.dog_activities
-  for insert with check (true);
-drop policy if exists "Allow anon update dog_activities" on public.dog_activities;
-create policy "Allow anon update dog_activities" on public.dog_activities
-  for update using (true) with check (true);
-drop policy if exists "Allow anon delete dog_activities" on public.dog_activities;
-create policy "Allow anon delete dog_activities" on public.dog_activities
-  for delete using (true);
+-- ==========================================================================
+-- RLS policies — created only if missing, never dropped.
+--
+-- Postgres has no "create policy if not exists", so this DO block checks
+-- pg_policies first and only issues a CREATE for the ones that aren't there
+-- yet. Re-running this file is a no-op for policies that already exist.
+-- Permissive anon policies, matching every other table in this project
+-- (one shared anon key, no per-user auth).
+-- ==========================================================================
+do $$
+declare
+  p record;
+begin
+  for p in
+    select * from (values
+      ('activities',     'core anon read activities',      'select', 'using (true)'),
+      ('activities',     'core anon insert activities',    'insert', 'with check (true)'),
+      ('activities',     'core anon update activities',    'update', 'using (true) with check (true)'),
+      ('activities',     'core anon delete activities',    'delete', 'using (true)'),
+      ('dog_activities', 'core anon read dog_activities',   'select', 'using (true)'),
+      ('dog_activities', 'core anon insert dog_activities', 'insert', 'with check (true)'),
+      ('dog_activities', 'core anon update dog_activities', 'update', 'using (true) with check (true)'),
+      ('dog_activities', 'core anon delete dog_activities', 'delete', 'using (true)')
+    ) as t(tbl, pol, cmd, clause)
+  loop
+    if not exists (
+      select 1 from pg_policies
+      where schemaname = 'public' and tablename = p.tbl and policyname = p.pol
+    ) then
+      execute format(
+        'create policy %I on public.%I for %s to anon %s',
+        p.pol, p.tbl, p.cmd, p.clause
+      );
+    end if;
+  end loop;
+end $$;
 
 -- ==========================================================================
 -- dog_activity_totals: convenience view for the hero card's lifetime and
 -- year-to-date rollups. No pseudo-medical / calorie fields — only distance,
 -- outing time, frequency, and consistency (Build Rule 4).
+--
+-- Created only if a view/table of this name does not already exist (no
+-- "create OR REPLACE" — that would count as a destructive replace to the
+-- linter, and there is no existing view to preserve on first run anyway).
+-- To intentionally update the view definition later, drop it by hand first.
 -- ==========================================================================
-create or replace view public.dog_activity_totals as
-select
-  da.dog_id,
-  count(*)                                        as outings_total,
-  coalesce(sum(da.distance_km), 0)                as distance_km_total,
-  coalesce(sum(da.elapsed_seconds), 0)            as elapsed_seconds_total,
-  coalesce(sum(da.moving_seconds), 0)             as moving_seconds_total,
-  count(*) filter (
-    where da.occurred_at >= date_trunc('year', now())
-  )                                               as outings_ytd,
-  coalesce(sum(da.distance_km) filter (
-    where da.occurred_at >= date_trunc('year', now())
-  ), 0)                                           as distance_km_ytd,
-  coalesce(sum(da.elapsed_seconds) filter (
-    where da.occurred_at >= date_trunc('year', now())
-  ), 0)                                           as elapsed_seconds_ytd,
-  count(*) filter (
-    where da.occurred_at >= now() - interval '7 days'
-  )                                               as outings_7d,
-  coalesce(sum(da.distance_km) filter (
-    where da.occurred_at >= now() - interval '7 days'
-  ), 0)                                           as distance_km_7d,
-  coalesce(sum(da.elapsed_seconds) filter (
-    where da.occurred_at >= now() - interval '7 days'
-  ), 0)                                           as elapsed_seconds_7d,
-  max(da.occurred_at)                             as last_outing_at
-from public.dog_activities da
-group by da.dog_id;
+do $$
+begin
+  if not exists (
+    select 1 from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = 'dog_activity_totals'
+  ) then
+    execute $view$
+      create view public.dog_activity_totals as
+      select
+        da.dog_id,
+        count(*)                                        as outings_total,
+        coalesce(sum(da.distance_km), 0)                as distance_km_total,
+        coalesce(sum(da.elapsed_seconds), 0)            as elapsed_seconds_total,
+        coalesce(sum(da.moving_seconds), 0)             as moving_seconds_total,
+        count(*) filter (where da.occurred_at >= date_trunc('year', now()))
+                                                        as outings_ytd,
+        coalesce(sum(da.distance_km) filter (where da.occurred_at >= date_trunc('year', now())), 0)
+                                                        as distance_km_ytd,
+        coalesce(sum(da.elapsed_seconds) filter (where da.occurred_at >= date_trunc('year', now())), 0)
+                                                        as elapsed_seconds_ytd,
+        count(*) filter (where da.occurred_at >= now() - interval '7 days')
+                                                        as outings_7d,
+        coalesce(sum(da.distance_km) filter (where da.occurred_at >= now() - interval '7 days'), 0)
+                                                        as distance_km_7d,
+        coalesce(sum(da.elapsed_seconds) filter (where da.occurred_at >= now() - interval '7 days'), 0)
+                                                        as elapsed_seconds_7d,
+        max(da.occurred_at)                             as last_outing_at
+      from public.dog_activities da
+      group by da.dog_id;
+    $view$;
+  end if;
+end $$;
 
 -- ==========================================================================
--- Private Alpha cohort seed (Audrey, Bonnie, Jess).
--- Safe to re-run: matches on lower(name) so it won't duplicate dogs that
--- already exist in the live roster. Adjust breeds/dobs in the Passport later.
+-- Alpha cohort dog seed (Audrey, Bonnie, Jess) is NOT in this file — it is
+-- an INSERT into the existing public.dogs table, so it lives in its own
+-- optional file to keep this one purely structural:
+--   supabase/seed-core-dogs.sql
 -- ==========================================================================
-insert into public.dogs (name)
-select v.name
-from (values ('Audrey'), ('Bonnie'), ('Jess')) as v(name)
-where not exists (
-  select 1 from public.dogs d where lower(d.name) = lower(v.name)
-);
