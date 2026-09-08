@@ -23,6 +23,12 @@
     @keyframes bonePop { 0% { transform: scale(1); } 45% { transform: scale(1.35) rotate(-12deg); } 100% { transform: scale(1); } }
     .bone-pop { animation: bonePop .4s ease; }
   </style>
+  
+  <!-- Vercel Web Analytics -->
+  <script type="module">
+    import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics@2.0.1/+esm';
+    inject();
+  </script>
 </head>
 <body class="bg-[#F7F7F8] text-zinc-900 min-h-screen flex justify-center antialiased">
 
