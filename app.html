@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Dogwalkr 🐾 | Smart Canine Companion to Strava</title>
+  <title>DogWalkr Core 🐾 | Who came along?</title>
   
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -19,10 +19,17 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Official Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Shared pack store — keeps the active dog roster in sync with Fuel & Conditioning -->
+  <!-- Shared pack store — keeps the active dog roster consistent across devices -->
   <script src="pack-store.js"></script>
   <!-- Shared "Help & Strava Tips" bottom sheet -->
   <script src="strava-tips.js"></script>
+  <!-- DogWalkr Core: stripped-back, refinement-by-subtraction build of app.html.
+       Kept 100% of Kate's CSS, tokens, fonts, mobile frame, shadows and layout.
+       Removed by subtraction: Food tab + Food Bowl view, Conditioning Lab links,
+       Pack Feed / social. Added: the "New from Strava — Who came along?" one-tap
+       assignment card, wired to the non-destructive activities / dog_activities
+       tables. The full suite lives on branch dogwalkr-legacy / tag legacy-full-suite. -->
+  <script>window.__DOGWALKR_CORE = true;</script>
 
   <style>
     @supports (-webkit-touch-callout: none) {
@@ -52,7 +59,6 @@
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .tap-target { min-height: 48px; min-width: 48px; }
   </style>
-  <link rel="stylesheet" href="suite-nav.css" />
 </head>
 
 <body class="bg-[#FBFBFA] text-zinc-900 flex flex-col min-h-screen selection:bg-orange-500 selection:text-white">
@@ -104,13 +110,15 @@
       <!-- ========================================================== -->
       <section id="viewDashboard" class="space-y-4 block">
 
-        <!-- Pack Feed entry point -->
-        <a href="dogwalkr_feed.html" class="flex items-center justify-between rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 hover:bg-orange-100 transition">
-          <span class="text-xs font-bold text-orange-800 flex items-center gap-2">
-            <span class="text-base">🦴</span> See the Pack Feed — give a bone, leave a comment
-          </span>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-orange-500"></i>
-        </a>
+        <!-- ==========================================================
+             THE MAGIC ASSIGNMENT CARD(S) — "New from Strava · Who came
+             along?" One tap assigns a synced (or manually added but
+             still unassigned) activity to one or more household dogs.
+             Populated by renderWhoCameAlong() from STATE.pendingActivities
+             (public.core_activities where assigned = false). Hidden entirely
+             when the queue is empty.
+             ========================================================== -->
+        <div id="whoCameAlongList" class="space-y-3"></div>
 
         <!-- Weekly Movement -->
         <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-sm">
@@ -132,7 +140,7 @@
                 <span id="dashWeeklyDistance" class="text-2xl font-black text-zinc-900">0.0</span>
                 <span class="text-sm font-bold text-zinc-500">km</span>
               </div>
-              <p class="text-[11px] text-zinc-500 mt-1">Calibrated dog effort</p>
+              <p class="text-[11px] text-zinc-500 mt-1">Total this week</p>
             </div>
 
             <div class="bg-zinc-50 rounded-2xl p-3.5 border border-zinc-100">
@@ -161,15 +169,11 @@
           <div class="mb-1.5">
             <span id="dashCoachStatePill" class="inline-block bg-white/25 text-white text-xs font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm">✅ Ready</span>
           </div>
-          <h2 id="dashCoachHeadline" class="text-lg font-bold leading-tight mb-1">Your dog's activity coach</h2>
+          <h2 id="dashCoachHeadline" class="text-lg font-bold leading-tight mb-1">A few ideas for your dog's day</h2>
           <p id="dashCoachBody" class="text-sm text-orange-50 leading-relaxed">
-            Log or sync a walkout and the coach reads the rolling week to recommend rest, an easy day, or a full walkout.
+            Log or sync a walkout and the coach looks over your rolling week to suggest an easy day, a restful one, or a full walkout — just gentle ideas to think about.
           </p>
-          <p class="text-[11px] text-orange-100/80 mt-2">General activity guidance, not veterinary advice.</p>
-          <a href="condition.html" class="relative z-10 mt-4 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 border border-white/25 text-xs font-semibold text-white hover:bg-white/25 hover:border-white/40 transition-colors">
-            <span>⚡️ Build 4-Week Plan in Conditioning Lab</span>
-            <span class="opacity-80">→</span>
-          </a>
+          <p class="text-[11px] text-orange-100/80 mt-2">Gentle guidance based on recent outings, not veterinary advice.</p>
         </div>
 
         <!-- Puppy exercise reference guides (shown only for puppies) -->
@@ -253,73 +257,11 @@
           <!-- Populated by JS -->
         </div>
 
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-3xl p-5 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-blue-700 flex items-center space-x-1">
-              <span>🌴</span> <span>Holiday Handover Pass</span>
-            </span>
-            <span class="text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full">PHASE 3 PRO</span>
-          </div>
-          <h3 class="text-sm font-bold text-zinc-900">Pet-Sitter Live Handoffs</h3>
-          <p class="text-xs text-zinc-600 leading-relaxed">
-            Generate secure links for sitters and family to view feeding routines and log walks remotely.
-          </p>
-        </div>
-
       </section>
 
-      <!-- ========================================================== -->
-      <!-- TAB 4: FOOD 🥣 (Dog's Food Bowl log, per dog)              -->
-      <!-- ========================================================== -->
-      <section id="viewFood" class="space-y-4 hidden">
-
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 id="foodViewTitle" class="text-xl font-black text-zinc-900 tracking-tight">Food Bowl</h2>
-            <p class="text-xs text-zinc-500">Log each feeding and who fed them</p>
-          </div>
-          <button onclick="openAddFoodModal()" class="px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm hover:bg-orange-600 transition">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            <span>Add Item</span>
-          </button>
-        </div>
-
-        <a href="fuel.html" id="fuelLabCrossLink" class="block rounded-2xl border border-zinc-200/80 bg-zinc-50 px-4 py-3.5 text-xs font-medium text-zinc-700 hover:bg-white hover:border-zinc-300 transition-colors shadow-sm">
-          <span>🥩 Need exact daily portions? Calculate <span id="fuelLabCrossLinkName" class="font-semibold text-zinc-900">your dog&apos;s</span> meal plan in Fuel Lab</span>
-          <span class="text-orange-600 font-semibold ml-0.5">→</span>
-        </a>
-
-        <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-3">
-          <div class="flex items-center justify-between text-xs font-bold text-zinc-700">
-            <span>Feeding History</span>
-            <span id="foodSelectedDateLabel" class="text-orange-600 font-black">Today</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="shiftFoodDate(-1)" aria-label="Previous day" class="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-zinc-600 hover:bg-zinc-100"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-            <input type="date" id="foodDatePicker" onchange="selectFoodDate(this.value)" class="flex-1 p-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-xs font-semibold text-center focus:outline-none focus:border-orange-500" />
-            <button onclick="shiftFoodDate(1)" aria-label="Next day" class="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-zinc-600 hover:bg-zinc-100"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-2">
-          <span class="text-xs font-bold text-zinc-700">Logging As</span>
-          <div id="foodFeederChips" class="flex flex-wrap gap-2">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Feeding Routine Checklist</span>
-            <span class="text-xs text-zinc-500" id="foodRoutineDateHeader">Today</span>
-          </div>
-
-          <div id="foodStackList" class="space-y-2">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-
-      </section>
+      <!-- TAB 4 (FOOD / Food Bowl) removed by subtraction — DogWalkr Core
+           tracks distance, outing time, frequency and consistency only.
+           Nutrition logging remains in the full suite on dogwalkr-legacy. -->
 
     </main>
 
@@ -347,21 +289,6 @@
       <button onclick="openTab('pack')" id="navTabPack" class="flex-1 flex flex-col items-center py-1 text-zinc-400 tap-target">
         <i data-lucide="dog" class="w-5 h-5"></i>
         <span class="text-[10px] font-semibold mt-1">The Pack</span>
-      </button>
-
-      <button onclick="openTab('food')" id="navTabFood" class="flex-1 flex flex-col items-center py-1 text-zinc-400 tap-target">
-        <div class="w-5 h-5 flex items-center justify-center">
-          <!-- Kibble-bowl glyph: a trapezoid bowl with four kibble pieces
-               peeking over the rim (matches the supplied reference art). -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-            <circle cx="7.6" cy="7" r="2.1" fill="currentColor" stroke="none" />
-            <circle cx="11" cy="5.5" r="2.2" fill="currentColor" stroke="none" />
-            <circle cx="14.2" cy="6.1" r="2.1" fill="currentColor" stroke="none" />
-            <circle cx="16.7" cy="7.4" r="2" fill="currentColor" stroke="none" />
-            <path d="M4 9h16l-2.5 10H6.5L4 9z" />
-          </svg>
-        </div>
-        <span class="text-[10px] font-semibold mt-1">Food</span>
       </button>
 
     </nav>
@@ -559,26 +486,7 @@
     <img id="lightboxPhoto" src="" alt="Walk photo" class="max-w-full max-h-full w-auto h-auto object-contain rounded-xl" onclick="event.stopPropagation()" />
   </div>
 
-  <div id="modalAddFood" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
-      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
-        <h3 id="modalFoodTitle" class="text-lg font-bold text-zinc-900">Add Daily Food / Stack 🥣</h3>
-        <button onclick="closeModal('modalAddFood')" class="p-2 text-zinc-400 hover:text-zinc-700"><i data-lucide="x" class="w-5 h-5"></i></button>
-      </div>
-      <input type="hidden" id="editFoodItemId" value="" />
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs font-bold text-zinc-700 uppercase">Item Name</label>
-          <input type="text" id="inputFoodName" placeholder="e.g. Royal Canin" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
-        </div>
-        <div>
-          <label class="text-xs font-bold text-zinc-700 uppercase">Portion</label>
-          <input type="text" id="inputFoodPortion" placeholder="150g Bowl" class="w-full mt-1 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-sm font-semibold placeholder:text-zinc-400 focus:outline-none focus:border-orange-500" />
-        </div>
-      </div>
-      <button onclick="saveFoodItem()" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md">Save Food Item 🥣</button>
-    </div>
-  </div>
+  <!-- modalAddFood removed by subtraction (Food Bowl module). -->
 
   <div id="modalSettings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -710,11 +618,11 @@
         { id: 'dog_joe', name: 'Joe', breed: 'Italian Greyhound', weight: 5.8, dob: '2024-03-09', best_trait: 'Loves sprint zooms', worst_trait: 'Nibbles shoes', avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80' },
         { id: 'dog_charlie', name: 'Charlie', breed: 'Puppy', weight: 2.5, dob: '2026-07-15', best_trait: 'Tiny zoomies', worst_trait: 'Chews absolutely everything', avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=200&q=80' }
       ],
-      walkouts: [],
-      walkDogs: [],
-      walkBones: [],
-      foodItems: [],
-      foodLogs: [],
+      walkouts: [],        // flattened per-dog rows from public.core_dog_activities
+      walkDogs: [],         // unused in Core (each dog_activities row is already per-dog) — kept so shared helpers don't break
+      walkBones: [],        // unused in Core (Pack Feed removed) — kept so the share card's bones badge helper no-ops
+      pendingActivities: [],// public.core_activities where assigned = false — the "Who came along?" queue
+      whoSelections: {},    // activityId -> Set(dogId) draft selections for the assignment cards
       currentFeederName: getStoredFeederName(),
       selectedFoodDate: localDateKey(new Date())
     };
@@ -866,9 +774,9 @@
         const ageText = !p.ageM ? 'under a month' : `${p.ageM} month${p.ageM === 1 ? '' : 's'}`;
         return {
           ...base,
-          pill: '🏡 Garden & Socialising Only',
-          headline: `${dog.name} is too young for pavement walks`,
-          body: `At ${ageText} old, ${dog.name}'s vaccinations aren't complete and the growth plates are very soft. Keep to short bursts of garden play, gentle carried trips out for socialisation, and plenty of rest — no lead walks on hard pavement yet. Structured walks can usually start about a week after the final puppy vaccination, then follow the 5-minutes-per-month rule.`,
+          pill: '🏡 Garden & Socialising Idea',
+          headline: `${dog.name} may still be a little young for pavement walks`,
+          body: `Suggestion for today: at around ${ageText} old, many puppies are still finishing their vaccinations and their joints are very soft, so short bursts of garden play, gentle carried trips out for socialising and plenty of rest can be a good fit. Lots of owners hold off on lead walks on hard pavement until roughly a week after the final puppy vaccination, then ease in around the 5-minutes-per-month idea. Your vet knows ${dog.name} best.`,
         };
       }
 
@@ -880,7 +788,7 @@
           ...base,
           pill: '🐾 No Data Yet',
           headline: `${dog.name} hasn't logged a walkout yet`,
-          body: `Log or sync a walkout and the coach will track ${dog.name}'s rolling-week activity and recovery. Target for ${dog.name} right now is roughly ${p.dailyTarget} min a day.`,
+          body: `Log or sync a walkout and the coach can start sharing ideas from ${dog.name}'s rolling-week activity and recovery. As a rough starting point, something around ${p.dailyTarget} min a day is a common guide for a dog like ${dog.name}.`,
         };
       }
 
@@ -907,9 +815,9 @@
           || (priorWalks.length === 1 && latestMins >= priorAvg * relBigMult && latestMins >= p.dailyTarget * 1.3);
 
       const pupNote = p.stage === 'puppy'
-        ? ` At ${dog.name}'s age the rule of thumb is about 5 min of structured walking per month of age, up to twice a day — so roughly ${p.perWalk} min a walk, twice daily, beats one long one. Go easy on stairs, long runs and jumping while the joints grow.`
+        ? ` A common rule of thumb at ${dog.name}'s age is about 5 min of structured walking per month of age, up to twice a day — so roughly ${p.perWalk} min a walk, twice daily, is often gentler than one long one. Many owners also go easy on stairs, long runs and jumping while the joints grow.`
         : p.stage === 'senior'
-        ? ` Keep ${dog.name}'s walks gentle and on soft ground, and turn back early if you see any stiffness.`
+        ? ` You might keep ${dog.name}'s walks gentle and on soft ground, and turn back early if you notice any stiffness.`
         : '';
       const dayPlan = p.stage === 'puppy'
         ? `about ${p.dailyTarget} min of walking today, split into two`
@@ -921,42 +829,42 @@
       if (p.stage === 'puppy' && isBig && hoursSince < 30) {
         return {
           ...base,
-          pill: '🟡 Keep It Short',
+          pill: '🟡 Keep It Short Idea',
           headline: `${dog.name}'s last walk ran a bit long`,
-          body: `${fmtMins(latestMins)} is over the roughly ${p.perWalk} min a walk that suits a pup ${dog.name}'s age (about 5 min per month of age) — keep the next few short and low-impact while the joints are still growing.${pupNote}`,
+          body: `Suggestion for today: ${fmtMins(latestMins)} is over the roughly ${p.perWalk} min a walk that's often suggested for a pup ${dog.name}'s age (about 5 min per month of age), so you might keep the next few short and low-impact while the joints are still growing.${pupNote}`,
         };
       }
 
       if (isBig && hoursSince < 20) {
         return {
           ...base,
-          pill: '🔴 Rest Day',
-          headline: `${dog.name} has earned a rest day`,
-          body: `That last walkout (${fmtMins(latestMins)}) was well above ${dog.name}'s usual — keep today to a rest day or just a short garden potter so paws${p.stage === 'puppy' ? ', joints and growth plates' : ' and joints'} recover.${pupNote}`,
+          pill: '🔴 Rest Day Idea',
+          headline: `${dog.name} might enjoy a rest day`,
+          body: `Suggestion for today: that last walkout (${fmtMins(latestMins)}) was well above ${dog.name}'s usual, so a rest day or just a short garden potter could give paws${p.stage === 'puppy' ? ', joints and growth plates' : ' and joints'} a chance to recover.${pupNote}`,
         };
       }
       if (isBig && hoursSince < 44) {
         return {
           ...base,
-          pill: '🟡 Easy Day',
-          headline: `${dog.name} is still recovering`,
-          body: `Still inside 48 hours of that ${fmtMins(latestMins)} effort — keep today to a short, gentle walk on soft ground rather than another long one.${pupNote}`,
+          pill: '🟡 Easy Day Idea',
+          headline: `${dog.name} may still be recovering`,
+          body: `Suggestion for today: it's still inside 48 hours of that ${fmtMins(latestMins)} effort, so a short, gentle walk on soft ground could suit ${dog.name} better than another long one.${pupNote}`,
         };
       }
       if (weeklyRatio >= p.heavyWeekRatio) {
         return {
           ...base,
-          pill: '🟡 Ease Off',
-          headline: `${dog.name} has had a heavy week`,
-          body: `${fmtMins(weeklyMinutes)} of walks over the last 7 days is well above ${dog.name}'s ~${fmtMins(p.weeklyTarget)} target — trade a walkout or two for sniffy pottering until the weekly load comes down.${pupNote}`,
+          pill: '🟡 Ease Off Idea',
+          headline: `${dog.name} has had a busy week`,
+          body: `Suggestion for today: ${fmtMins(weeklyMinutes)} of walks over the last 7 days is well above ${dog.name}'s ~${fmtMins(p.weeklyTarget)} rough guide, so swapping a walkout or two for sniffy pottering could help the weekly load settle.${pupNote}`,
         };
       }
       if (daysSince >= 2 && weeklyRatio < 0.55) {
         return {
           ...base,
-          pill: '🟠 Needs a Walk',
-          headline: `${dog.name} is due a proper walkout`,
-          body: `No real walk in ${daysSince} days and a light week so far — ${dayPlan} would help ${dog.name}'s energy, digestion and sleep.${pupNote}`,
+          pill: '🟠 Time for a Walk?',
+          headline: `${dog.name} might be ready for a proper walkout`,
+          body: `Suggestion for today: no real walk in ${daysSince} days and a light week so far, so ${dayPlan} could be a nice lift for ${dog.name}'s energy, digestion and sleep.${pupNote}`,
         };
       }
       if (walkedToday) {
@@ -1016,7 +924,9 @@
     }
 
     async function initApp() {
-      await Promise.all([fetchSupabaseWalks(), fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchHouseholdMembers(), fetchStravaConnectionStatus(), fetchFoodItems(), fetchFoodLogs(), fetchWalkDogs(), fetchWalkBones()]);
+      await Promise.all([fetchSupabaseDogs(), fetchSupabaseHousehold(), fetchHouseholdMembers(), fetchStravaConnectionStatus()]);
+      // Dog roster must be loaded before walks (walk rows carry dog_id).
+      await Promise.all([fetchSupabaseWalks(), fetchPendingActivities()]);
       renderAll();
 
       const params = new URLSearchParams(window.location.search);
@@ -1033,32 +943,66 @@
       }
     }
 
+    // DogWalkr Core reads the normalized per-dog record (public.core_dog_activities)
+    // instead of the legacy `walks` table. Each row is already scoped to ONE
+    // dog, so we flatten it straight into the in-memory "walkout" shape every
+    // existing renderer (dashboard, Walkout Library, coach, share card) still
+    // expects — nothing downstream had to change.
+    function mapDogActivityToWalkout(r) {
+      const elapsedMin = r.elapsed_seconds != null ? Math.round(r.elapsed_seconds / 60) : null;
+      const movingMin  = r.moving_seconds  != null ? Math.round(r.moving_seconds  / 60) : null;
+      return {
+        id: r.id,                       // dog_activities.id — the per-dog row
+        activity_id: r.activity_id,     // parent public.core_activities.id
+        source: r.source,
+        external_id: r.external_id,
+        title: r.title || 'Walkout',
+        humanDistance: Number(r.distance_km) || 0,
+        durationMins: elapsedMin ?? movingMin ?? 0,   // elapsed = the dog's true outing (Build Rule 3)
+        movingMins: movingMin,                        // preserved for the human's PB
+        elapsedMins: elapsedMin,
+        stoolScore: r.stool_score,
+        notes: r.notes || '',
+        photo_url: r.photo_url || null,
+        dog_id: r.dog_id,
+        created_at: r.occurred_at || r.created_at
+      };
+    }
+
     async function fetchSupabaseWalks() {
       try {
         const { data, error } = await db
-          .from('walks')
+          .from('core_dog_activities')
           .select('*')
-          .order('created_at', { ascending: false });
-
+          .order('occurred_at', { ascending: false });
         if (error) {
-          console.warn("Supabase query notice:", error.message);
-          if (STATE.walkouts.length === 0) {
-            STATE.walkouts = [{
-              id: 'walk_init',
-              title: 'Evening Walk (Strava Synced)',
-              humanDistance: 2.92,
-              durationMins: 53,
-              stoolScore: 3,
-              notes: 'Synced via Strava 🐾',
-              dog_id: STATE.activeDogId,
-              created_at: new Date().toISOString()
-            }];
-          }
-        } else if (data && data.length > 0) {
-          STATE.walkouts = data;
+          console.warn("Supabase core_dog_activities notice:", error.message, "— run supabase/schema-core.sql");
+          return;
         }
+        STATE.walkouts = (data || []).map(mapDogActivityToWalkout);
+        STATE.walkDogs = [];  // not used in Core — dog_activities is already per-dog
       } catch (err) {
-        console.error("Connection exception:", err);
+        console.error("dog_activities connection exception:", err);
+      }
+    }
+
+    // The "Who came along?" queue: canonical outings not yet attributed to
+    // any dog (public.core_activities where assigned = false). Populated by the
+    // strava-sync-core Edge Function and by manual logs saved without a dog.
+    async function fetchPendingActivities() {
+      try {
+        const { data, error } = await db
+          .from('core_activities')
+          .select('*')
+          .eq('assigned', false)
+          .order('started_at', { ascending: false });
+        if (error) {
+          console.warn("Supabase core_activities notice:", error.message, "— run supabase/schema-core.sql");
+          return;
+        }
+        STATE.pendingActivities = data || [];
+      } catch (err) {
+        console.error("activities connection exception:", err);
       }
     }
 
@@ -1128,47 +1072,10 @@
       }
     }
 
-    async function fetchFoodItems() {
-      try {
-        const { data, error } = await db.from('food_items').select('*').order('created_at', { ascending: true });
-        if (error) {
-          console.warn("Supabase food items query notice:", error.message);
-        } else if (data) {
-          STATE.foodItems = data;
-        }
-      } catch (err) {
-        console.error("Food items connection exception:", err);
-      }
-    }
-
-    async function fetchFoodLogs() {
-      try {
-        const { data, error } = await db.from('food_logs').select('*');
-        if (error) {
-          console.warn("Supabase food logs query notice:", error.message);
-        } else if (data) {
-          STATE.foodLogs = data;
-        }
-      } catch (err) {
-        console.error("Food logs connection exception:", err);
-      }
-    }
-
-    async function fetchWalkDogs() {
-      try {
-        const { data, error } = await db.from('walk_dogs').select('walk_id, dog_id');
-        if (error) {
-          console.warn("Supabase walk_dogs query notice:", error.message);
-        } else if (data) {
-          STATE.walkDogs = data;
-        }
-      } catch (err) {
-        console.error("walk_dogs connection exception:", err);
-      }
-    }
-
-    // Bone counts per walk (the social "Give a Bone 🦴" reactions from
-    // dogwalkr_feed.html) — read-only here, used to badge the story card.
+    // Food Bowl, walk_dogs and Pack-Feed "bones" fetches removed by
+    // subtraction. Their state fields are kept as empty arrays (see STATE)
+    // so shared helpers — getDogWalkouts(), the share card's bones badge —
+    // keep working without a branch.
     async function fetchWalkBones() {
       try {
         const { data, error } = await db.from('walk_bones').select('walk_id');
@@ -1355,56 +1262,93 @@
         dogIds = [STATE.activeDogId];
       }
 
+      // Core: a manual walkout is a source='manual' row in public.core_activities
+      // plus one public.core_dog_activities row per selected dog (full distance +
+      // both durations copied — identical to how a Strava assignment writes,
+      // so a manual log produces an identical dog record, Build Rule 6).
+      const elapsedSeconds = Math.round((durationMins || 0) * 60);
+      const nowIso = new Date().toISOString();
+
       if (editId) {
+        // editId is a dog_activities.id — resolve its parent activity.
         const existing = STATE.walkouts.find(w => String(w.id) === String(editId));
+        const activityId = existing && existing.activity_id;
         const photo_url = uploadedPhoto || (existing ? existing.photo_url : null) || null;
-        const updateData = { title, humanDistance, durationMins, stoolScore, notes, photo_url, dog_id: dogIds[0] };
-        const { data, error } = await db.from('walks').update(updateData).eq('id', editId).select();
-        if (error || !data || !data.length) {
-          console.warn("Walk update notice:", error?.message || 'update matched 0 rows — check RLS policy');
-        }
-        if (existing) Object.assign(existing, updateData);
-        await assignWalkToDogs(editId, dogIds);
-      } else {
-        const newWalk = {
-          title,
-          humanDistance,
-          durationMins,
-          stoolScore,
-          notes,
-          photo_url: uploadedPhoto,
-          dog_id: dogIds[0],
-          created_at: new Date().toISOString()
+        const shared = {
+          title, distance_km: humanDistance, elapsed_seconds: elapsedSeconds,
+          notes, stool_score: stoolScore, photo_url
         };
-        const { data, error } = await db.from('walks').insert([newWalk]).select();
-        if (error) {
-          STATE.walkouts.unshift({ id: 'walk_' + Date.now(), ...newWalk });
-        } else if (data) {
-          STATE.walkouts.unshift(data[0]);
-          await assignWalkToDogs(data[0].id, dogIds);
+        if (activityId) {
+          const { error: aErr } = await db.from('core_activities')
+            .update({ ...shared, moving_seconds: elapsedSeconds, assigned: dogIds.length > 0 })
+            .eq('id', activityId);
+          if (aErr) console.warn("activities update notice:", aErr.message);
+
+          // Reconcile which dogs this activity belongs to: drop rows for dogs
+          // no longer selected, then upsert rows for the current selection.
+          let prune = db.from('core_dog_activities').delete().eq('activity_id', activityId);
+          if (dogIds.length) {
+            prune = prune.not('dog_id', 'in', `(${dogIds.map(id => `"${id}"`).join(',')})`);
+          }
+          const { error: dErr } = await prune;
+          if (dErr) console.warn("dog_activities prune notice:", dErr.message);
+
+          const occurredAt = existing.created_at || nowIso;
+          const rows = dogIds.map(dogId => ({
+            activity_id: activityId, dog_id: dogId, source: 'manual', external_id: null,
+            ...shared, moving_seconds: elapsedSeconds, occurred_at: occurredAt
+          }));
+          const { error: uErr } = await db.from('core_dog_activities').upsert(rows, { onConflict: 'activity_id,dog_id' });
+          if (uErr) console.warn("dog_activities upsert notice:", uErr.message);
+        }
+      } else {
+        const { data: act, error: aErr } = await db.from('core_activities').insert([{
+          source: 'manual', external_id: null, title,
+          distance_km: humanDistance, elapsed_seconds: elapsedSeconds, moving_seconds: elapsedSeconds,
+          started_at: nowIso, device_id: null, assigned: dogIds.length > 0,
+          notes, stool_score: stoolScore, photo_url: uploadedPhoto || null
+        }]).select().single();
+        if (aErr || !act) {
+          console.warn("activities insert notice:", aErr?.message);
+          alert('Could not save the walkout — check the console for details.');
+          return;
+        }
+        const rows = dogIds.map(dogId => ({
+          activity_id: act.id, dog_id: dogId, source: 'manual', external_id: null,
+          title, distance_km: humanDistance, elapsed_seconds: elapsedSeconds, moving_seconds: elapsedSeconds,
+          occurred_at: nowIso, notes, stool_score: stoolScore, photo_url: uploadedPhoto || null
+        }));
+        if (rows.length) {
+          const { error: dErr } = await db.from('core_dog_activities').insert(rows);
+          if (dErr) console.warn("dog_activities insert notice:", dErr.message);
         }
       }
 
       closeModal('modalLogWalk');
       resetWalkForm();
+      await Promise.all([fetchSupabaseWalks(), fetchPendingActivities()]);
       renderAll();
     }
 
     async function deleteWalkout(walkId) {
-      if (confirm("Delete this walkout record?")) {
-        const { error } = await db.from('walks').delete().eq('id', walkId);
-        if (error) {
-          console.warn("Supabase delete notice:", error.message);
-          return;
-        }
-        STATE.walkouts = STATE.walkouts.filter(w => w.id !== walkId);
-        renderAll();
+      if (!confirm("Delete this walkout record?")) return;
+      const w = STATE.walkouts.find(x => String(x.id) === String(walkId));
+      // Remove just this dog's row. If it was the last dog on the parent
+      // activity, remove the activity too (a cascade clears any siblings).
+      const { error } = await db.from('core_dog_activities').delete().eq('id', walkId);
+      if (error) { console.warn("dog_activities delete notice:", error.message); return; }
+      if (w && w.activity_id) {
+        const { count } = await db.from('core_dog_activities')
+          .select('id', { count: 'exact', head: true }).eq('activity_id', w.activity_id);
+        if (!count) await db.from('core_activities').delete().eq('id', w.activity_id);
       }
+      await Promise.all([fetchSupabaseWalks(), fetchPendingActivities()]);
+      renderAll();
     }
 
     function openTab(tabName) {
       STATE.activeTab = tabName;
-      ['dashboard', 'walkouts', 'pack', 'food'].forEach(t => {
+      ['dashboard', 'walkouts', 'pack'].forEach(t => {
         const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
         const nav = document.getElementById('navTab' + t.charAt(0).toUpperCase() + t.slice(1));
         if (view) view.classList.toggle('hidden', t !== tabName);
@@ -1424,10 +1368,10 @@
       document.getElementById('activeDogSubhead').innerText = `${activeDog.breed} • ${activeDog.weight} kg`;
       document.getElementById('activeDogAvatar').src = activeDog.avatar;
 
+      renderWhoCameAlong();
       renderDashboard(activeDog);
       renderWalkouts();
       renderPack();
-      renderFood();
 
       if (window.lucide) lucide.createIcons();
     }
@@ -1438,8 +1382,105 @@
       );
     }
 
+    // ==========================================================
+    // THE MAGIC LOOP — "New from Strava · Who came along?"
+    // A synced (or manually added but unassigned) activity → tap the
+    // dog(s) that came → one row per dog written to dog_activities with
+    // the FULL distance + both durations (no splitting, Build Rule 5) →
+    // every dog's independent record updates. Styled with the same card
+    // /chip/pill vocabulary as the rest of Kate's UI.
+    // ==========================================================
+    function renderWhoCameAlong() {
+      const box = document.getElementById('whoCameAlongList');
+      if (!box) return;
+      const pending = STATE.pendingActivities || [];
+      if (pending.length === 0) { box.innerHTML = ''; box.classList.add('hidden'); return; }
+      box.classList.remove('hidden');
+      const now = new Date();
+
+      box.innerHTML = pending.map(a => {
+        if (!STATE.whoSelections[a.id]) {
+          STATE.whoSelections[a.id] = new Set(STATE.activeDogId ? [STATE.activeDogId] : []);
+        }
+        const sel = STATE.whoSelections[a.id];
+        const km = (Number(a.distance_km) || 0).toFixed(2);
+        const elapsed = fmtMins(Math.round((a.elapsed_seconds || 0) / 60));
+        const moving = a.moving_seconds ? fmtMins(Math.round(a.moving_seconds / 60)) : null;
+        const srcLabel = a.source === 'strava' ? 'New from Strava' : 'New · added manually';
+        const when = a.started_at ? formatTimeAgo(a.started_at, now) : '';
+        const splitLine = (moving && moving !== elapsed)
+          ? `<p class="text-[11px] text-zinc-400 mt-1">Moving ${moving} · Elapsed ${elapsed} — the dog gets the full outing</p>`
+          : '';
+        const chips = STATE.dogs.map(d => {
+          const on = sel.has(d.id);
+          return `<button type="button" onclick="toggleWhoDog('${a.id}','${d.id}')" class="px-3 py-1.5 rounded-full text-xs font-bold border flex items-center space-x-1.5 transition ${on ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-zinc-600 border-zinc-200'}">
+            <img src="${d.avatar}" class="w-4 h-4 rounded-full object-cover" />
+            <span>${d.name}</span>${on ? '<span>✓</span>' : ''}
+          </button>`;
+        }).join('');
+        return `
+          <div class="bg-white rounded-3xl p-5 border border-orange-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-100 flex items-center gap-1.5">
+                <span>${a.source === 'strava' ? '🔥' : '🐾'}</span> ${srcLabel}
+              </span>
+              ${when ? `<span class="text-[11px] text-zinc-400">${when}</span>` : ''}
+            </div>
+            <div>
+              <p class="text-sm font-bold text-zinc-900">${a.title || 'Walk'}</p>
+              <p class="text-xs text-zinc-500">${km} km • ${elapsed}</p>
+              ${splitLine}
+            </div>
+            <div class="pt-1">
+              <p class="text-xs font-bold text-zinc-700 mb-2">Who came along?</p>
+              <div class="flex flex-wrap gap-2">${chips}</div>
+            </div>
+            <button onclick="assignPendingActivity('${a.id}')" ${sel.size === 0 ? 'disabled' : ''} class="w-full py-3.5 bg-orange-500 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-orange-600 transition disabled:opacity-40 disabled:hover:bg-orange-500">Assign Activity 🐾</button>
+          </div>`;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleWhoDog(activityId, dogId) {
+      const sel = STATE.whoSelections[activityId] || (STATE.whoSelections[activityId] = new Set());
+      sel.has(dogId) ? sel.delete(dogId) : sel.add(dogId);
+      renderWhoCameAlong();
+    }
+
+    async function assignPendingActivity(activityId) {
+      const activity = STATE.pendingActivities.find(a => a.id === activityId);
+      const sel = STATE.whoSelections[activityId];
+      if (!activity || !sel || sel.size === 0) return;
+      const dogIds = [...sel];
+      const movingSecs = activity.moving_seconds != null ? activity.moving_seconds : activity.elapsed_seconds;
+      const rows = dogIds.map(dogId => ({
+        activity_id: activity.id,
+        dog_id: dogId,
+        source: activity.source,
+        external_id: activity.external_id,
+        title: activity.title,
+        distance_km: activity.distance_km,
+        elapsed_seconds: activity.elapsed_seconds,
+        moving_seconds: movingSecs,
+        occurred_at: activity.started_at,
+        notes: activity.notes || null,
+        stool_score: activity.stool_score != null ? activity.stool_score : null,
+        photo_url: activity.photo_url || null
+      }));
+      const { error: e1 } = await db.from('core_dog_activities').upsert(rows, { onConflict: 'activity_id,dog_id' });
+      if (e1) { console.warn('dog_activities upsert notice:', e1.message); alert('Could not assign — check the console for details.'); return; }
+      const { error: e2 } = await db.from('core_activities').update({ assigned: true }).eq('id', activity.id);
+      if (e2) console.warn('activities update notice:', e2.message);
+      delete STATE.whoSelections[activityId];
+      await Promise.all([fetchSupabaseWalks(), fetchPendingActivities()]);
+      renderAll();
+    }
+
     function renderDashboard(dog) {
-      const multiplier = calculateStrideRatio(dog.weight);
+      // Core: the dog's distance IS the activity distance. Assigning one
+      // walk to several dogs gives each the full distance (Build Rule 5) —
+      // no stride-ratio "calibration" multiplier, which would overclaim.
+      const multiplier = 1;
       const now = new Date();
       const dogWalkouts = getDogWalkouts(dog.id);
 
@@ -1576,110 +1617,9 @@
       }).join('');
     }
 
-    function renderFoodFeederChips() {
-      const chips = document.getElementById('foodFeederChips');
-      if (!chips) return;
-      if (STATE.householdMembers.length === 0) {
-        chips.innerHTML = '<p class="text-[11px] text-zinc-400 italic">Add co-owners in Settings to track who fed each dog.</p>';
-        return;
-      }
-      chips.innerHTML = STATE.householdMembers.map(m => {
-        const active = STATE.currentFeederName === m.name;
-        return `<button onclick="setFeederName('${m.name}')" class="px-3 py-1.5 rounded-full text-xs font-bold border ${active ? 'bg-orange-500 text-white border-orange-500' : 'bg-zinc-50 text-zinc-600 border-zinc-200'}">${m.name}</button>`;
-      }).join('');
-    }
-
-    function setFeederName(name) {
-      STATE.currentFeederName = name;
-      localStorage.setItem('dogwalkr_feeder_name', name);
-      renderFoodFeederChips();
-    }
-
-    function renderFood() {
-      const activeDog = STATE.dogs.find(d => d.id === STATE.activeDogId);
-      const titleEl = document.getElementById('foodViewTitle');
-      if (titleEl) titleEl.innerText = activeDog ? `${activeDog.name}'s Food Bowl` : 'Food Bowl';
-
-      const fuelLinkNameEl = document.getElementById('fuelLabCrossLinkName');
-      if (fuelLinkNameEl) fuelLinkNameEl.innerText = activeDog ? `${activeDog.name}'s` : "your dog's";
-
-      renderFoodFeederChips();
-
-      const logsToday = STATE.foodLogs.filter(l => l.fed_date === STATE.selectedFoodDate);
-      const list = document.getElementById('foodStackList');
-      const dogFoodItems = STATE.foodItems.filter(item => item.dog_id === STATE.activeDogId);
-      list.innerHTML = dogFoodItems.map(item => {
-        const log = logsToday.find(l => l.food_item_id === item.id);
-        const done = !!log;
-        return `
-        <div class="bg-white rounded-2xl p-3.5 border border-zinc-200/80 shadow-xs flex items-center justify-between">
-          <label class="flex items-center space-x-3 flex-1 cursor-pointer">
-            <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleFoodDone('${item.id}')" class="w-4 h-4 accent-orange-500" />
-            <span class="text-xl">${item.emoji}</span>
-            <div class="${done ? 'opacity-40 line-through' : ''}">
-              <p class="text-xs font-bold text-zinc-900">${item.name}</p>
-              <p class="text-[11px] text-zinc-500">${item.portion}${done && log.fed_by ? ` • Fed by ${log.fed_by}` : ''}</p>
-            </div>
-          </label>
-          <div class="flex items-center">
-            <button onclick="openEditFoodModal('${item.id}')" class="p-2 text-zinc-400 hover:text-orange-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-            <button onclick="deleteFoodItem('${item.id}')" class="p-2 text-zinc-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-          </div>
-        </div>
-      `;
-      }).join('');
-
-      const todayKey = localDateKey(new Date());
-      const dateLabel = STATE.selectedFoodDate === todayKey
-        ? 'Today'
-        : new Date(STATE.selectedFoodDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      document.getElementById('foodSelectedDateLabel').innerText = dateLabel;
-      document.getElementById('foodRoutineDateHeader').innerText = dateLabel;
-      document.getElementById('foodDatePicker').value = STATE.selectedFoodDate;
-
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function selectFoodDate(dateKey) {
-      if (!dateKey) return;
-      STATE.selectedFoodDate = dateKey;
-      renderFood();
-    }
-
-    function shiftFoodDate(delta) {
-      const [y, m, d] = STATE.selectedFoodDate.split('-').map(Number);
-      const date = new Date(y, m - 1, d);
-      date.setDate(date.getDate() + delta);
-      selectFoodDate(localDateKey(date));
-    }
-
-    async function toggleFoodDone(itemId) {
-      const fedDate = STATE.selectedFoodDate;
-      const existing = STATE.foodLogs.find(l => l.food_item_id === itemId && l.fed_date === fedDate);
-
-      if (existing) {
-        const { error } = await db.from('food_logs').delete().eq('id', existing.id);
-        if (error) console.warn("Supabase food log delete notice:", error.message);
-        STATE.foodLogs = STATE.foodLogs.filter(l => l.id !== existing.id);
-      } else {
-        const fedBy = STATE.currentFeederName || null;
-        const { data, error } = await db.from('food_logs').insert([{ food_item_id: itemId, fed_date: fedDate, fed_by: fedBy }]).select();
-        if (error || !data) {
-          console.warn("Supabase food log insert notice:", error?.message);
-          STATE.foodLogs.push({ id: 'log_' + Date.now(), food_item_id: itemId, fed_date: fedDate, fed_by: fedBy });
-        } else {
-          STATE.foodLogs.push(data[0]);
-        }
-      }
-      renderFood();
-    }
-
-    async function deleteFoodItem(itemId) {
-      const { error } = await db.from('food_items').delete().eq('id', itemId);
-      if (error) console.warn("Supabase food item delete notice:", error.message);
-      STATE.foodItems = STATE.foodItems.filter(i => i.id !== itemId);
-      renderFood();
-    }
+    // Food Bowl render/log functions (renderFood, renderFoodFeederChips,
+    // setFeederName, selectFoodDate, shiftFoodDate, toggleFoodDone,
+    // deleteFoodItem) removed by subtraction — the Food tab is gone.
 
     function setActiveDog(dogId) {
       STATE.activeDogId = dogId;
@@ -1735,7 +1675,7 @@
       const qrContainer = document.getElementById('passportQRCode');
       qrContainer.innerHTML = '';
       if (window.QRCode) {
-        const shareUrl = window.location.href.replace(/app\.html.*$/, 'index.html');
+        const shareUrl = window.location.href.replace(/(app|core)\.html.*$/, 'index.html');
         new QRCode(qrContainer, { text: shareUrl, width: 96, height: 96 });
       }
 
@@ -2041,11 +1981,13 @@
       const dogsForStats = displayDogs.length > 0 ? displayDogs : assignedDogs;
 
       const humanDist = Number(w.humanDistance || w.distance) || 0;
-      const avgMultiplier = dogsForStats.length > 0
+      // Core: the dog walked the same distance the activity recorded.
+      const dogDist = humanDist;
+      // "Paws taken" stays a playful scaled stat (not a distance claim).
+      const strideAvg = dogsForStats.length > 0
         ? dogsForStats.reduce((sum, d) => sum + calculateStrideRatio(d.weight), 0) / dogsForStats.length
         : 1;
-      const dogDist = humanDist * avgMultiplier;
-      const pawsTaken = computePawsTaken(humanDist, avgMultiplier);
+      const pawsTaken = computePawsTaken(humanDist, strideAvg);
       const dateStr = new Date(w.created_at || Date.now())
         .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
       const bonesCount = bonesCountForWalk(w.id);
@@ -2334,33 +2276,8 @@
       downloadBlob(blob, filename);
     }
 
-    async function saveFoodItem() {
-      const editId = document.getElementById('editFoodItemId').value;
-      const name = document.getElementById('inputFoodName').value.trim();
-      const portion = document.getElementById('inputFoodPortion').value.trim();
-      if (!name) return;
-
-      if (editId) {
-        const { data, error } = await db.from('food_items').update({ name, portion }).eq('id', editId).select();
-        if (error || !data || !data.length) {
-          console.warn("Supabase food item update notice:", error?.message || 'update matched 0 rows');
-        }
-        const item = STATE.foodItems.find(i => i.id === editId);
-        if (item) { item.name = name; item.portion = portion; }
-      } else {
-        const newItem = { name, portion, emoji: '🥣', dog_id: STATE.activeDogId };
-        const { data, error } = await db.from('food_items').insert([newItem]).select();
-        if (error || !data) {
-          console.warn("Supabase food item insert notice:", error?.message);
-          STATE.foodItems.push({ id: 'food_' + Date.now(), ...newItem });
-        } else {
-          STATE.foodItems.push(data[0]);
-        }
-      }
-
-      closeModal('modalAddFood');
-      renderAll();
-    }
+    // saveFoodItem / openAddFoodModal / openEditFoodModal removed by
+    // subtraction (Food Bowl module).
 
     function setDogStatus(emoji, text) {
       document.getElementById('headerStatusEmoji').innerText = emoji;
@@ -2370,23 +2287,6 @@
 
     function openLogWalkModal() { resetWalkForm(); openModal('modalLogWalk'); }
 
-    function openAddFoodModal() {
-      document.getElementById('editFoodItemId').value = '';
-      document.getElementById('modalFoodTitle').innerText = 'Add Daily Food / Stack 🥣';
-      document.getElementById('inputFoodName').value = '';
-      document.getElementById('inputFoodPortion').value = '';
-      openModal('modalAddFood');
-    }
-
-    function openEditFoodModal(itemId) {
-      const item = STATE.foodItems.find(i => i.id === itemId);
-      if (!item) return;
-      document.getElementById('editFoodItemId').value = item.id;
-      document.getElementById('modalFoodTitle').innerText = 'Edit Food Item 🥣';
-      document.getElementById('inputFoodName').value = item.name || '';
-      document.getElementById('inputFoodPortion').value = item.portion || '';
-      openModal('modalAddFood');
-    }
     function openSettingsModal() { renderStravaStatus(); openModal('modalSettings'); }
 
     // Registered Strava API app (strava.com/settings/api). The
@@ -2449,18 +2349,19 @@
       const btn = document.getElementById('stravaSyncBtn');
       if (btn) { btn.disabled = true; btn.innerText = 'Syncing…'; }
       try {
-        const { data, error } = await db.functions.invoke('strava-sync', { body: { device_id: DEVICE_ID } });
+        // Core sync: strava-sync-core imports outings into public.core_activities
+        // as UNASSIGNED (no hashtag guessing) — the "Who came along?" card
+        // is the one place a dog gets attributed.
+        const { data, error } = await db.functions.invoke('strava-sync-core', { body: { device_id: DEVICE_ID } });
         if (error) {
           console.warn("Strava sync notice:", error.message);
           alert('Strava sync failed — check the console for details.');
         } else {
-          console.log('[strava-sync] result:', data);
+          console.log('[strava-sync-core] result:', data);
           if (Array.isArray(data.debug)) console.table(data.debug);
-          await fetchSupabaseWalks();
-          await fetchWalkDogs();
-          await fetchWalkBones();
+          await Promise.all([fetchSupabaseWalks(), fetchPendingActivities()]);
           renderAll();
-          alert(`Strava sync complete: ${data.imported} new walk(s) imported, ${data.skipped} skipped.`);
+          alert(`Strava sync complete: ${data.imported} new activity(ies) to assign, ${data.skipped} skipped.`);
         }
       } finally {
         if (btn) { btn.disabled = false; btn.innerText = 'Sync Now'; }
@@ -2543,6 +2444,10 @@
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
-  <script src="suite-nav.js" data-active="app" data-theme="light" data-drawer="true"></script>
+  <!-- suite-nav.js removed by subtraction: it injected the top bar carrying
+       the Fuel & Nutrition and Conditioning Splits tabs. The in-app header,
+       Help & Strava Tips sheet (strava-tips.js, loaded in <head>) and every
+       screen below it are Kate's originals, untouched. -->
+
 </body>
 </html>

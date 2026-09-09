@@ -169,11 +169,11 @@
           <div class="mb-1.5">
             <span id="dashCoachStatePill" class="inline-block bg-white/25 text-white text-xs font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm">✅ Ready</span>
           </div>
-          <h2 id="dashCoachHeadline" class="text-lg font-bold leading-tight mb-1">Your dog's activity coach</h2>
+          <h2 id="dashCoachHeadline" class="text-lg font-bold leading-tight mb-1">A few ideas for your dog's day</h2>
           <p id="dashCoachBody" class="text-sm text-orange-50 leading-relaxed">
-            Log or sync a walkout and the coach reads the rolling week to recommend rest, an easy day, or a full walkout.
+            Log or sync a walkout and the coach looks over your rolling week to suggest an easy day, a restful one, or a full walkout — just gentle ideas to think about.
           </p>
-          <p class="text-[11px] text-orange-100/80 mt-2">General activity guidance, not veterinary advice.</p>
+          <p class="text-[11px] text-orange-100/80 mt-2">Gentle guidance based on recent outings, not veterinary advice.</p>
         </div>
 
         <!-- Puppy exercise reference guides (shown only for puppies) -->
@@ -774,9 +774,9 @@
         const ageText = !p.ageM ? 'under a month' : `${p.ageM} month${p.ageM === 1 ? '' : 's'}`;
         return {
           ...base,
-          pill: '🏡 Garden & Socialising Only',
-          headline: `${dog.name} is too young for pavement walks`,
-          body: `At ${ageText} old, ${dog.name}'s vaccinations aren't complete and the growth plates are very soft. Keep to short bursts of garden play, gentle carried trips out for socialisation, and plenty of rest — no lead walks on hard pavement yet. Structured walks can usually start about a week after the final puppy vaccination, then follow the 5-minutes-per-month rule.`,
+          pill: '🏡 Garden & Socialising Idea',
+          headline: `${dog.name} may still be a little young for pavement walks`,
+          body: `Suggestion for today: at around ${ageText} old, many puppies are still finishing their vaccinations and their joints are very soft, so short bursts of garden play, gentle carried trips out for socialising and plenty of rest can be a good fit. Lots of owners hold off on lead walks on hard pavement until roughly a week after the final puppy vaccination, then ease in around the 5-minutes-per-month idea. Your vet knows ${dog.name} best.`,
         };
       }
 
@@ -788,7 +788,7 @@
           ...base,
           pill: '🐾 No Data Yet',
           headline: `${dog.name} hasn't logged a walkout yet`,
-          body: `Log or sync a walkout and the coach will track ${dog.name}'s rolling-week activity and recovery. Target for ${dog.name} right now is roughly ${p.dailyTarget} min a day.`,
+          body: `Log or sync a walkout and the coach can start sharing ideas from ${dog.name}'s rolling-week activity and recovery. As a rough starting point, something around ${p.dailyTarget} min a day is a common guide for a dog like ${dog.name}.`,
         };
       }
 
@@ -815,9 +815,9 @@
           || (priorWalks.length === 1 && latestMins >= priorAvg * relBigMult && latestMins >= p.dailyTarget * 1.3);
 
       const pupNote = p.stage === 'puppy'
-        ? ` At ${dog.name}'s age the rule of thumb is about 5 min of structured walking per month of age, up to twice a day — so roughly ${p.perWalk} min a walk, twice daily, beats one long one. Go easy on stairs, long runs and jumping while the joints grow.`
+        ? ` A common rule of thumb at ${dog.name}'s age is about 5 min of structured walking per month of age, up to twice a day — so roughly ${p.perWalk} min a walk, twice daily, is often gentler than one long one. Many owners also go easy on stairs, long runs and jumping while the joints grow.`
         : p.stage === 'senior'
-        ? ` Keep ${dog.name}'s walks gentle and on soft ground, and turn back early if you see any stiffness.`
+        ? ` You might keep ${dog.name}'s walks gentle and on soft ground, and turn back early if you notice any stiffness.`
         : '';
       const dayPlan = p.stage === 'puppy'
         ? `about ${p.dailyTarget} min of walking today, split into two`
@@ -829,42 +829,42 @@
       if (p.stage === 'puppy' && isBig && hoursSince < 30) {
         return {
           ...base,
-          pill: '🟡 Keep It Short',
+          pill: '🟡 Keep It Short Idea',
           headline: `${dog.name}'s last walk ran a bit long`,
-          body: `${fmtMins(latestMins)} is over the roughly ${p.perWalk} min a walk that suits a pup ${dog.name}'s age (about 5 min per month of age) — keep the next few short and low-impact while the joints are still growing.${pupNote}`,
+          body: `Suggestion for today: ${fmtMins(latestMins)} is over the roughly ${p.perWalk} min a walk that's often suggested for a pup ${dog.name}'s age (about 5 min per month of age), so you might keep the next few short and low-impact while the joints are still growing.${pupNote}`,
         };
       }
 
       if (isBig && hoursSince < 20) {
         return {
           ...base,
-          pill: '🔴 Rest Day',
-          headline: `${dog.name} has earned a rest day`,
-          body: `That last walkout (${fmtMins(latestMins)}) was well above ${dog.name}'s usual — keep today to a rest day or just a short garden potter so paws${p.stage === 'puppy' ? ', joints and growth plates' : ' and joints'} recover.${pupNote}`,
+          pill: '🔴 Rest Day Idea',
+          headline: `${dog.name} might enjoy a rest day`,
+          body: `Suggestion for today: that last walkout (${fmtMins(latestMins)}) was well above ${dog.name}'s usual, so a rest day or just a short garden potter could give paws${p.stage === 'puppy' ? ', joints and growth plates' : ' and joints'} a chance to recover.${pupNote}`,
         };
       }
       if (isBig && hoursSince < 44) {
         return {
           ...base,
-          pill: '🟡 Easy Day',
-          headline: `${dog.name} is still recovering`,
-          body: `Still inside 48 hours of that ${fmtMins(latestMins)} effort — keep today to a short, gentle walk on soft ground rather than another long one.${pupNote}`,
+          pill: '🟡 Easy Day Idea',
+          headline: `${dog.name} may still be recovering`,
+          body: `Suggestion for today: it's still inside 48 hours of that ${fmtMins(latestMins)} effort, so a short, gentle walk on soft ground could suit ${dog.name} better than another long one.${pupNote}`,
         };
       }
       if (weeklyRatio >= p.heavyWeekRatio) {
         return {
           ...base,
-          pill: '🟡 Ease Off',
-          headline: `${dog.name} has had a heavy week`,
-          body: `${fmtMins(weeklyMinutes)} of walks over the last 7 days is well above ${dog.name}'s ~${fmtMins(p.weeklyTarget)} target — trade a walkout or two for sniffy pottering until the weekly load comes down.${pupNote}`,
+          pill: '🟡 Ease Off Idea',
+          headline: `${dog.name} has had a busy week`,
+          body: `Suggestion for today: ${fmtMins(weeklyMinutes)} of walks over the last 7 days is well above ${dog.name}'s ~${fmtMins(p.weeklyTarget)} rough guide, so swapping a walkout or two for sniffy pottering could help the weekly load settle.${pupNote}`,
         };
       }
       if (daysSince >= 2 && weeklyRatio < 0.55) {
         return {
           ...base,
-          pill: '🟠 Needs a Walk',
-          headline: `${dog.name} is due a proper walkout`,
-          body: `No real walk in ${daysSince} days and a light week so far — ${dayPlan} would help ${dog.name}'s energy, digestion and sleep.${pupNote}`,
+          pill: '🟠 Time for a Walk?',
+          headline: `${dog.name} might be ready for a proper walkout`,
+          body: `Suggestion for today: no real walk in ${daysSince} days and a light week so far, so ${dayPlan} could be a nice lift for ${dog.name}'s energy, digestion and sleep.${pupNote}`,
         };
       }
       if (walkedToday) {
